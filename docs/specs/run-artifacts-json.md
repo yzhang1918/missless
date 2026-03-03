@@ -37,11 +37,20 @@ Artifacts must be self-contained per run for replay/debugging.
     - atoms: require `target_atom_id`
     - artifacts: require `target_artifact_id`
 
+- Candidate score audit requirement:
+  - Candidate scores must be included for auditability.
+  - If `decision != new`, candidate scores are required.
+  - If `decision == new`, candidate scores are optional.
+
 - `source_id`
 - `atoms[]`
   - `temp_id`, `decision`, `target_atom_id` (required when `decision != new`), optional `relation_type`, `confidence`, optional `rationale`
+  - `candidate_scores[]` (required when `decision != new`; optional when `decision == new`)
+    - `candidate_atom_id`, `score_final`, optional `score_lexical`, optional `score_embedding`, optional `score_nli`
 - `artifacts[]`
   - `temp_id`, `decision`, `target_artifact_id` (required when `decision != new`), `confidence`, optional `rationale`
+  - `candidate_scores[]` (required when `decision != new`; optional when `decision == new`)
+    - `candidate_artifact_id`, `score_final`, optional `score_lexical`, optional `score_embedding`, optional `score_nli`
 - `new_edges.atom_atom_edges[]`
   - references to atom ids/temp ids, `relation_type`, `strength`, optional `rationale`
 - optional `new_edges.source_atom_edges[]`

@@ -46,7 +46,7 @@ Status: Active
 - `content_ref`
 - `fingerprints`: `content_hash`, `simhash/minhash`, `embedding_ref`
 - `quality_signals`
-- `derived`: `tldr_l0`, `tldr_l1`, `estimated_time_cost`, `rating`, `rating_breakdown`
+- `derived`: `tldr_l0`, `tldr_l1`, `estimated_time_cost`, `rating_label`, `rating_breakdown`
 
 ## Segment Fields
 
