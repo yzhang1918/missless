@@ -14,6 +14,7 @@ Should print:
 - proposed merges/edges
 
 Should create an `ingest_run` record.
+Should not execute commit/persistence automatically.
 
 ### `missless review <run_id>`
 

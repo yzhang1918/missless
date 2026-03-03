@@ -5,6 +5,7 @@ Status: Active
 ## Pipeline Overview
 
 One `ingest_run` is a full execution unit from source input to commit-ready proposal.
+By default, `missless ingest` does not persist KB writes; commit is a separate explicit step.
 
 Stages:
 1. `connector.fetch`
@@ -13,7 +14,7 @@ Stages:
 4. `align`
 5. `propose`
 6. `human_review`
-7. `commit`
+7. `commit` (optional follow-up stage, executed by `missless commit <run_id>`)
 
 ## Connector Responsibilities
 
