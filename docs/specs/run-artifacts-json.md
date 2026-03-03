@@ -31,11 +31,17 @@ Artifacts must be self-contained per run for replay/debugging.
 
 ## `alignment_result.json` Skeleton
 
+- Decision target requirement:
+  - If `decision == new`, target id is omitted.
+  - If `decision != new`, a target id is required.
+    - atoms: require `target_atom_id`
+    - artifacts: require `target_artifact_id`
+
 - `source_id`
 - `atoms[]`
-  - `temp_id`, `decision`, optional `target_atom_id`, optional `relation_type`, `confidence`, optional `rationale`
+  - `temp_id`, `decision`, `target_atom_id` (required when `decision != new`), optional `relation_type`, `confidence`, optional `rationale`
 - `artifacts[]`
-  - `temp_id`, `decision`, optional `target_artifact_id`, `confidence`, optional `rationale`
+  - `temp_id`, `decision`, `target_artifact_id` (required when `decision != new`), `confidence`, optional `rationale`
 - `new_edges.atom_atom_edges[]`
   - references to atom ids/temp ids, `relation_type`, `strength`, optional `rationale`
 - optional `new_edges.source_atom_edges[]`

@@ -10,7 +10,8 @@ Status: Active
 4. Aligner compares extracted outputs against KB candidates.
 5. System computes a proposal with rating and explanation.
 6. User reviews proposal and takes actions.
-7. System commits approved changes and logs events.
+7. User runs `missless commit <run_id>` to persist approved changes.
+8. System commits approved changes and logs events.
 
 ## Review Actions
 
