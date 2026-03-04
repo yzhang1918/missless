@@ -6,6 +6,8 @@ Status: Active
 
 One `ingest_run` is a full execution unit from source input to commit-ready proposal.
 By default, `missless ingest` does not persist KB writes; commit is a separate explicit step.
+In non-dry-run mode, `missless ingest` creates a persistent `ingest_run` record with `run_id`.
+In `--dry-run` mode, no `ingest_run` record is created.
 
 Stages:
 1. `connector.fetch`

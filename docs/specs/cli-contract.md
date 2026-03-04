@@ -7,6 +7,7 @@ Status: Active
 ### `missless ingest <locator> [--ext <extension>] [--dry-run]`
 
 Should print:
+- `run_id` (required when `--dry-run` is not set)
 - source summary
 - TL;DR (`L0`, `L1`)
 - rating + breakdown
@@ -15,6 +16,12 @@ Should print:
 
 Should create an `ingest_run` record.
 Should not execute commit/persistence automatically.
+
+`--dry-run` semantics:
+- executes fetch/parse/extract/align/propose only
+- does not create an `ingest_run` record
+- does not persist events, nodes, or edges
+- omits `run_id` and marks output as dry-run
 
 ### `missless review <run_id>`
 
