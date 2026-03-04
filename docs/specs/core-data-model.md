@@ -105,6 +105,18 @@ Status: Active
 - `strength`
 - `segments[]`
 
+### Optional `Source -> Source`
+
+- `relation_type`: `duplicates|rewrites|quotes`
+- `strength`: `0..1`
+- optional `rationale`
+
+### Optional `Artifact <-> Artifact`
+
+- `relation_type`: `duplicate_of|equivalent_to|variant_of|improves|uses|compares_to`
+- `strength`: `0..1`
+- optional `rationale`
+
 ## Scope Modeling Guidance
 
 - POC default: `Atom.scope_text`.

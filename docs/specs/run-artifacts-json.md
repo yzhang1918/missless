@@ -45,19 +45,29 @@ Artifacts must be self-contained per run for replay/debugging.
   - Candidate scores are required for all decisions.
   - `candidate_scores[]` may be empty only when retrieval returned no candidates.
 
+- Relation edge requirement:
+  - If `atoms[].decision` is `qualifies|entails|contradicts|extends`, include:
+    - `relation_type` (must equal decision)
+    - `relation_strength` (`0..1`)
+  - If `artifacts[].decision` is `variant_of|improves|uses|compares_to`, include:
+    - `relation_type` (must equal decision)
+    - `relation_strength` (`0..1`)
+
 - `source_id`
 - `atoms[]`
-  - `temp_id`, `decision`, `target_atom_id` (required when `decision != new`), optional `relation_type`, `confidence`, `rationale`
+  - `temp_id`, `decision`, `target_atom_id` (required when `decision != new`), optional `relation_type`, optional `relation_strength`, `confidence`, `rationale`
   - `candidate_scores[]` (required)
     - `candidate_atom_id`, `score_final`, optional `score_lexical`, optional `score_embedding`, optional `score_nli`
 - `artifacts[]`
-  - `temp_id`, `decision`, `target_artifact_id` (required when `decision != new`), `confidence`, `rationale`
+  - `temp_id`, `decision`, `target_artifact_id` (required when `decision != new`), optional `relation_type`, optional `relation_strength`, `confidence`, `rationale`
   - `candidate_scores[]` (required)
     - `candidate_artifact_id`, `score_final`, optional `score_lexical`, optional `score_embedding`, optional `score_nli`
 - `new_edges.atom_atom_edges[]`
   - references to atom ids/temp ids, `relation_type`, `strength`, optional `rationale`
 - optional `new_edges.source_atom_edges[]`
+  - `source_id`, `atom_id_or_temp`, `strength_agg`, optional `top_segments[]`
 - optional `new_edges.source_source_edges[]`
+  - `from_source_id`, `to_source_id`, `relation_type` (`duplicates|rewrites|quotes`), `strength`, optional `rationale`
 
 ## `commit_plan.json` Expectation
 
