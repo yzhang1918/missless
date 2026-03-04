@@ -64,7 +64,10 @@ Artifacts must be self-contained per run for replay/debugging.
   - `candidate_scores[]` (required)
     - `candidate_artifact_id`, `score_final`, optional `score_lexical`, optional `score_embedding`, optional `score_nli`
 - `new_edges.atom_atom_edges[]`
-  - references to atom ids/temp ids, `relation_type`, `strength`, optional `rationale`
+  - `from_atom_id_or_temp`, `to_atom_id_or_temp`, `relation_type`, `strength`, optional `rationale`
+  - Direction semantics:
+    - `qualifies|entails|extends|duplicate_of`: interpret as `from -> to`
+    - `equivalent_to|contradicts`: symmetric; still emit deterministic `from/to` ordering
 - optional `new_edges.source_atom_edges[]`
   - `source_id`, `atom_id_or_temp`, `strength_agg`, optional `top_segments[]`
 - optional `new_edges.source_source_edges[]`
