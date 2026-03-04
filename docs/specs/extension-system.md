@@ -97,12 +97,11 @@ All actions must emit events.
 
 ## Event Logging Requirements
 
-Always log events for:
-- run start/complete
-- extraction output
-- alignment output
-- review actions
-- commit summary
+Event emission requirements:
+- non-dry-run ingest: persist events for run start/complete, extraction output, and alignment output
+- review actions: persist when review/override actions occur
+- commit summary: persist only when commit stage is executed
+- dry-run ingest: do not persist events (transient debug telemetry is optional)
 
 Minimum event fields:
 - event id/time

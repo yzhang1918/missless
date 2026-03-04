@@ -28,6 +28,7 @@ Artifacts must be self-contained per run for replay/debugging.
 - `edges.artifact_atoms[]`
   - `artifact_temp_id`, `atom_temp_id`, `relation_type`, `strength`, `segments[]`
 - optional `edges.intra_atoms[]`
+  - `a_temp_id`, `b_temp_id`, `relation_type` (`equivalent_to|duplicate_of|qualifies|entails|contradicts|extends`), `strength`, optional `rationale`
 
 ## `alignment_result.json` Skeleton
 
