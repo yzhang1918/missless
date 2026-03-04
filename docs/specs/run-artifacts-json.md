@@ -31,6 +31,10 @@ Artifacts must be self-contained per run for replay/debugging.
 
 ## `alignment_result.json` Skeleton
 
+- Decision vocabulary:
+  - `atoms[].decision`: `new|duplicate_of|equivalent_to|qualifies|entails|contradicts|extends`
+  - `artifacts[].decision`: `new|duplicate_of|equivalent_to|variant_of|improves|uses|compares_to`
+
 - Decision target requirement:
   - If `decision == new`, target id is omitted.
   - If `decision != new`, a target id is required.
@@ -38,18 +42,17 @@ Artifacts must be self-contained per run for replay/debugging.
     - artifacts: require `target_artifact_id`
 
 - Candidate score audit requirement:
-  - Candidate scores must be included for auditability.
-  - If `decision != new`, candidate scores are required.
-  - If `decision == new`, candidate scores are optional.
+  - Candidate scores are required for all decisions.
+  - `candidate_scores[]` may be empty only when retrieval returned no candidates.
 
 - `source_id`
 - `atoms[]`
   - `temp_id`, `decision`, `target_atom_id` (required when `decision != new`), optional `relation_type`, `confidence`, optional `rationale`
-  - `candidate_scores[]` (required when `decision != new`; optional when `decision == new`)
+  - `candidate_scores[]` (required)
     - `candidate_atom_id`, `score_final`, optional `score_lexical`, optional `score_embedding`, optional `score_nli`
 - `artifacts[]`
   - `temp_id`, `decision`, `target_artifact_id` (required when `decision != new`), `confidence`, optional `rationale`
-  - `candidate_scores[]` (required when `decision != new`; optional when `decision == new`)
+  - `candidate_scores[]` (required)
     - `candidate_artifact_id`, `score_final`, optional `score_lexical`, optional `score_embedding`, optional `score_nli`
 - `new_edges.atom_atom_edges[]`
   - references to atom ids/temp ids, `relation_type`, `strength`, optional `rationale`

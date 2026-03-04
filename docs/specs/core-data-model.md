@@ -28,7 +28,7 @@ Status: Active
 - `Atom <-> Atom`: `equivalent_to|duplicate_of|qualifies|entails|contradicts|extends`
 - Optional `Source -> Source`: `duplicates|rewrites|quotes`
 - Optional `Atom -> Concept`: `about`
-- Optional `Artifact <-> Artifact`: `variant_of|improves|uses|compares_to`
+- Optional `Artifact <-> Artifact`: `duplicate_of|equivalent_to|variant_of|improves|uses|compares_to`
 
 ## Atom Constraints
 

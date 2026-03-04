@@ -13,7 +13,7 @@ Define how source content is transformed into structured knowledge.
 - may produce TL;DR outputs
 
 `align(extraction_output, kb_candidates) -> alignment_result`
-- decides `new|duplicate_of|equivalent_to|qualifies|entails|contradicts|extends`
+- decides alignment outcomes using type-specific decision enums
 - attaches confidence and rationale
 
 `merge(alignment_result, human_edits) -> commit_plan`
@@ -48,7 +48,7 @@ Pass only compact views to extractor to reduce context load.
 
 ### Alignment Decision Vocabulary
 
-Canonical decision enum:
+Atom decision enum:
 - `new`
 - `duplicate_of`
 - `equivalent_to`
@@ -57,11 +57,20 @@ Canonical decision enum:
 - `contradicts`
 - `extends`
 
+Artifact decision enum:
+- `new`
+- `duplicate_of`
+- `equivalent_to`
+- `variant_of`
+- `improves`
+- `uses`
+- `compares_to`
+
 Allowed display aliases (for human-readable summaries only):
 - `duplicate` -> `duplicate_of`
 - `equivalent` -> `equivalent_to`
 
-Machine-readable outputs must use canonical enum values.
+Machine-readable outputs must use enum values valid for the object type.
 
 Multi-signal strategy:
 - lexical/canonical matching for precision
