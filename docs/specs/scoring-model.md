@@ -10,7 +10,7 @@ Produce an explainable read-priority decision:
 - `read`
 - `deep_read`
 
-## Component Scores (POC)
+## Component Scores (Baseline)
 
 - `novelty_score`
   - weighted count of new atoms

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Loop Final Gate"
+  short_description: "Evaluate landing readiness"
+  default_prompt: "Use $loop-final-gate to perform the final go/no-go decision before landing."

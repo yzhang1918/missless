@@ -8,7 +8,7 @@ Define how source content is transformed into structured knowledge.
 
 ## Extension Contract (Conceptual)
 
-`extract(source, segments, retrieval_context) -> extraction_output`
+`extract(source, normalized_content, retrieval_context) -> extraction_output`
 - produces atoms, artifacts, and evidence edges
 - may produce TL;DR outputs
 
@@ -19,13 +19,13 @@ Define how source content is transformed into structured knowledge.
 `merge(alignment_result, human_edits) -> commit_plan`
 - resolves upserts and edge writes
 
-## POC Extensions
+## Baseline Extension Profiles
 
 ### `blog.basic`
 
 - required outputs:
   - atoms (`fact|insight|definition|procedure`)
-  - `segment->atom` support edges
+  - evidence support edges from anchors to atoms (materialized segment nodes optional)
 - artifacts optional
 
 ### `paper.basic`
@@ -33,7 +33,7 @@ Define how source content is transformed into structured knowledge.
 - required outputs:
   - atoms for problem/findings/results
   - artifacts including `paper.method` (if proposed) and at least one `paper.result`
-  - edges: `source->artifact`, `artifact->atom`, `segment->atom`
+  - edges: `source->artifact`, `artifact->atom`, and evidence support/refute links to atoms
 
 ## Retrieval Context for KB-Assisted Extraction
 
@@ -42,9 +42,9 @@ Before extraction, retrieve top-k candidates:
 - similar artifacts
 - similar sources (for slop detection)
 
-Pass only compact views to extractor to reduce context load.
+Pass compact views to extractor to reduce context load.
 
-## Alignment Strategy (POC)
+## Alignment Strategy
 
 ### Alignment Decision Vocabulary
 

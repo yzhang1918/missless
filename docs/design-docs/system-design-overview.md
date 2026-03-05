@@ -4,45 +4,46 @@ Status: Active
 
 ## Purpose
 
-Describe the intended system shape for `missless` and why the pipeline is structured as staged transformations.
+Describe the intended system shape for `missless` and why extraction and evidence anchoring are separated into distinct stages.
 
 ## End-to-End System Shape
 
-Input source locator -> content acquisition -> normalized segments -> knowledge extraction -> alignment against KB -> proposal generation -> human review -> commit and event logging.
+Input source locator -> content acquisition -> normalized full-content representation -> knowledge extraction (atoms/artifacts) -> evidence anchoring (segment links) -> alignment against KB -> proposal generation -> human review -> optional commit and event persistence.
 
 ## Design Goals
 
 - Keep each stage auditable and replayable.
-- Separate concerns between acquisition, extraction, alignment, and commit.
-- Preserve deterministic artifacts per run for debugging.
-- Allow extension-based extraction logic by source type.
+- Separate semantic extraction from evidence localization.
+- Preserve deterministic run artifacts for debugging and review.
+- Keep interface adapters (skill/CLI/web/mobile) independent from core pipeline semantics.
 
 ## Stage Responsibilities
 
 1. Connector
    - Fetch source content and metadata.
-   - Produce normalized text snapshot and segment locators.
+   - Produce normalized full-content representation.
 2. Extractor Extension
-   - Produce atoms/artifacts and evidence edges.
-   - Optionally produce TL;DR summaries.
-3. Aligner
+   - Read normalized content and produce atoms/artifacts first.
+   - Avoid premature dependency on pre-cut segment nodes.
+3. Evidence Anchoring
+   - Attach supporting/refuting segment references to extracted outputs.
+   - Materialize segment objects when needed for audit/navigation.
+4. Aligner
    - Compare outputs with existing KB candidates.
-   - Decide `new|duplicate_of|equivalent_to|qualifies|contradicts|entails|extends`.
-4. Proposer
-   - Build human-reviewable package and rating breakdown.
-5. Human Review
+   - Decide type-specific alignment relations.
+5. Proposer
+   - Build human-reviewable package with rationale and candidate scores.
+6. Human Review
    - Accept/reject/edit/override before persistence.
-6. Committer
-   - Persist resolved plan and emit complete event trail.
+7. Committer (optional follow-up)
+   - Persist approved plan and emit durable event trail.
 
 ## Boundary Contracts
 
-- Data contracts live in `docs/specs/`.
+- Data and run artifact contracts live in `docs/specs/`.
 - Design rationale and tradeoffs live in `docs/design-docs/`.
 - Operational collaboration rules live in `AGENTS.md` and `docs/standards/`.
 
-## Evolution Strategy
+## Open Design Topics
 
-- Add new connectors/extensions without changing core ingestion orchestration.
-- Add artifact subtypes via payload schema versioning.
-- Keep run artifact formats backward-compatible where possible.
+- Segment modeling alternatives: `docs/design-docs/segment-evidence-model-options.md`

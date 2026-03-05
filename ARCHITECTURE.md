@@ -9,16 +9,18 @@ Repository knowledge is the system of record. If it is not in this repository, i
 ## Top-Level Layout
 
 - `AGENTS.md`: operating contract for human + Codex collaboration
-- `docs/`: all long-lived product and engineering knowledge
+- `.agents/skills/`: repository-local execution skills and loop workflow assets
+- `docs/`: long-lived product and engineering knowledge
+- `scripts/loop/`: lightweight automation helpers for review/gate loops
 
 ## `docs/` Structure
 
 - `docs/index.md`: global navigation
-- `docs/design-docs/`: product and system design intent, architecture tradeoffs, decision logs
-- `docs/product-specs/`: product goals, scope, workflow, acceptance criteria, roadmap
-- `docs/specs/`: formal contracts (data model, pipeline, scoring, CLI, run artifacts)
-- `docs/exec-plans/`: active/completed execution plans and technical debt tracking
-- `docs/standards/`: documentation, governance, and merge workflow standards
+- `docs/design-docs/`: product/system design intent, tradeoffs, decision logs
+- `docs/product-specs/`: product charter, stage strategy, workflow, stage gates
+- `docs/specs/`: formal contracts (data model, pipeline, extension, scoring, interfaces, run artifacts)
+- `docs/exec-plans/`: active/completed plans, backlog, kanban, follow-ups, debt tracking
+- `docs/standards/`: governance and merge/review standards
 - `docs/references/`: external practice notes and glossary
 
 ## Change Policy

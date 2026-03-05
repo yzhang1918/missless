@@ -1,0 +1,4 @@
+interface:
+  display_name: "Loop Execute"
+  short_description: "Implement a plan step with TDD"
+  default_prompt: "Use $loop-execute to implement one plan step with Red/Green/Refactor and quick validation."

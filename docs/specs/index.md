@@ -17,8 +17,9 @@ Define implementation contracts that must remain stable or explicitly versioned.
 | Document | Status | Summary | When to read |
 | --- | --- | --- | --- |
 | [Core Data Model](./core-data-model.md) | Active | Node/edge schemas and claim/evidence constraints. | Before any schema or graph relation changes. |
-| [Ingestion Pipeline](./ingestion-pipeline.md) | Active | Stage-by-stage run lifecycle and connector outputs. | Before orchestration or ingestion flow changes. |
+| [Ingestion Pipeline](./ingestion-pipeline.md) | Active | Stage-by-stage run lifecycle and extraction/anchoring flow. | Before orchestration or ingestion flow changes. |
 | [Extension System](./extension-system.md) | Active | Extract/align/merge contracts and review/event expectations. | Before adding or changing extension behavior. |
 | [Scoring Model](./scoring-model.md) | Active | Rating components and explainability requirements. | Before ranking or weighting changes. |
-| [CLI Contract](./cli-contract.md) | Active | Command surface and expected outputs. | Before changing CLI UX or command semantics. |
+| [Interface Contracts](./interface-contracts.md) | Active | Interface adapter contracts (CLI now, others by stage). | Before changing interaction semantics. |
 | [Run Artifacts JSON Contracts](./run-artifacts-json.md) | Active | Per-run machine-readable artifact schemas. | Before changing debug/replay outputs. |
+| [Legacy CLI Contract](./cli-contract.md) | Deprecated | Historical CLI-only framing. | Only when auditing prior assumptions. |

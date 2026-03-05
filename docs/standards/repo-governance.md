@@ -12,10 +12,11 @@ Status: Active
 - Any behavior or contract change requires corresponding doc updates in the same branch.
 - Stale docs must be corrected before or with implementation changes.
 
-## Scope Boundaries
+## Stage Governance
 
-- POC scope is authoritative as defined in `docs/product-specs/`.
-- Deferred work belongs in roadmap/backlog, not hidden TODOs.
+- Delivery stages are authoritative in `docs/product-specs/delivery-stages.md`.
+- Stage gates are authoritative in `docs/product-specs/stage-gates.md`.
+- Backlog prioritization is authoritative in `docs/exec-plans/backlog.md` and `docs/exec-plans/kanban.md`.
 
 ## Document Placement Governance
 

@@ -32,38 +32,60 @@ Build `missless` as an agent-first, repository-legible system that turns informa
 Use for ambiguous tasks.
 - Identify relevant docs/specs.
 - Clarify assumptions.
-- Produce a short execution approach before making major changes.
+- Converge on a concrete approach before major edits.
 
 ### Mode B: Execution
 
 Use for scoped tasks.
-- Update or create execution plan when the task is non-trivial.
+- Update or create an execution plan for non-trivial work.
 - Implement in small, reviewable increments.
-- Run validation and capture outcomes.
+- Run validation and capture evidence.
 
 ### Mode C: Stabilization
 
 Use after delivery.
 - Update docs where behavior changed.
-- Capture technical debt in tracker.
-- Add follow-up tasks into backlog or execution plans.
+- Track unresolved follow-ups in `docs/exec-plans/follow-ups.md`.
+- Map unresolved follow-ups to backlog IDs.
 
 ## Standard Workflow
 
 1. Intake
    - Restate goal, constraints, and done criteria.
 2. Context Load
-   - Read only relevant docs first, then code.
-3. Plan
-   - For medium/large work, create or update an execution plan in `docs/exec-plans/active/`.
-4. Execute
+   - Read relevant docs first, then code.
+3. Prioritize
+   - Start from `docs/exec-plans/kanban.md` and `docs/exec-plans/backlog.md`.
+4. Plan
+   - For medium/large work, create/update plan under `docs/exec-plans/active/`.
+5. Execute
    - Make atomic changes tied to plan steps.
-5. Validate
+6. Validate
    - Run checks relevant to the change.
-6. Document
+7. Document
    - Update specs/docs in the same branch.
-7. Report
-   - Summarize what changed, what was validated, and open risks.
+8. Report
+   - Summarize changes, validation, open risks, and follow-ups.
+
+## Local Skills
+
+Repository-local skills live under `.agents/skills/`.
+
+- Workflow overview: `.agents/skills/AGENT_LOOP_WORKFLOW.md`
+- Available loop skills:
+  - `loop-discovery`
+  - `loop-plan`
+  - `loop-execute`
+  - `loop-review-loop`
+  - `loop-final-gate`
+  - `loop-land`
+  - `loop-janitor`
+
+Standards/skill overlap policy:
+- Standards are normative.
+- Skills are operational playbooks.
+- If they conflict, standards win.
+- See `docs/standards/skills-alignment.md`.
 
 ## Git Workflow
 
@@ -81,7 +103,7 @@ Every PR should include:
 - Scope of change
 - Validation evidence
 - Updated docs/specs links
-- Known limitations or follow-up tasks
+- Known limitations or follow-up tasks with IDs
 
 ## Documentation Lifecycle
 
@@ -96,19 +118,19 @@ When deprecating a document:
 
 ## Knowledge Placement Rules
 
-- Product intent and scope: `docs/product-specs/`
+- Product intent and staged outcomes: `docs/product-specs/`
 - Technical contracts: `docs/specs/`
 - Collaboration and quality rules: `docs/standards/`
 - Product/system design intent and decisions: `docs/design-docs/`
-- Tactical work plans and debt: `docs/exec-plans/`
+- Tactical plans, backlog, follow-ups, and debt: `docs/exec-plans/`
 - External learnings and glossary: `docs/references/`
 
 ## Placement Decision Heuristics
 
 Use these checks when deciding where a new document should live:
-- If it defines what the product should do or not do, use `docs/product-specs/`.
+- If it defines what the product should do, use `docs/product-specs/`.
 - If it defines machine-facing contracts consumed by implementation, use `docs/specs/`.
-- If it explains product/system design rationale and tradeoffs, use `docs/design-docs/`.
+- If it explains product/system rationale and tradeoffs, use `docs/design-docs/`.
 - If it defines process, governance, quality policy, or review rules, use `docs/standards/`.
 - If it tracks tactical delivery work, use `docs/exec-plans/`.
 
@@ -120,4 +142,4 @@ A task is done only when:
 - Acceptance criteria are met.
 - Validation was performed (or explicitly declared unavailable).
 - Relevant docs/specs are updated.
-- Remaining risks are documented.
+- Open follow-ups are tracked with IDs and mapped to backlog or active plan.

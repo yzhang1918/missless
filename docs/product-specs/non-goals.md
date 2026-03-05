@@ -1,24 +1,8 @@
-# Non-Goals (Explicitly Out of POC)
+# Legacy Non-Goals
 
-Status: Active
+Status: Deprecated
+Deprecated on: 2026-03-05
+Replaced by: `docs/product-specs/delivery-stages.md`
 
-## Product Experience
-
-- Web UI, iOS, Android, mini-program app experiences
-- Streaming/vibe editing interfaces
-- Vault/project multi-knowledge-base product experience
-- Watchlist/subscription-based automatic source tracking
-
-## Access and Input
-
-- Paywall/login bypass automation
-- Voice input and speech recognition
-
-## Advanced Knowledge Features
-
-- Complex debate issue/position aggregation (POC supports contradiction edges only)
-
-## Packaging and Commercialization
-
-- SaaS launch operations and app-store distribution workflows
-- Full compliance and commercialization execution
+Historical POC non-goals are no longer the primary framing.
+Stage-based focus now defines sequencing without treating later outcomes as permanent exclusions.

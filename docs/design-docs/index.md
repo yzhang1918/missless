@@ -4,7 +4,7 @@ Status: Active
 
 ## Purpose
 
-Capture the design intent of `missless` itself: why the product works this way, what system shape we are optimizing for, and what tradeoffs are intentional.
+Capture the design intent of `missless`: why the product works this way, what system shape we are optimizing for, and which tradeoffs remain open.
 
 ## Status Legend
 
@@ -16,7 +16,8 @@ Capture the design intent of `missless` itself: why the product works this way, 
 
 | Document | Status | Summary | When to read |
 | --- | --- | --- | --- |
-| [Product Design Principles](./product-design-principles.md) | Active | Defines product-level design principles and quality attributes. | Before changing user-facing behavior or scope. |
-| [System Design Overview](./system-design-overview.md) | Active | Explains the end-to-end system shape, boundaries, and stage responsibilities. | Before designing architecture or splitting implementation work. |
-| [Knowledge Graph Design Rationale](./knowledge-graph-design-rationale.md) | Active | Explains why the heterogeneous graph model is chosen and how to evolve it safely. | Before changing nodes/edges/schema behavior. |
-| [Decision Log](./decision-log.md) | Active | Records high-impact design and architecture decisions. | When proposing or reviewing major tradeoffs. |
+| [Product Design Principles](./product-design-principles.md) | Active | Product-level principles and quality attributes. | Before changing user/system behavior assumptions. |
+| [System Design Overview](./system-design-overview.md) | Active | End-to-end system shape and stage responsibilities. | Before architecture and orchestration changes. |
+| [Segment Evidence Model Options](./segment-evidence-model-options.md) | Draft | Tradeoff analysis for segment node vs attribute vs hybrid modeling. | Before locking segment/evidence representation. |
+| [Knowledge Graph Design Rationale](./knowledge-graph-design-rationale.md) | Active | Why heterogeneous graph semantics are used and how to evolve safely. | Before changing node/edge contracts. |
+| [Decision Log](./decision-log.md) | Active | High-impact design and architecture decisions. | When proposing or reviewing major tradeoffs. |

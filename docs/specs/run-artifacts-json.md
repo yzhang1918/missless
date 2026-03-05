@@ -21,14 +21,20 @@ Artifacts must be self-contained per run for replay/debugging.
   - `temp_id`, `text`, `type`, optional `scope_text`, optional `confidence`
 - `artifacts[]`
   - `temp_id`, `subtype`, `name`, `l0_abstract`, optional `l1_overview`, `payload`, `schema_version`
-- `edges.segment_states[]`
-  - `segment_id`, `atom_temp_id`, `polarity`, `strength`
+- `edges.evidence_states[]` (canonical)
+  - `atom_temp_id`, `polarity`, `strength`
+  - evidence reference (one of):
+    - `segment_id` (when segment nodes are materialized), or
+    - `anchor` object (embedded locator/snippet reference)
 - `edges.source_artifacts[]`
-  - `source_id`, `artifact_temp_id`, `relation_type`, `key_segments[]`
+  - `source_id`, `artifact_temp_id`, `relation_type`, `key_evidence_refs[]`
 - `edges.artifact_atoms[]`
-  - `artifact_temp_id`, `atom_temp_id`, `relation_type`, `strength`, `segments[]`
+  - `artifact_temp_id`, `atom_temp_id`, `relation_type`, `strength`, `evidence_refs[]`
 - optional `edges.intra_atoms[]`
   - `a_temp_id`, `b_temp_id`, `relation_type` (`equivalent_to|duplicate_of|qualifies|entails|contradicts|extends`), `strength`, optional `rationale`
+
+Legacy compatibility:
+- `edges.segment_states[]` may be emitted as a legacy alias of `edges.evidence_states[]` during migration.
 
 ## `alignment_result.json` Skeleton
 
@@ -69,7 +75,7 @@ Artifacts must be self-contained per run for replay/debugging.
     - `qualifies|entails|extends|duplicate_of`: interpret as `from -> to`
     - `equivalent_to|contradicts`: symmetric; still emit deterministic `from/to` ordering
 - optional `new_edges.source_atom_edges[]`
-  - `source_id`, `atom_id_or_temp`, `strength_agg`, optional `top_segments[]`
+  - `source_id`, `atom_id_or_temp`, `strength_agg`, optional `top_evidence_refs[]`
 - optional `new_edges.source_source_edges[]`
   - `from_source_id`, `to_source_id`, `relation_type` (`duplicates|rewrites|quotes`), `strength`, optional `rationale`
 

@@ -8,6 +8,7 @@ Status: Draft
 - Owner:
 - Date:
 - Related issue/task:
+- Backlog IDs:
 
 ## Objective
 
@@ -48,4 +49,5 @@ Define the outcome in one or two sentences.
 
 - Delivered:
 - Not delivered:
-- Follow-up:
+- Follow-up IDs (`FUP-xxxx`):
+- Follow-up to backlog mapping:
