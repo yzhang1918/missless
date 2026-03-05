@@ -1,6 +1,6 @@
 ---
 name: loop-plan
-description: Convert an approved discovery outcome into an execution-ready plan with step boundaries, acceptance criteria, validation strategy, and documentation obligations. Use when a task needs explicit step planning before implementation.
+description: Convert an approved discovery summary into an execution-ready plan with step boundaries, acceptance criteria, validation strategy, and documentation obligations.
 ---
 
 # Loop Plan
@@ -13,22 +13,24 @@ For medium/large tasks, this skill is required after discovery and before execut
 
 ## Inputs
 
-- Approved discovery outcome.
+- Approved discovery summary from conversation.
 - Repository constraints and standards.
 
 ## Execution Contract
 
-1. Use `docs/exec-plans/active/YYYY-MM-DD-<topic>.md` as the plan file.
-2. Break work into small, reviewable steps.
-3. For each step, define:
+1. Confirm discovery is explicitly approved by the human.
+   - If not approved, return to `loop-discovery`.
+2. Use `docs/exec-plans/active/YYYY-MM-DD-<topic>.md` as the plan file.
+3. Break work into small, reviewable steps.
+4. For each step, define:
    - objective
    - expected files
    - validation commands
    - documentation impact
-4. Define review cadence:
+5. Define review cadence:
    - delta review after each step
    - full-pr review before final gate
-5. Define final gate conditions explicitly.
+6. Define final gate conditions explicitly.
 
 ## Output
 

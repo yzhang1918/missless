@@ -19,11 +19,18 @@ Build `missless` as an agent-first, repository-legible system that turns informa
 - Human: set priorities, constraints, acceptance criteria, and final tradeoff calls.
 - Codex: execute end-to-end, keep docs/code aligned, surface risks clearly.
 
+## Task Intake Gate
+
+Before any discovery/plan/execution work:
+- If the human has not explicitly provided a task, Codex must ask a concise clarification question first.
+- Codex must confirm objective and success criteria before entering discovery.
+- Codex must not start implementation-oriented work on assumed tasks.
+
 ## Required Workflow
 
 For medium or large work, these steps are mandatory:
-1. Discovery (brainstorm assumptions/options)
-2. Plan (write to `docs/exec-plans/active/`)
+1. Discovery (interactive brainstorming; no repository file writes)
+2. Plan (write to `docs/exec-plans/active/` only after discovery approval)
 3. Execution (small reviewable increments)
 4. Validation (checks + evidence)
 5. Documentation updates

@@ -1,4 +1,4 @@
 interface:
   display_name: "Loop Plan"
-  short_description: "Turn design into an execution plan"
-  default_prompt: "Use $loop-plan to create step-level implementation and validation plans."
+  short_description: "Turn approved discovery into a plan"
+  default_prompt: "Use $loop-plan to convert an approved discovery summary into a step-level execution and validation plan."
