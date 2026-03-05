@@ -18,8 +18,46 @@ if [[ ! -f "$review_file" ]]; then
   exit 1
 fi
 
-blocker="$(jq -r '.counts.blocker // 0' "$review_file")"
-important="$(jq -r '.counts.important // 0' "$review_file")"
+# Fail closed if required gate fields are missing or invalid.
+if ! jq -e '
+  (.status | type == "string")
+  and (.status == "complete")
+  and
+  (.findings | type == "array")
+  and
+  all(.findings[]?;
+    (.severity | type == "string")
+    and (
+      .severity == "BLOCKER"
+      or .severity == "IMPORTANT"
+      or .severity == "MINOR"
+      or .severity == "NIT"
+    )
+  )
+  and
+  (.counts | type == "object")
+  and (.counts.blocker | type == "number")
+  and (.counts.important | type == "number")
+' "$review_file" >/dev/null; then
+  echo "Invalid review artifact: status/findings/counts contract failed" >&2
+  exit 3
+fi
+
+derived_blocker="$(jq -r '[.findings[]? | select((.severity // "") == "BLOCKER")] | length' "$review_file")"
+derived_important="$(jq -r '[.findings[]? | select((.severity // "") == "IMPORTANT")] | length' "$review_file")"
+counts_match="$(jq -r '
+  (.counts.blocker == ([.findings[]? | select((.severity // "") == "BLOCKER")] | length))
+  and
+  (.counts.important == ([.findings[]? | select((.severity // "") == "IMPORTANT")] | length))
+' "$review_file")"
+
+if [[ "$counts_match" != "true" ]]; then
+  echo "Invalid review artifact: counts do not match findings payload" >&2
+  exit 3
+fi
+
+blocker="$derived_blocker"
+important="$derived_important"
 
 if [[ "$blocker" == "0" && "$important" == "0" ]]; then
   echo "PASS: review gate clear (BLOCKER=0, IMPORTANT=0)"

@@ -9,6 +9,11 @@ description: Run iterative self-review with dynamically selected subagent review
 
 Run structured review cycles in `delta` mode (per step) or `full-pr` mode (end-to-end).
 
+Scope selection rule:
+- Use `full-pr` at least once before final gate.
+- Use `delta` after targeted fixes when changed surface is narrow.
+- Re-run `full-pr` if fixes touch cross-cutting contracts, orchestration flow, or many files.
+
 ## Inputs
 
 - Review scope: `delta` or `full-pr`.
@@ -19,8 +24,10 @@ Run structured review cycles in `delta` mode (per step) or `full-pr` mode (end-t
 1. Start a new review round:
 
 ```sh
-.agents/skills/loop-review-loop/scripts/review_init.sh <round-id> <scope>
+.agents/skills/loop-review-loop/scripts/review_init.sh <round-id YYYYMMDD-HHMMSS> <scope>
 ```
+
+`round-id` uses UTC timestamp format (`YYYYMMDD-HHMMSS`) so cleanup and retention logic can safely classify rounds.
 
 2. Select reviewer dimensions dynamically based on risk and scope.
    Recommended pool:
@@ -38,7 +45,7 @@ Run structured review cycles in `delta` mode (per step) or `full-pr` mode (end-t
 6. Aggregate findings:
 
 ```sh
-.agents/skills/loop-review-loop/scripts/review_aggregate.sh <round-id> .local/loop/review-<round-id>-*.json
+.agents/skills/loop-review-loop/scripts/review_aggregate.sh <round-id YYYYMMDD-HHMMSS> .local/loop/review-<round-id>-*.json
 ```
 
 7. Evaluate blocking state:
@@ -49,6 +56,16 @@ Run structured review cycles in `delta` mode (per step) or `full-pr` mode (end-t
 
 8. If blocked, fix findings and run another review round.
 9. Summarize accepted review outcome in the tracked plan or PR description.
+10. Cleanup ephemeral artifacts after the loop:
+
+```sh
+.agents/skills/loop-review-loop/scripts/review_cleanup.sh --keep-rounds 1
+```
+11. When review-loop or final-gate scripts change, run regression checks:
+
+```sh
+.agents/skills/loop-review-loop/scripts/review_regression.sh
+```
 
 ## Output
 

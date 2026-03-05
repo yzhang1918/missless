@@ -31,6 +31,10 @@ Run `loop-janitor` independently on a recurring cadence for entropy control and 
 - Review findings may remain in `.local` while active.
 - Final decisions and outcomes must be summarized in tracked plan/PR records.
 - Helper scripts are skill-local under `.agents/skills/*/scripts/`.
+- Run review artifact cleanup after active review loops:
+  - `.agents/skills/loop-review-loop/scripts/review_cleanup.sh --keep-rounds 1`
+- If loop/gate scripts changed, run:
+  - `.agents/skills/loop-review-loop/scripts/review_regression.sh`
 
 ## Review Policy
 

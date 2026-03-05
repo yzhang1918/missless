@@ -107,18 +107,10 @@ This note is a retrieval-oriented distillation of agent-harness practices from t
 - specs separated from design rationale
 - tracker-driven execution and follow-up handling
 
-### Near-Term Adoption (recommended next)
+### Operationalization Note
 
-1. Add docs consistency checks.
-   - Validate index links, status fields, and required sections.
-2. Add architecture boundary checks once code structure exists.
-   - Enforce dependency direction and module boundaries.
-3. Add recurring hygiene workflow.
-   - Periodically review stale docs and unresolved debt items.
-4. Add execution-plan discipline.
-   - Require plan files for multi-step work and archive outcomes.
-5. Add observability contracts in specs before implementation.
-   - Define what run metrics/logs must exist for ingest and review loops.
+- Use this reference as external distillation, not as a tactical backlog.
+- When adopting any recommendation here, track it in `docs/exec-plans/tracker.md`.
 
 ## Implementation Prompts (Reusable)
 
