@@ -37,6 +37,7 @@ Single tactical tracker for priorities, follow-ups, and debt.
 
 | ID | Title | Priority | Status | Owner | Links | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| FUP-0003 | Harden review-loop and final-gate artifact contracts | P1 | done | Codex | `.agents/skills/loop-review-loop/scripts/`, `.agents/skills/loop-final-gate/scripts/final_gate.sh`, commit `cbd4636` | Added fail-closed validation, safe cleanup behavior, and regression harness. |
 | FUP-0001 | Add optional CI status exporter for final-gate input | P2 | todo | Codex | `.agents/skills/loop-final-gate/scripts/final_gate.sh` | Emit machine-readable status file. |
 | FUP-0002 | Add helper to spawn reviewer subagents by selected dimensions | P2 | todo | Codex | `.agents/skills/loop-review-loop/SKILL.md` | Keep dimensions configurable. |
 

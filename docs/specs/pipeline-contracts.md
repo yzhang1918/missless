@@ -14,7 +14,7 @@ Define the baseline processing contract from source ingestion to commit-ready pr
 4. `anchor_evidence`: attach evidence anchors to candidates.
 5. `align`: compare with existing knowledge and propose relations.
 6. `propose`: assemble human-review package.
-7. `review`: human accepts/rejects/edits/overrides.
+7. `review`: human accepts/rejects/edits/defers/overrides.
 8. `commit`: optional persistence step.
 
 ## Review Contract
@@ -23,6 +23,7 @@ Review actions must support:
 - accept selected items
 - reject selected items
 - edit candidate fields
+- defer selected items
 - override alignment decisions
 
 ## Interface Contract (Adapter-Agnostic)
