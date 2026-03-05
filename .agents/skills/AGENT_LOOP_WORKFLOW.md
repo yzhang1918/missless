@@ -6,12 +6,20 @@ Status: Active
 
 Define the repository-local workflow for Codex-led implementation in `missless`.
 
+## Task Clarification Gate
+
+Before entering the primary loop:
+- If the human request does not specify an explicit task, ask one concise clarifying question.
+- Confirm task objective and success criteria before running discovery.
+- Do not start discovery/plan/execution on implicit assumptions.
+
 ## Primary Loop
 
 For medium/large tasks, discovery + plan are required (do not skip steps 1-2).
 
-1. `loop-discovery`
-2. `loop-plan`
+0. Task clarification gate
+1. `loop-discovery` (conversation-only; no repository file writes)
+2. `loop-plan` (first step that writes plan artifacts)
 3. `loop-execute` (per step)
 4. `loop-review-loop` (delta mode, per step)
 5. Repeat 3-4 until all steps are complete
@@ -27,6 +35,7 @@ Run `loop-janitor` independently on a recurring cadence for entropy control and 
 ## Artifact Policy
 
 - Repository source-of-truth artifacts live in git-tracked docs and code.
+- Discovery outputs remain in conversation until human approval.
 - `.local/loop/*.json` files are ephemeral process artifacts.
 - Review findings may remain in `.local` while active.
 - Final decisions and outcomes must be summarized in tracked plan/PR records.
