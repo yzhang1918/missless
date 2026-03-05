@@ -1,0 +1,4 @@
+interface:
+  display_name: "Loop Review"
+  short_description: "Run iterative review/fix loops"
+  default_prompt: "Use $loop-review-loop to run dynamic subagent-based review rounds and resolve findings."
