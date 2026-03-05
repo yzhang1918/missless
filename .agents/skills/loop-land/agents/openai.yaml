@@ -1,0 +1,4 @@
+interface:
+  display_name: "Loop Land"
+  short_description: "Land changes after gate pass"
+  default_prompt: "Use $loop-land to merge and record outcomes after final gate passes."

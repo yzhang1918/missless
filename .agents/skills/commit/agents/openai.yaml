@@ -1,0 +1,4 @@
+interface:
+  display_name: "Commit"
+  short_description: "Create clean conventional commits"
+  default_prompt: "Use $commit to stage changes and create a well-formed conventional commit with rationale and validation notes."

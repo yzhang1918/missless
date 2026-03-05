@@ -1,0 +1,4 @@
+interface:
+  display_name: "Loop Discovery"
+  short_description: "Clarify intent before planning"
+  default_prompt: "Use $loop-discovery to run pre-implementation discovery and converge on a design."
