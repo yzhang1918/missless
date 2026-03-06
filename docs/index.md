@@ -8,7 +8,9 @@ This is the canonical entry point for repository knowledge.
 
 - Start from the catalog below.
 - Prefer `Active` docs, then `Draft` docs where needed.
-- To answer "what should we do next?", start from `Execution Plans -> Tracker`.
+- To answer "what should we do next?", pick the tracker by scope:
+  - product delivery -> `docs/exec-plans/tracker.md`
+  - harness/process workflow -> `docs/harness/tracker.md`
 
 ## Status Legend
 
