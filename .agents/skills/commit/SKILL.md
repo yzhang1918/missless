@@ -10,12 +10,20 @@ description: Create a well-formed git commit from current changes using session 
 - Produce a commit that reflects actual changes and session context.
 - Follow common git conventions (type prefix, short subject, wrapped body).
 - Include both summary and rationale in the body.
+- Keep commits small and atomic so they can be published/merged incrementally.
 
 ## Inputs
 
 - Session history for intent and rationale.
 - `git status`, `git diff`, and `git diff --staged` for actual changes.
 - Repository commit conventions (if documented).
+- Current loop stage to determine commit timing (execution can have multiple commits).
+
+## Commit Cadence
+
+- This skill defines commit quality, not commit frequency.
+- Commit frequency is controlled by workflow (`loop-execute`/`loop-review-loop`/`loop-publish`).
+- Multiple commits in one task are expected when they improve reviewability.
 
 ## Steps
 

@@ -4,7 +4,7 @@ Status: Active
 
 ## Purpose
 
-Define the repository-local workflow for Codex-led implementation in `missless`.
+Define the repository-local workflow for Codex-led implementation and harness evolution in `missless`.
 
 ## Task Clarification Gate
 
@@ -20,13 +20,16 @@ For medium/large tasks, discovery + plan are required (do not skip steps 1-2).
 0. Task clarification gate
 1. `loop-discovery` (conversation-only; no repository file writes)
 2. `loop-plan` (first step that writes plan artifacts)
+   - Product work -> `docs/exec-plans/active/`
+   - Harness/process work -> `docs/harness/active/`
 3. `loop-execute` (per step)
 4. `loop-review-loop` (delta mode, per step)
 5. Repeat 3-4 until all steps are complete
 6. `loop-review-loop` (full-pr mode)
 7. `loop-final-gate`
-8. `commit` (when creating local commits before merge)
-9. `loop-land`
+8. `commit` (zero-to-many during execution; at least one before publish)
+9. `loop-publish` (push branch and open/update PR)
+10. `loop-land`
 
 ## Janitor Loop
 
@@ -44,6 +47,11 @@ Run `loop-janitor` independently on a recurring cadence for entropy control and 
   - `.agents/skills/loop-review-loop/scripts/review_cleanup.sh --keep-rounds 1`
 - If loop/gate scripts changed, run:
   - `.agents/skills/loop-review-loop/scripts/review_regression.sh`
+
+## Tracker Policy
+
+- Product delivery priorities/follow-ups/debt are tracked in `docs/exec-plans/tracker.md`.
+- Harness/workflow priorities/follow-ups/debt are tracked in `docs/harness/tracker.md`.
 
 ## Review Policy
 

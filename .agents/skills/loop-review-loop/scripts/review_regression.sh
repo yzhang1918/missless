@@ -5,6 +5,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 review_init="$script_dir/review_init.sh"
 review_aggregate="$script_dir/review_aggregate.sh"
 review_gate="$script_dir/review_gate.sh"
+review_finalize="$script_dir/review_finalize.sh"
 review_cleanup="$script_dir/review_cleanup.sh"
 final_gate="$script_dir/../../loop-final-gate/scripts/final_gate.sh"
 
@@ -91,6 +92,27 @@ agg_file="$work_dir/.local/loop/review-20260305-230000.json"
 assert_exists "$agg_file"
 important_count="$(jq -r '.counts.important' "$agg_file")"
 [[ "$important_count" == "1" ]] || fail "expected important count=1, got $important_count"
+
+# 6.1) review_finalize fails when important findings remain.
+if (
+  cd "$work_dir" &&
+  "$review_finalize" 20260305-230000 reviewer-a.json reviewer-b.json >/dev/null 2>&1
+); then
+  fail "review_finalize unexpectedly passed with IMPORTANT findings"
+fi
+
+# 6.2) review_finalize passes for clean reviewer artifacts.
+cat > "$work_dir/reviewer-clean-a.json" <<'JSON'
+{"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
+JSON
+cat > "$work_dir/reviewer-clean-b.json" <<'JSON'
+{"scope":"full-pr","dimension":"correctness","status":"complete","findings":[]}
+JSON
+(
+  cd "$work_dir" &&
+  "$review_finalize" 20260305-230002 reviewer-clean-a.json reviewer-clean-b.json >/dev/null
+)
+assert_exists "$work_dir/.local/loop/review-20260305-230002.json"
 
 # 7) review_gate fails when counts do not match findings payload.
 cat > "$work_dir/.local/loop/review-mismatch.json" <<'JSON'

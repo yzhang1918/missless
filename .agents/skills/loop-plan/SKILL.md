@@ -20,7 +20,9 @@ For medium/large tasks, this skill is required after discovery and before execut
 
 1. Confirm discovery is explicitly approved by the human.
    - If not approved, return to `loop-discovery`.
-2. Use `docs/exec-plans/active/YYYY-MM-DD-<topic>.md` as the plan file.
+2. Choose plan location by work type:
+   - Product work -> `docs/exec-plans/active/YYYY-MM-DD-<topic>.md`
+   - Harness/process work -> `docs/harness/active/YYYY-MM-DD-<topic>.md`
 3. Break work into small, reviewable steps.
 4. For each step, define:
    - objective

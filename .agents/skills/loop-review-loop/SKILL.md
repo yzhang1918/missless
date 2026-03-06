@@ -38,30 +38,24 @@ Scope selection rule:
    - security
    - performance/reliability
 
-3. Spawn subagent reviewers for selected dimensions.
+3. Spawn subagent reviewers for selected dimensions using `loop-reviewer`.
 4. Each subagent gathers its own context via local git commands (`git diff`, `git show`, `git log`) instead of requiring raw diff injection.
-5. Save reviewer outputs to `.local/loop/review-<round-id>-<dimension>.json`.
+5. Each reviewer writes JSON directly to `.local/loop/review-<round-id>-<dimension>.json`.
    Use the schema in `references/reviewer-output-schema.md`.
-6. Aggregate findings:
+6. Finalize the round (aggregate + gate) with one command:
 
 ```sh
-.agents/skills/loop-review-loop/scripts/review_aggregate.sh <round-id YYYYMMDD-HHMMSS> .local/loop/review-<round-id>-*.json
+.agents/skills/loop-review-loop/scripts/review_finalize.sh <round-id YYYYMMDD-HHMMSS> .local/loop/review-<round-id>-*.json
 ```
 
-7. Evaluate blocking state:
-
-```sh
-.agents/skills/loop-review-loop/scripts/review_gate.sh .local/loop/review-<round-id>.json
-```
-
-8. If blocked, fix findings and run another review round.
-9. Summarize accepted review outcome in the tracked plan or PR description.
-10. Cleanup ephemeral artifacts after the loop:
+7. If blocked, fix findings and run another review round.
+8. Summarize accepted review outcome in the tracked plan or PR description.
+9. Cleanup ephemeral artifacts after the loop:
 
 ```sh
 .agents/skills/loop-review-loop/scripts/review_cleanup.sh --keep-rounds 1
 ```
-11. When review-loop or final-gate scripts change, run regression checks:
+10. When review-loop or final-gate scripts change, run regression checks:
 
 ```sh
 .agents/skills/loop-review-loop/scripts/review_regression.sh
@@ -77,3 +71,5 @@ Scope selection rule:
 - Treat `.local` artifacts as temporary process state.
 - Keep final decisions in git-tracked docs or PR records.
 - Do not require a fixed reviewer set for all tasks.
+- Do not hand-author reviewer JSON when reviewer subagent output is available.
+- If fallback manual reviewer artifacts are required, record the reason in the plan/PR review summary.

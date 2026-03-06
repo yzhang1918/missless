@@ -1,0 +1,4 @@
+interface:
+  display_name: "Loop Reviewer"
+  short_description: "Write one structured review JSON"
+  default_prompt: "Use $loop-reviewer to inspect diff context and write one schema-valid reviewer JSON artifact for a single dimension."

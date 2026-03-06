@@ -1,0 +1,4 @@
+interface:
+  display_name: "Loop Publish"
+  short_description: "Push branch and open/update PR"
+  default_prompt: "Use $loop-publish to push the branch and create or update the PR before $loop-land."

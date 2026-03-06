@@ -24,7 +24,8 @@ Define detailed operational standards for documentation, status semantics, revie
 - Product intent/workflow -> `docs/product-specs/`
 - Design rationale/tradeoffs -> `docs/design-docs/`
 - Technical contracts -> `docs/specs/`
-- Tactical execution/progress tracking -> `docs/exec-plans/`
+- Product tactical execution/progress tracking -> `docs/exec-plans/`
+- Harness/process workflow tracking -> `docs/harness/`
 - External distillations and terms -> `docs/references/`
 
 ## Status Standards
@@ -36,7 +37,7 @@ Use these statuses for docs:
 
 Clarification:
 - Do not use `Completed` as a product/spec status.
-- Completion is tracked in `docs/exec-plans/tracker.md` and plan archives.
+- Completion is tracked in execution trackers and plan archives (`docs/exec-plans/*` for product, `docs/harness/*` for harness/process).
 
 ## Review and Merge Standards
 
@@ -44,7 +45,9 @@ For non-trivial work:
 - run step-level delta review during execution
 - run full review before final merge
 - resolve blocking/important findings before final gate
-- track unresolved follow-ups or debt in `docs/exec-plans/tracker.md`
+- track unresolved follow-ups or debt in the appropriate tracker:
+  - product scope -> `docs/exec-plans/tracker.md`
+  - harness/process scope -> `docs/harness/tracker.md`
 
 ## Skills Alignment Standards
 

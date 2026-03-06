@@ -44,7 +44,7 @@ Refine `loop-discovery` so Socratic discovery remains concise while offering bet
   - a 3-option architectural fork
   - a 3-option implementation-slice choice
   - a true 2-option scope fork
-- `find docs/exec-plans/completed -maxdepth 1 -name '*.md' ! -name 'README.md' -exec basename {} \; | while read -r file; do rg -q "$file" docs/exec-plans/completed/README.md || echo "missing:$file"; done`
+- `find docs/harness/completed -maxdepth 1 -name '*.md' ! -name 'README.md' -exec basename {} \; | while read -r file; do rg -q "$file" docs/harness/completed/README.md || echo "missing:$file"; done`
 - `loop-review-loop` in `full-pr` mode
 - `loop-final-gate` against the latest review artifact and local CI-equivalent metadata
 
@@ -55,9 +55,9 @@ Refine `loop-discovery` so Socratic discovery remains concise while offering bet
   - Prompt: design the first `Segment` entity for evidence anchoring. Observed result: 3 options, each with one short upside and one short downside, followed by a concise recommendation.
   - Prompt: choose the first implementation slice after evidence anchoring. Observed result: 3 options, each with one short upside and one short downside, with no long compare table.
   - Prompt: decide whether v1 `Segment` must support podcast/audio locators now. Observed result: 2 options only, each with one short upside and one short downside, confirming true binary forks do not get padded with weak extras.
-- Executed `find docs/exec-plans/completed -maxdepth 1 -name '*.md' ! -name 'README.md' -exec basename {} \; | while read -r file; do rg -q "$file" docs/exec-plans/completed/README.md || echo "missing:$file"; done`; the command produced no missing entries, so the completed-plan catalog stayed in sync.
+- Executed `find docs/harness/completed -maxdepth 1 -name '*.md' ! -name 'README.md' -exec basename {} \; | while read -r file; do rg -q "$file" docs/harness/completed/README.md || echo "missing:$file"; done`; the command produced no missing entries, so the completed-plan catalog stayed in sync.
 - Executed `loop-review-loop` full-PR round `20260306-015645`; review gate passed with `BLOCKER=0`, `IMPORTANT=0`.
-- Executed `loop-review-loop` delta round `20260306-020428`; review gate blocked with `BLOCKER=0`, `IMPORTANT=1`, which drove the archive-evidence updates in this plan and the catalog-sync rule added to `docs/exec-plans/completed/README.md`.
+- Executed `loop-review-loop` delta round `20260306-020428`; review gate blocked with `BLOCKER=0`, `IMPORTANT=1`, which drove the archive-evidence updates in this plan and the catalog-sync rule added to `docs/harness/completed/README.md`.
 - Executed `loop-review-loop` delta round `20260306-020831`; review gate passed with `BLOCKER=0`, `IMPORTANT=0` after the archive-evidence updates.
 - Executed `loop-final-gate` against `.local/loop/review-20260306-020831.json` and `.local/loop/ci-20260306-discovery-option-framing.json`; the gate passed with `review_ok=true`, `ci_ok=true`, `branch_ok=true`, and `docs_ok=true`.
 
