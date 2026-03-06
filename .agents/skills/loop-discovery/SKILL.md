@@ -26,9 +26,13 @@ Discovery is a collaborative brainstorming phase and stays in conversation until
    - Ask exactly one high-leverage question per turn.
    - Prioritize purpose, constraints, non-goals, success criteria, and tradeoffs.
    - When related docs/contracts are `Draft`, keep probing assumptions until uncertainty is reduced.
-4. Propose 2-3 approaches with trade-offs and a recommendation.
-5. Converge on one approach with explicit acceptance criteria and human approval.
-6. Produce a concise discovery summary in conversation for plan handoff.
+4. When a decision benefits from explicit framing, present 2-4 realistic options.
+   - Choose the count based on the real decision shape: 2 for a true fork, 3-4 when there are meaningful alternatives.
+   - Give each option a very short trade-off note with one clear upside and one clear downside.
+   - Keep options concise and non-redundant; do not pad weak options just to reach four.
+5. Recommend a direction with short rationale when the trade-offs are asymmetric.
+6. Converge on one approach with explicit acceptance criteria and human approval.
+7. Produce a concise discovery summary in conversation for plan handoff.
 
 ## Output
 
@@ -47,3 +51,4 @@ Conversation-only discovery summary with:
 - Do not create a worktree automatically.
 - Do not proceed to `loop-plan` until the discovery summary is approved by the human.
 - Do not ask bundled multi-question prompts; keep one question per turn.
+- Do not turn option framing into long compare tables or verbose essays.
