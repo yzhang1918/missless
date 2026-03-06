@@ -32,6 +32,11 @@ if [[ "$head_branch" == "main" ]]; then
   exit 1
 fi
 
+if [[ "$head_branch" != codex/* ]]; then
+  echo "Refusing to publish from non-codex branch: $head_branch" >&2
+  exit 1
+fi
+
 if [[ -n "$(git status --porcelain)" ]]; then
   echo "Working tree is not clean; commit or stash changes before publish" >&2
   exit 1

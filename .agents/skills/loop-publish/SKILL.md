@@ -17,7 +17,7 @@ Publish current branch changes into an open PR before landing.
 
 ## Execution Contract
 
-1. Confirm branch has intended commits and no uncommitted changes.
+1. Confirm current branch matches `codex/*`, has intended commits, and has no uncommitted changes.
 2. Push branch to `origin` (set upstream when needed).
 3. Create PR if none exists for the branch, or update existing PR title/body.
 4. Record PR URL and head SHA in the active plan or PR notes.
@@ -38,4 +38,4 @@ Use script:
 
 - Do not merge in this skill.
 - Do not force-push unless explicitly requested by the human.
-- Do not publish from `main`.
+- Publish only from `codex/*` working branches.

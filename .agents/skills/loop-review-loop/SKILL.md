@@ -48,6 +48,8 @@ Scope selection rule:
 .agents/skills/loop-review-loop/scripts/review_finalize.sh <round-id YYYYMMDD-HHMMSS> .local/loop/review-<round-id>-*.json
 ```
 
+`review_finalize.sh` always prints the aggregated artifact path. If the gate is blocked, it exits non-zero (currently `2`) after printing the path.
+
 7. If blocked, fix findings and run another review round.
 8. Summarize accepted review outcome in the tracked plan or PR description.
 9. Cleanup ephemeral artifacts after the loop:

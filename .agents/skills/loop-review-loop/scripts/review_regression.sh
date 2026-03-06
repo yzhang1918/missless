@@ -93,13 +93,19 @@ assert_exists "$agg_file"
 important_count="$(jq -r '.counts.important' "$agg_file")"
 [[ "$important_count" == "1" ]] || fail "expected important count=1, got $important_count"
 
-# 6.1) review_finalize fails when important findings remain.
-if (
+# 6.1) review_finalize fails when important findings remain and still prints aggregate path.
+set +e
+finalize_fail_output="$(
   cd "$work_dir" &&
-  "$review_finalize" 20260305-230000 reviewer-a.json reviewer-b.json >/dev/null 2>&1
-); then
+  "$review_finalize" 20260305-230000 reviewer-a.json reviewer-b.json 2>&1
+)"
+finalize_fail_status=$?
+set -e
+if [[ "$finalize_fail_status" -eq 0 ]]; then
   fail "review_finalize unexpectedly passed with IMPORTANT findings"
 fi
+[[ "$finalize_fail_status" -eq 2 ]] || fail "review_finalize expected exit status 2, got $finalize_fail_status"
+[[ "$finalize_fail_output" == *".local/loop/review-20260305-230000.json"* ]] || fail "review_finalize did not print aggregate path on failure"
 
 # 6.2) review_finalize passes for clean reviewer artifacts.
 cat > "$work_dir/reviewer-clean-a.json" <<'JSON'

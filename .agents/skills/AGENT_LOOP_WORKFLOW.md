@@ -23,13 +23,14 @@ For medium/large tasks, discovery + plan are required (do not skip steps 1-2).
    - Product work -> `docs/exec-plans/active/`
    - Harness/process work -> `docs/harness/active/`
 3. `loop-execute` (per step)
-4. `loop-review-loop` (delta mode, per step)
-5. Repeat 3-4 until all steps are complete
-6. `loop-review-loop` (full-pr mode)
-7. `loop-final-gate`
-8. `commit` (zero-to-many during execution; at least one before publish)
+4. `commit` (zero-to-many; create reviewable increments during execution)
+5. `loop-review-loop` (delta mode, per step)
+6. Repeat 3-5 until all steps are complete
+7. `loop-review-loop` (full-pr mode)
+8. `commit` (optional final fix commit; if new changes are introduced here, rerun step 7)
 9. `loop-publish` (push branch and open/update PR)
-10. `loop-land`
+10. `loop-final-gate`
+11. `loop-land`
 
 ## Janitor Loop
 

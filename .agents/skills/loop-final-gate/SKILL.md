@@ -8,6 +8,7 @@ description: Evaluate whether a change is ready to land by combining review stat
 ## Overview
 
 Perform the final readiness decision before landing. This skill decides; it does not merge.
+Run this after `loop-publish` so gate evidence reflects the published branch state.
 
 ## Inputs
 
@@ -22,7 +23,6 @@ Perform the final readiness decision before landing. This skill decides; it does
 3. Confirm docs/spec updates are complete for behavior changes.
 4. Confirm branch is in a merge-ready state:
    - local branch is up-to-date with target base (or rebased immediately before gate)
-   - PR head SHA matches local HEAD
 5. Run final gate evaluation:
 
 ```sh

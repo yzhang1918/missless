@@ -15,6 +15,11 @@ gate_script="$script_dir/review_gate.sh"
 
 aggregated_file="$("$aggregate_script" "$round_id" "$@")"
 
-"$gate_script" "$aggregated_file"
-
-echo "$aggregated_file"
+if "$gate_script" "$aggregated_file"; then
+  echo "$aggregated_file"
+  exit 0
+else
+  status=$?
+  echo "$aggregated_file"
+  exit "$status"
+fi

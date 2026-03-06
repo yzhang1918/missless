@@ -17,7 +17,7 @@ Complete integration after final gate success.
 ## Execution Contract
 
 1. Verify final gate is pass and current evidence is fresh.
-2. Verify PR is already published and merge strategy matches repository policy.
+2. Verify PR is already published, PR head SHA matches local HEAD, and merge strategy matches repository policy.
 3. Perform merge/land action according to repository workflow.
    - prefer `rebase` or `squash` if merge commits are disabled
 4. Record:
