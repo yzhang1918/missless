@@ -119,7 +119,7 @@ Convert the approved evidence-anchor discovery into repository source-of-truth d
 - Addressed those findings by explicitly scoping the first slice to `Atom` persistence, marking alignment as deferred/no-op, and syncing tracker/plan terminology.
 - Delta review round `20260306-023322` then passed with `BLOCKER=0`, `IMPORTANT=0`.
 - Full-PR review round `20260306-023328` passed with `BLOCKER=0`, `IMPORTANT=0`.
-- Post-archive delta review round `20260306-023841` passed with `BLOCKER=0`, `IMPORTANT=0` after moving the plan into `completed/`, syncing the catalog, and marking tracker tasks as done.
+- Post-archive delta review round `20260306-024106` passed with `BLOCKER=0`, `IMPORTANT=0` after moving the plan into `completed/`, syncing the catalog, marking tracker tasks as done, and refreshing the final evidence references.
 
 ## Final Gate Conditions
 
@@ -133,7 +133,7 @@ Convert the approved evidence-anchor discovery into repository source-of-truth d
 
 - Initial local-equivalent final-gate evidence was superseded after detecting that the working branch had drifted behind `origin/main`.
 - Switched work onto `codex/evidence-contract-first-slice`, fast-forwarded to `origin/main`, and re-applied the change set before recording final gate evidence.
-- Executed `.agents/skills/loop-final-gate/scripts/final_gate.sh .local/loop/review-20260306-023841.json .local/loop/ci-local-20260306-023841.json .local/loop/final-gate-20260306-023841.json`.
+- Executed `.agents/skills/loop-final-gate/scripts/final_gate.sh .local/loop/review-20260306-024106.json .local/loop/ci-local-20260306-024106.json .local/loop/final-gate-20260306-024106.json`.
 - Final gate passed with `review_ok=true`, `ci_ok=true`, `branch_ok=true`, and `docs_ok=true`.
 
 ## Risks and Mitigations
