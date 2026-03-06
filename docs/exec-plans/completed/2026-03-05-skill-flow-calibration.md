@@ -1,7 +1,5 @@
 # Skill Flow Calibration (Task Intake + Discovery Behavior)
 
-Status: Active
-
 ## Metadata
 
 - Plan name: Skill Flow Calibration (Task Intake + Discovery Behavior)
@@ -46,6 +44,14 @@ Align repository collaboration flow so Codex confirms task intent before discove
 - `rg -n "Socratic|one high-leverage question|Do not write or modify repository files during discovery|Do not proceed to .*loop-plan" .agents/skills/loop-discovery/SKILL.md`
 - `rg -n "approved discovery summary|If not approved, return to .*loop-discovery" .agents/skills/loop-plan/SKILL.md`
 - `rg -n "TASK-0004|TASK-0001" docs/exec-plans/tracker.md docs/exec-plans/completed/2026-03-05-skill-flow-calibration.md`
+
+## Validation Summary
+
+- Executed `rg -n "Task Intake Gate|interactive brainstorming; no repository file writes|task clarification gate" AGENTS.md .agents/skills/AGENT_LOOP_WORKFLOW.md`; expected task-intake and discovery-write-guard terms were found in the target docs.
+- Executed `rg -n "Socratic|one high-leverage question|Do not write or modify repository files during discovery|Do not proceed to .*loop-plan" .agents/skills/loop-discovery/SKILL.md`; the updated discovery contract terms were present.
+- Executed `rg -n "approved discovery summary|If not approved, return to .*loop-discovery" .agents/skills/loop-plan/SKILL.md`; the plan handoff guard was present.
+- Executed `rg -n "TASK-0004|TASK-0001" docs/exec-plans/tracker.md docs/exec-plans/completed/2026-03-05-skill-flow-calibration.md`; tracker and archived-plan references were aligned at the time of the check.
+- Executed `loop-review-loop` full-PR round `20260306-010234`; review gate was blocked with `BLOCKER=0`, `IMPORTANT=1`, `MINOR=2`, which drove the archived-plan metadata and validation-evidence fixes captured in this document.
 
 ## Risks and Mitigations
 
