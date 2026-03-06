@@ -30,3 +30,4 @@ find docs/exec-plans/completed -maxdepth 1 -name '*.md' ! -name 'README.md' -exe
 | --- | --- | --- |
 | [`2026-03-05-skill-flow-calibration.md`](./2026-03-05-skill-flow-calibration.md) | 2026-03-05 | Calibrated task intake, discovery behavior, and plan handoff rules. |
 | [`2026-03-06-discovery-option-framing.md`](./2026-03-06-discovery-option-framing.md) | 2026-03-06 | Refined discovery option framing to support concise 2-4 options with brief tradeoffs. |
+| [`2026-03-06-evidence-contract-first-slice.md`](./2026-03-06-evidence-contract-first-slice.md) | 2026-03-06 | Locked the text-source `Segment` evidence contract and defined the first delivery slice plus acceptance bar. |

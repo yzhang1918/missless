@@ -39,3 +39,11 @@ Use this file to record high-impact design decisions and reversals.
 - Chosen option: compact foundation docs with split policy.
 - Consequences: easier navigation now, controlled growth later.
 - Related docs: `docs/product-specs/index.md`, `docs/exec-plans/tracker.md`, `docs/standards/repository-standards.md`
+
+- Date: 2026-03-06
+- Decision: Use first-class `Segment` objects as the text-source evidence contract for the first delivery slice.
+- Context: Evidence needed to stay reusable and auditable without forcing ingest-time pre-segmentation or relying on external webpages for stable highlighting.
+- Options considered: embedded-only anchors, optional/hybrid materialization profiles, first-class runtime-materialized `Segment` objects.
+- Chosen option: extraction agents propose candidate evidence, runtime validates and materializes reusable `Segment` objects using validated text locators.
+- Consequences: text evidence identity is owned by runtime; the first slice depends on canonical stored source text and an internal evidence-reading surface; refresh/versioning and non-text locator variants stay deferred.
+- Related docs: `docs/design-docs/system-design.md`, `docs/specs/core-data-model.md`, `docs/specs/pipeline-contracts.md`, `docs/product-specs/product-foundation.md`
