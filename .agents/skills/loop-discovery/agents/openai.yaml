@@ -1,4 +1,4 @@
 interface:
   display_name: "Loop Discovery"
-  short_description: "Socratic discovery before planning"
-  default_prompt: "Use $loop-discovery to run conversation-only discovery (one question at a time), converge on an approved approach, then hand off to planning."
+  short_description: "Socratic discovery with concise tradeoffs"
+  default_prompt: "Use $loop-discovery to run conversation-only discovery one question at a time, offer 2-4 concise options with brief pros/cons when useful, converge on an approved approach, then hand off to planning."
