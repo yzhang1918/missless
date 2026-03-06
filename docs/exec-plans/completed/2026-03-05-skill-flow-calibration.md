@@ -52,6 +52,8 @@ Align repository collaboration flow so Codex confirms task intent before discove
 - Executed `rg -n "approved discovery summary|If not approved, return to .*loop-discovery" .agents/skills/loop-plan/SKILL.md`; the plan handoff guard was present.
 - Executed `rg -n "TASK-0004|TASK-0001" docs/exec-plans/tracker.md docs/exec-plans/completed/2026-03-05-skill-flow-calibration.md`; tracker and archived-plan references were aligned at the time of the check.
 - Executed `loop-review-loop` full-PR round `20260306-010234`; review gate was blocked with `BLOCKER=0`, `IMPORTANT=1`, `MINOR=2`, which drove the archived-plan metadata and validation-evidence fixes captured in this document.
+- Executed `loop-review-loop` delta round `20260306-010513`; review gate passed with `BLOCKER=0`, `IMPORTANT=0`.
+- Executed `loop-final-gate` against `.local/loop/review-20260306-010513.json` and local-equivalent CI metadata; final gate passed with `review_ok=true`, `ci_ok=true`, `branch_ok=true`, and `docs_ok=true`.
 
 ## Risks and Mitigations
 
@@ -69,6 +71,7 @@ Align repository collaboration flow so Codex confirms task intent before discove
   - Reworked `loop-plan` to require explicit discovery approval before file-writing.
   - Synced `agents/openai.yaml` text for `loop-discovery` and `loop-plan`.
   - Added tracker task `TASK-0004`, then restored `TASK-0001` to `ready` after this PR scope was narrowed to skill-flow only.
+  - Cleared the review loop by fixing archived-plan evidence/status issues, then passed final gate.
 - Not delivered:
   - No additional execution-loop behavior changes outside discovery/plan handoff.
 - Tracker updates:
