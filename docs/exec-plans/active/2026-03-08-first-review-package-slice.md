@@ -90,7 +90,7 @@ Implement the first real `missless` product slice as a pnpm-workspace monorepo w
 
 ### Step 2
 
-- Status: in_progress
+- Status: completed
 - Objective: Implement deterministic ingestion and contract validation for `fetch-normalize` and `validate-draft`, including Jina-backed normalization and fail-closed diagnostics.
 - Expected files:
   - `apps/cli/src/commands/fetch-normalize.ts`
@@ -106,13 +106,18 @@ Implement the first real `missless` product slice as a pnpm-workspace monorepo w
   - `pnpm -r build`
   - `pnpm -r typecheck`
   - `pnpm -r test`
+- Validation evidence:
+  - Implemented `fetch-normalize` with a provider abstraction and a Jina Reader default in `packages/core/src/providers/jina.ts` and `packages/core/src/source/fetch-normalize.ts`.
+  - Implemented `validate-draft` with fail-closed summary and `--json` diagnostics in `packages/core/src/diagnostics/validate-draft.ts`.
+  - Added deterministic core unit tests plus CLI integration tests using fixture-backed runs and a mocked Jina HTTP server.
+  - Verified the full workspace passes `pnpm -r build`, `pnpm -r typecheck`, and `pnpm -r test`.
 - Documentation impact:
   - Capture any contract refinements required by the implemented run directory or diagnostics shape.
   - Keep provider assumptions and environment requirements explicit in repository docs.
 
 ### Step 3
 
-- Status: pending
+- Status: in_progress
 - Objective: Implement evidence anchoring, review bundle assembly, and read-only HTML rendering for the first review package.
 - Expected files:
   - `apps/cli/src/commands/anchor-evidence.ts`

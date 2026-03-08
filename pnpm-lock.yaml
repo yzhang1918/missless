@@ -36,7 +36,11 @@ importers:
         specifier: ^8.17.1
         version: 8.18.0
 
-  packages/core: {}
+  packages/core:
+    dependencies:
+      '@missless/contracts':
+        specifier: workspace:*
+        version: link:../contracts
 
   packages/rendering: {}
 

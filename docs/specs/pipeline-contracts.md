@@ -49,6 +49,27 @@ Define the baseline processing contract from source ingestion to commit-ready pr
 - `align` and `commit` remain part of the broader baseline architecture but may
   be omitted or no-op for the first delivery slice.
 
+## First Deterministic CLI Contracts
+
+`fetch-normalize <url>`:
+- accepts one HTTP(S) URL plus optional `--runs-dir <dir>`
+- creates a stable `run_dir`
+- writes `run.json`, `source.json`, and `canonical_text.md`
+- uses a provider abstraction with Jina Reader as the first implementation
+- allows local/mock provider overrides through `MISSLESS_JINA_BASE_URL`
+- may use `JINA_API_KEY` when an authenticated Jina environment is required
+
+`validate-draft --run-dir <dir>`:
+- reads `canonical_text.md` and `extraction_draft.json`
+- validates the extraction draft schema
+- validates deterministic contract invariants that do not require evidence
+  materialization
+- returns concise summary output by default
+- returns structured JSON diagnostics when `--json` is requested
+- fails closed with a non-zero exit code when required artifacts are missing,
+  JSON is malformed, schema validation fails, or duplicate atom claims are
+  detected
+
 ## Review Contract
 
 Long-term review actions must support:

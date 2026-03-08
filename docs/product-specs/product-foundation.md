@@ -48,6 +48,9 @@ Capture the current product intent in one place until detailed scope decisions a
 - Use a single-source, URL-only, text-first workflow for the first slice.
 - Create a `run_dir` for each non-dry run and treat its canonical normalized
   markdown snapshot as immutable within that run.
+- Use a provider abstraction for fetch/normalize. The first implementation uses
+  Jina Reader, with `MISSLESS_JINA_BASE_URL` reserved for local and mocked
+  runs and optional `JINA_API_KEY` support for authenticated environments.
 - Use Codex as the current extraction engine through a product-facing skill in
   `skills/`; a custom embedded runtime agent remains deferred.
 - Produce a `TLDR`, a knowledge-base-agnostic reading decision
@@ -66,9 +69,11 @@ Capture the current product intent in one place until detailed scope decisions a
   explicit `deep_read|skim|skip` decision, decision reasons, claim-first atom
   candidates, and candidate evidence selectors.
 - Runtime can validate the draft contract and fail closed with clear
-  diagnostics when schema or evidence invariants are violated.
+  diagnostics when schema or draft-contract invariants are violated.
 - Runtime can validate candidate evidence selectors and render a read-only HTML
   review package that highlights supporting canonical text.
+- `validate-draft` provides concise summary output by default and structured
+  JSON diagnostics when `--json` is requested.
 - Human review happens before any persistence boundary; the first slice does
   not commit accepted atoms.
 

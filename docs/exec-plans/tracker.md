@@ -26,7 +26,7 @@ Single product-delivery tracker for priorities, follow-ups, and debt.
 
 | ID | Title | Priority | Status | Owner | Links | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| TASK-0003 | Implement the first URL-to-review-package slice | P1 | in_progress | Human+Codex | `docs/exec-plans/active/2026-03-08-first-review-package-slice.md` | Step 1 bootstrap is complete: pnpm workspace monorepo, product-facing `skills/`, CLI/package boundaries, and first-slice contracts are in place. Knowledge-aware personalized decisions remain the key differentiator but are deferred from this slice. |
+| TASK-0003 | Implement the first URL-to-review-package slice | P1 | in_progress | Human+Codex | `docs/exec-plans/active/2026-03-08-first-review-package-slice.md` | Steps 1-2 are complete: workspace bootstrap, Jina-backed fetch/normalize, draft validation, and fixture-backed CLI/core tests are in place. Knowledge-aware personalized decisions remain the key differentiator but are deferred from this slice. |
 
 ## Queue
 

@@ -50,6 +50,21 @@ Current baseline for the first delivery slice is:
 - The first runtime contract should make the Codex boundary replaceable later
   by a custom embedded agent core.
 
+## Ingestion and Validation Boundary
+
+- `fetch-normalize` is the first deterministic CLI seam. It creates a stable
+  `run_dir` and writes `run.json`, `source.json`, and `canonical_text.md`.
+- Fetch/normalize uses a provider abstraction. Jina Reader is the default
+  implementation for the first slice.
+- Local and mocked runs may override the reader endpoint with
+  `MISSLESS_JINA_BASE_URL`; authenticated environments may also provide
+  `JINA_API_KEY`.
+- `validate-draft` reads the run artifacts and fails closed on schema or
+  contract issues before any later evidence/materialization steps run.
+- The first non-schema draft invariant is duplicate claim detection so the
+  runtime can reject obviously unstable atom sets even before evidence
+  anchoring begins.
+
 ## Evidence Anchoring Contract (Text Baseline)
 
 - `Segment` is a reusable evidence-location object, not an editable semantic object.

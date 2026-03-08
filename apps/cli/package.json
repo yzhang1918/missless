@@ -12,7 +12,7 @@
   "scripts": {
     "build": "tsc -b tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --eval \"console.log('No package-local tests for @missless/cli yet')\""
+    "test": "pnpm -r build && tsx --test ../../tests/integration/cli/*.test.ts"
   },
   "dependencies": {
     "@missless/contracts": "workspace:*",
