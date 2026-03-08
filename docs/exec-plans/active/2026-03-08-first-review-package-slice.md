@@ -213,6 +213,15 @@ Implement the first real `missless` product slice as a pnpm-workspace monorepo w
   fallback rather than pretending the missing reviewer JSON arrived
   automatically.
 
+## Publish and Gate Evidence
+
+- Published branch: `codex/first-review-package-slice`
+- PR: [#8](https://github.com/yzhang1918/missless/pull/8)
+- Publish outcome: created via
+  `.agents/skills/loop-publish/scripts/publish_pr.sh`
+- Final gate artifact: `.local/loop/final-gate-20260308-170151.json`
+- Final gate result: `pass`
+
 ## Final Gate Conditions
 
 - All acceptance criteria are checked.

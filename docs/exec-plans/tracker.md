@@ -26,7 +26,7 @@ Single product-delivery tracker for priorities, follow-ups, and debt.
 
 | ID | Title | Priority | Status | Owner | Links | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| TASK-0003 | Implement the first URL-to-review-package slice | P1 | in_progress | Human+Codex | `docs/exec-plans/active/2026-03-08-first-review-package-slice.md` | All four implementation steps are complete locally, the review-driven security/test follow-up fixes are in, and delta review round `20260308-170151` is clear. Knowledge-aware personalized decisions remain the key differentiator but are deferred from this slice. |
+| TASK-0003 | Implement the first URL-to-review-package slice | P1 | ready | Human+Codex | `docs/exec-plans/active/2026-03-08-first-review-package-slice.md`, PR `#8` | All four implementation steps are complete locally, the review-driven security/test follow-up fixes are in, delta review round `20260308-170151` is clear, and final gate passed. Knowledge-aware personalized decisions remain the key differentiator but are deferred from this slice. |
 
 ## Queue
 
