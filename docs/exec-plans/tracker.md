@@ -26,6 +26,7 @@ Single product-delivery tracker for priorities, follow-ups, and debt.
 
 | ID | Title | Priority | Status | Owner | Links | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| TASK-0003 | Implement the first URL-to-review-package slice | P1 | ready | Human+Codex | `docs/exec-plans/active/2026-03-08-first-review-package-slice.md` | pnpm workspace monorepo foundation, product-facing skills under `skills/`, and Codex-backed extraction; knowledge-aware personalized decisions remain the key differentiator but are deferred from this slice. |
 
 ## Queue
 
