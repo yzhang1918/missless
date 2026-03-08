@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   buildJinaReaderUrl,
+  createJinaReaderProvider,
   normalizeReaderOutput
 } from "../../../packages/core/src/index.ts";
 
@@ -22,4 +23,41 @@ test("buildJinaReaderUrl prefixes the target URL with the reader base", () => {
     ),
     "https://r.jina.ai/https://example.com/agent-harness"
   );
+});
+
+test("createJinaReaderProvider forwards auth to the official reader host", async () => {
+  let seenAuthorization: string | null = null;
+  const provider = createJinaReaderProvider({
+    apiKey: "secret-token",
+    fetchImpl: async (_input, init) => {
+      const headers = new Headers(init?.headers);
+
+      seenAuthorization = headers.get("Authorization");
+
+      return new Response("# Harness Engineering\n");
+    }
+  });
+
+  await provider.fetch("https://example.com/agent-harness");
+
+  assert.equal(seenAuthorization, "Bearer secret-token");
+});
+
+test("createJinaReaderProvider does not forward auth to override hosts by default", async () => {
+  let seenAuthorization: string | null = null;
+  const provider = createJinaReaderProvider({
+    baseUrl: "http://127.0.0.1:4321/",
+    apiKey: "secret-token",
+    fetchImpl: async (_input, init) => {
+      const headers = new Headers(init?.headers);
+
+      seenAuthorization = headers.get("Authorization");
+
+      return new Response("# Harness Engineering\n");
+    }
+  });
+
+  await provider.fetch("https://example.com/agent-harness");
+
+  assert.equal(seenAuthorization, null);
 });

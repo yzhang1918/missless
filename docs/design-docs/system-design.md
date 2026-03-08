@@ -64,6 +64,12 @@ Current baseline for the first delivery slice is:
 - Local and mocked runs may override the reader endpoint with
   `MISSLESS_JINA_BASE_URL`; authenticated environments may also provide
   `JINA_API_KEY`.
+- `fetch-normalize` rejects embedded credentials plus localhost/private
+  targets by default so repository runs do not silently exfiltrate internal or
+  credentialed URLs through the third-party reader.
+- `JINA_API_KEY` is only forwarded to the official `r.jina.ai` origin unless
+  `MISSLESS_JINA_FORWARD_API_KEY_TO_OVERRIDE` explicitly opts into credential
+  forwarding for a custom override host.
 - `validate-draft` reads the run artifacts and fails closed on schema or
   contract issues before any later evidence/materialization steps run.
 - The first non-schema draft invariant is duplicate claim detection so the

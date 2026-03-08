@@ -61,7 +61,12 @@ Define the baseline processing contract from source ingestion to commit-ready pr
 - writes `run.json`, `source.json`, and `canonical_text.md`
 - uses a provider abstraction with Jina Reader as the first implementation
 - allows local/mock provider overrides through `MISSLESS_JINA_BASE_URL`
+- rejects source URLs with embedded credentials and rejects localhost,
+  private, link-local, and single-label hosts by default
 - may use `JINA_API_KEY` when an authenticated Jina environment is required
+- only forwards `JINA_API_KEY` to the official `r.jina.ai` reader host unless
+  `MISSLESS_JINA_FORWARD_API_KEY_TO_OVERRIDE` explicitly opts into forwarding
+  credentials to a custom override host
 
 `validate-draft --run-dir <dir>`:
 - reads `canonical_text.md` and `extraction_draft.json`

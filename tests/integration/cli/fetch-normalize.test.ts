@@ -100,3 +100,47 @@ test("fetch-normalize creates a stable run directory from a URL", async () => {
     server.close();
   }
 });
+
+test("fetch-normalize rejects unsafe source URLs before provider access", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-unsafe-"));
+  const command = await new Promise<{
+    status: number | null;
+    stdout: string;
+    stderr: string;
+  }>((resolve, reject) => {
+    const child = spawn(
+      process.execPath,
+      [
+        cliEntrypoint.pathname,
+        "fetch-normalize",
+        "http://127.0.0.1/private",
+        "--runs-dir",
+        runsDir
+      ],
+      {
+        cwd: repoRoot,
+        env: process.env,
+        stdio: ["ignore", "pipe", "pipe"]
+      }
+    );
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", reject);
+    child.on("close", (status) => {
+      resolve({ status, stdout, stderr });
+    });
+  });
+
+  assert.notEqual(command.status, 0);
+  assert.match(
+    command.stderr,
+    /localhost, private, link-local, and single-label hosts/
+  );
+});

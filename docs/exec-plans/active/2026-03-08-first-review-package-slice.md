@@ -195,6 +195,24 @@ Implement the first real `missless` product slice as a pnpm-workspace monorepo w
 - Run one full-PR review before final gate.
 - If the skill prompt or evidence contract changes materially during execution, rerun the relevant deterministic tests plus the manual Codex CLI E2E check.
 
+## Review Evidence
+
+- Full-PR review round `20260308-165221` surfaced four `IMPORTANT` findings
+  across `security` and `tests-regression`:
+  Jina credential forwarding on override hosts, unsafe source URL handling,
+  thin validation-diagnostic coverage, and missing evidence-failure regression
+  tests.
+- The follow-up fix tightened `fetch-normalize` URL guardrails, restricted
+  `JINA_API_KEY` forwarding to the official reader host by default, and added
+  the missing unit and CLI regression coverage.
+- Delta review round `20260308-170151` passed with `BLOCKER=0` and
+  `IMPORTANT=0`.
+- Reviewer-subagent availability was noisy during the delta round because the
+  local agent pool was saturated and several earlier reviewer tasks did not
+  return on time, so the delta review artifacts were completed with main-agent
+  fallback rather than pretending the missing reviewer JSON arrived
+  automatically.
+
 ## Final Gate Conditions
 
 - All acceptance criteria are checked.

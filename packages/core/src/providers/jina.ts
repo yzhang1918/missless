@@ -1,8 +1,17 @@
 import type { SourceProvider } from "./provider.js";
 
 const DEFAULT_JINA_READER_BASE_URL = "https://r.jina.ai/";
+const FORWARD_OVERRIDE_AUTH_ENV = "MISSLESS_JINA_FORWARD_API_KEY_TO_OVERRIDE";
 
 export type FetchLike = typeof fetch;
+
+function parseBooleanEnv(value: string | undefined): boolean {
+  if (value === undefined) {
+    return false;
+  }
+
+  return value === "1" || value.toLowerCase() === "true";
+}
 
 function trimBlankLines(lines: readonly string[]): readonly string[] {
   let start = 0;
@@ -31,11 +40,33 @@ export function normalizeReaderOutput(rawText: string): string {
   return trimmed === "" ? "" : `${trimmed}\n`;
 }
 
+function normalizeBaseUrl(baseUrl: string): string {
+  return baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+}
+
+function isOfficialJinaReaderOrigin(baseUrl: string): boolean {
+  const parsed = new URL(normalizeBaseUrl(baseUrl));
+
+  return (
+    parsed.protocol === "https:" &&
+    parsed.hostname.toLowerCase() === "r.jina.ai"
+  );
+}
+
+export function shouldForwardJinaApiKey(
+  baseUrl: string,
+  allowOverrideApiKeyForwarding = false
+): boolean {
+  return (
+    isOfficialJinaReaderOrigin(baseUrl) || allowOverrideApiKeyForwarding
+  );
+}
+
 export function buildJinaReaderUrl(
   targetUrl: string,
   baseUrl = DEFAULT_JINA_READER_BASE_URL
 ): string {
-  const normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+  const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
 
   return `${normalizedBaseUrl}${targetUrl}`;
 }
@@ -44,6 +75,7 @@ export interface CreateJinaReaderProviderOptions {
   readonly baseUrl?: string;
   readonly apiKey?: string;
   readonly fetchImpl?: FetchLike;
+  readonly allowOverrideApiKeyForwarding?: boolean;
 }
 
 export function createJinaReaderProvider(
@@ -55,6 +87,9 @@ export function createJinaReaderProvider(
     DEFAULT_JINA_READER_BASE_URL;
   const apiKey = options.apiKey ?? process.env.JINA_API_KEY;
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  const allowOverrideApiKeyForwarding =
+    options.allowOverrideApiKeyForwarding ??
+    parseBooleanEnv(process.env[FORWARD_OVERRIDE_AUTH_ENV]);
 
   return {
     name: "jina_reader",
@@ -64,7 +99,11 @@ export function createJinaReaderProvider(
         Accept: "text/plain"
       });
 
-      if (apiKey !== undefined && apiKey !== "") {
+      if (
+        apiKey !== undefined &&
+        apiKey !== "" &&
+        shouldForwardJinaApiKey(baseUrl, allowOverrideApiKeyForwarding)
+      ) {
         headers.set("Authorization", `Bearer ${apiKey}`);
       }
 
