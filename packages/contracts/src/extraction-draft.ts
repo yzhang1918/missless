@@ -38,6 +38,11 @@ export interface ExtractionDraftValidator {
   readonly errors: () => ErrorObject[] | null | undefined;
 }
 
+export interface SchemaValidator<T = unknown> {
+  readonly validate: ValidateFunction<T>;
+  readonly errors: () => ErrorObject[] | null | undefined;
+}
+
 export function getExtractionDraftSchemaPath(): string {
   return extractionDraftSchemaPath;
 }
@@ -48,15 +53,21 @@ export function loadExtractionDraftSchema(): Record<string, unknown> {
   ) as Record<string, unknown>;
 }
 
-export function createExtractionDraftValidator(): ExtractionDraftValidator {
+export function createSchemaValidator<T = unknown>(
+  schema: Record<string, unknown>
+): SchemaValidator<T> {
   const ajv = new Ajv2020({
     allErrors: true,
     strict: true
   });
-  const validate = ajv.compile<ExtractionDraft>(loadExtractionDraftSchema());
+  const validate = ajv.compile<T>(schema);
 
   return {
     validate,
     errors: () => validate.errors
   };
+}
+
+export function createExtractionDraftValidator(): ExtractionDraftValidator {
+  return createSchemaValidator<ExtractionDraft>(loadExtractionDraftSchema());
 }

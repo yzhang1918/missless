@@ -26,7 +26,7 @@ Single product-delivery tracker for priorities, follow-ups, and debt.
 
 | ID | Title | Priority | Status | Owner | Links | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| TASK-0003 | Implement the first URL-to-review-package slice | P1 | in_progress | Human+Codex | `docs/exec-plans/active/2026-03-08-first-review-package-slice.md` | Steps 1-3 are complete: workspace bootstrap, fetch/normalize, draft validation, evidence anchoring, and read-only review rendering all run locally with deterministic tests. Knowledge-aware personalized decisions remain the key differentiator but are deferred from this slice. |
+| TASK-0003 | Implement the first URL-to-review-package slice | P1 | in_progress | Human+Codex | `docs/exec-plans/active/2026-03-08-first-review-package-slice.md` | All four implementation steps are now complete locally: workspace bootstrap, deterministic CLI/runtime, product-facing skill, and a real Codex CLI E2E run with one evidence-repair loop. Knowledge-aware personalized decisions remain the key differentiator but are deferred from this slice. |
 
 ## Queue
 
@@ -37,6 +37,7 @@ Single product-delivery tracker for priorities, follow-ups, and debt.
 
 | ID | Title | Priority | Status | Owner | Links | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| FUP-0001 | Investigate `codex exec` hangs when structured-output runs read local files before final JSON emission | P2 | todo | Codex | `docs/exec-plans/active/2026-03-08-first-review-package-slice.md` | Manual E2E succeeded with the same canonical text inlined into the prompt plus `packages/contracts/extraction-draft.codex-output-schema.json`, but direct local-file-read prompts stalled after context gathering. |
 
 ## Technical Debt
 

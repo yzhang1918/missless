@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://missless.dev/schemas/extraction-draft.schema.json",
-  "title": "ExtractionDraft",
+  "$id": "https://missless.dev/schemas/extraction-draft.codex-output-schema.json",
+  "title": "ExtractionDraftCodexOutput",
   "type": "object",
   "additionalProperties": false,
   "required": ["tldr", "decision", "decision_reasons", "atom_candidates"],
@@ -28,37 +28,13 @@
       "items": {
         "$ref": "#/$defs/atom_candidate"
       }
-    },
-    "self_check": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "corrected": {
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 3,
-          "items": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "uncertain": {
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 3,
-          "items": {
-            "type": "string",
-            "minLength": 1
-          }
-        }
-      }
     }
   },
   "$defs": {
     "evidence_selector": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["exact"],
+      "required": ["exact", "prefix", "suffix"],
       "properties": {
         "exact": {
           "type": "string",

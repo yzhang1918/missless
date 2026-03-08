@@ -1,6 +1,7 @@
 export { DECISION_LABELS } from "./decision.js";
 export type { DecisionLabel } from "./decision.js";
 export {
+  createSchemaValidator,
   createExtractionDraftValidator,
   getExtractionDraftSchemaPath,
   loadExtractionDraftSchema
@@ -9,6 +10,7 @@ export type {
   AtomCandidate,
   EvidenceSelector,
   ExtractionDraft,
+  SchemaValidator,
   ExtractionDraftValidator,
   ExtractionSelfCheck
 } from "./extraction-draft.js";

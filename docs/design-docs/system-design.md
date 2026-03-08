@@ -49,6 +49,11 @@ Current baseline for the first delivery slice is:
   helper folders.
 - The first runtime contract should make the Codex boundary replaceable later
   by a custom embedded agent core.
+- The runtime keeps the authoritative extraction-draft contract, but live
+  `codex exec --output-schema` runs currently hand off through a stricter
+  `packages/contracts/extraction-draft.codex-output-schema.json` subset
+  because current provider structured-output validation rejects parts of the
+  richer runtime schema.
 
 ## Ingestion and Validation Boundary
 
@@ -77,6 +82,9 @@ Current baseline for the first delivery slice is:
   silently dropping evidence.
 - `render-review` assembles a `review_bundle.json` artifact and a local
   read-only `review.html` page from anchored evidence plus canonical text.
+- Real Codex CLI extraction now uses the same repair loop the product expects:
+  generate a full draft, run deterministic validation, repair the whole draft
+  from JSON diagnostics, then rerun `anchor-evidence` and `render-review`.
 
 ## Evidence Anchoring Contract (Text Baseline)
 
@@ -104,6 +112,10 @@ Current baseline for the first delivery slice is:
 - Deferred from the first slice: non-text locator contracts,
   refresh/versioning flows, knowledge-aware personalized decisions, and
   external-page deep-link guarantees.
+- Manual live-E2E note: the current Codex CLI proved more reliable when the
+  canonical text was inlined into the prompt than when the model first read the
+  local file before emitting structured JSON, so that tooling caveat is tracked
+  as a follow-up rather than changing runtime semantics.
 
 ## Design Priorities
 

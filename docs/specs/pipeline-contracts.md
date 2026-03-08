@@ -48,6 +48,10 @@ Define the baseline processing contract from source ingestion to commit-ready pr
   variants, evidence-role semantics, and external-page deep-link guarantees.
 - `align` and `commit` remain part of the broader baseline architecture but may
   be omitted or no-op for the first delivery slice.
+- Live `codex exec` structured-output runs currently use
+  `packages/contracts/extraction-draft.codex-output-schema.json`, a stricter
+  subset of the runtime draft contract that omits `self_check` and requires
+  `exact + prefix + suffix` for each evidence selector.
 
 ## First Deterministic CLI Contracts
 
@@ -64,6 +68,8 @@ Define the baseline processing contract from source ingestion to commit-ready pr
 - validates the extraction draft schema
 - validates deterministic contract invariants that do not require evidence
   materialization
+- remains the authoritative runtime gate even when the draft was produced via
+  the stricter `codex-output` schema used by manual live Codex CLI runs
 - returns concise summary output by default
 - returns structured JSON diagnostics when `--json` is requested
 - fails closed with a non-zero exit code when required artifacts are missing,
@@ -86,6 +92,16 @@ Define the baseline processing contract from source ingestion to commit-ready pr
 - writes a read-only local `review.html`
 - preserves the same ordered candidate list that came from extraction and draft
   validation
+
+Manual real-Codex E2E:
+- uses `codex exec` against the live canonical text produced by
+  `fetch-normalize`
+- uses `packages/contracts/extraction-draft.codex-output-schema.json` for the
+  model handoff
+- may inline canonical text into the prompt when a direct local-file-read
+  prompt proves unstable in the current Codex CLI
+- still must pass `validate-draft`, `anchor-evidence`, and `render-review`
+  without special-case runtime behavior
 
 ## Review Contract
 

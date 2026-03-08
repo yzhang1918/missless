@@ -142,7 +142,7 @@ Implement the first real `missless` product slice as a pnpm-workspace monorepo w
 
 ### Step 4
 
-- Status: in_progress
+- Status: completed
 - Objective: Add a product-facing skill under `skills/` that orchestrates real Codex-backed extraction on top of the deterministic CLI, then capture manual E2E evidence with the actual Codex CLI.
 - Expected files:
   - `skills/missless-review/SKILL.md`
@@ -154,11 +154,21 @@ Implement the first real `missless` product slice as a pnpm-workspace monorepo w
   - `pnpm -r build`
   - `pnpm -r typecheck`
   - `pnpm -r test`
-  - `codex exec -C "$PWD" --output-schema packages/contracts/extraction-draft.schema.json -o .local/e2e/extraction-draft.json - < .local/e2e/prompt.txt`
+  - `codex exec --ephemeral --json -c 'model_reasoning_effort="medium"' -C "$PWD" --output-schema packages/contracts/extraction-draft.codex-output-schema.json -o .local/e2e/runs/<run-id>/extraction_draft.json -`
+  - `node apps/cli/dist/index.js validate-draft --run-dir .local/e2e/runs/<run-id>`
+  - `node apps/cli/dist/index.js anchor-evidence --run-dir .local/e2e/runs/<run-id>`
+  - `node apps/cli/dist/index.js render-review --run-dir .local/e2e/runs/<run-id>`
 - Documentation impact:
   - Document the current extraction engine boundary clearly: Codex-backed now, custom runtime agent later.
   - Document the separation between product-facing `skills/` and developer-only `.agents/`.
-  - Capture manual E2E evidence and any resulting follow-ups in the tracker instead of hiding them in conversation.
+  - Capture manual E2E evidence, the `codex-output` schema subset, and any resulting follow-ups in the tracker instead of hiding them in conversation.
+- Validation evidence:
+  - Added the product-facing skill at `skills/missless-review/`, plus reference guidance for the extraction draft contract and repair loop.
+  - Split the draft contract into a richer runtime schema plus a stricter `packages/contracts/extraction-draft.codex-output-schema.json` subset so live `codex exec --output-schema` runs can complete while runtime keeps the authoritative validation contract.
+  - Captured a real URL-backed run under `.local/e2e/runs/run-20260308T163412Z-757ba3e9/` against the OpenAI Harness Engineering article and produced a live `extraction_draft.json` through the actual Codex CLI.
+  - Verified the live draft through `validate-draft`, repaired two selector-context mismatches after `anchor-evidence --json` diagnostics, then reran `anchor-evidence` and `render-review` to completion.
+  - Final local run artifacts now include `canonical_text.md`, `extraction_draft.json`, `evidence_result.json`, `review_bundle.json`, and `review.html` in the same run directory.
+  - Manual E2E was more reliable when canonical text was inlined into the `codex exec` prompt than when the model first read the local file itself, so that tooling caveat is recorded as a follow-up rather than hidden in chat history.
 
 ## Validation Strategy
 
@@ -210,8 +220,12 @@ Implement the first real `missless` product slice as a pnpm-workspace monorepo w
 ## Completion Summary
 
 - Delivered:
-  - Pending.
+  - Bootstrapped the first pnpm-workspace monorepo layout for `apps/`, `packages/`, and `skills/`.
+  - Implemented deterministic `fetch-normalize`, `validate-draft`, `anchor-evidence`, and `render-review` CLI commands plus unit and integration coverage.
+  - Added the product-facing `skills/missless-review/` skill and a real Codex CLI E2E path for URL-to-review-package runs.
+  - Captured a live review-package run and proved the runtime/agent repair loop with fail-closed evidence diagnostics.
 - Not delivered:
-  - Pending.
+  - Knowledge-aware personalized decisions, persistence, database/search, server/Web UI, and richer editable review flows remain deferred from this slice.
 - Tracker updates:
-  - TASK-0003 added as the current product focus for this slice.
+  - TASK-0003 remains the active product focus until review/publish complete.
+  - Added a follow-up for the current `codex exec` structured-output/file-read caveat discovered during the manual E2E.

@@ -91,6 +91,54 @@ function findDuplicateClaimDiagnostics(
   return diagnostics;
 }
 
+function findSelectorContextDiagnostics(
+  draft: ExtractionDraft
+): ValidationDiagnostic[] {
+  const diagnostics: ValidationDiagnostic[] = [];
+
+  draft.atom_candidates.forEach((candidate, atomIndex) => {
+    candidate.evidence_selectors.forEach((selector, selectorIndex) => {
+      if (selector.prefix !== undefined || selector.suffix !== undefined) {
+        return;
+      }
+
+      diagnostics.push({
+        code: "selector_missing_context",
+        message: `Evidence selector ${selectorIndex} for atom ${atomIndex} must include prefix or suffix context.`,
+        path: `/atom_candidates/${atomIndex}/evidence_selectors/${selectorIndex}`,
+        details: {
+          exact: selector.exact
+        }
+      });
+    });
+  });
+
+  return diagnostics;
+}
+
+function findSelfCheckDiagnostics(
+  draft: ExtractionDraft
+): ValidationDiagnostic[] {
+  if (draft.self_check === undefined) {
+    return [];
+  }
+
+  if (
+    draft.self_check.corrected !== undefined ||
+    draft.self_check.uncertain !== undefined
+  ) {
+    return [];
+  }
+
+  return [
+    {
+      code: "self_check_empty",
+      message: "self_check must contain corrected or uncertain when present.",
+      path: "/self_check"
+    }
+  ];
+}
+
 function summarizeFailure(diagnostics: readonly ValidationDiagnostic[]): string {
   return `Draft validation failed with ${diagnostics.length} issue(s). Re-run with --json for details.`;
 }
@@ -199,7 +247,11 @@ export async function validateDraftInRunDir(
   }
 
   const draft = parsedDraft as ExtractionDraft;
-  const contractDiagnostics = findDuplicateClaimDiagnostics(draft);
+  const contractDiagnostics = [
+    ...findDuplicateClaimDiagnostics(draft),
+    ...findSelectorContextDiagnostics(draft),
+    ...findSelfCheckDiagnostics(draft)
+  ];
 
   if (contractDiagnostics.length > 0) {
     return {
