@@ -18,7 +18,8 @@ Repository knowledge is the system of record. If it is not in this repository, i
 - `docs/product-specs/`: product foundation and workflow intent
 - `docs/design-docs/`: design rationale and decision log
 - `docs/specs/`: technical contracts (currently draft-first)
-- `docs/exec-plans/`: tactical planning, tracker, and plan archives
+- `docs/exec-plans/`: product tactical planning, tracker, and plan archives
+- `docs/harness/`: harness/process tactical planning, tracker, and plan archives
 - `docs/standards/`: working rules for documentation/review alignment
 - `docs/references/`: external distillations and glossary
 

@@ -17,13 +17,15 @@ Complete integration after final gate success.
 ## Execution Contract
 
 1. Verify final gate is pass and current evidence is fresh.
-2. Perform merge/land action according to repository workflow.
-3. Record:
+2. Verify PR is already published, PR head SHA matches local HEAD, and merge strategy matches repository policy.
+3. Perform merge/land action according to repository workflow.
+   - prefer `rebase` or `squash` if merge commits are disabled
+4. Record:
    - merge commit SHA
    - relevant PR link
    - key validation references
    - deferred follow-up items
-4. Update completion summary in the execution plan.
+5. Update completion summary in the execution plan.
 
 ## Output
 

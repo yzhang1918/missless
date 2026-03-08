@@ -110,7 +110,9 @@ This note is a retrieval-oriented distillation of agent-harness practices from t
 ### Operationalization Note
 
 - Use this reference as external distillation, not as a tactical backlog.
-- When adopting any recommendation here, track it in `docs/exec-plans/tracker.md`.
+- When adopting a recommendation here:
+  - harness/process work -> track in `docs/harness/tracker.md`
+  - product-facing implementation work -> track in `docs/exec-plans/tracker.md`
 
 ## Implementation Prompts (Reusable)
 
@@ -132,3 +134,4 @@ This note is a retrieval-oriented distillation of agent-harness practices from t
 - `docs/design-docs/index.md`
 - `docs/standards/repository-standards.md`
 - `docs/exec-plans/index.md`
+- `docs/harness/index.md`
