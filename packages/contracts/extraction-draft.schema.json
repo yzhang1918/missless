@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://missless.dev/schemas/extraction-draft.schema.json",
+  "title": "ExtractionDraft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tldr", "decision", "decision_reasons", "atom_candidates"],
+  "properties": {
+    "tldr": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["deep_read", "skim", "skip"]
+    },
+    "decision_reasons": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "atom_candidates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/atom_candidate"
+      }
+    },
+    "self_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "corrected": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "uncertain": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "anyOf": [
+        {
+          "properties": {
+            "corrected": {
+              "type": "array"
+            }
+          },
+          "required": ["corrected"]
+        },
+        {
+          "properties": {
+            "uncertain": {
+              "type": "array"
+            }
+          },
+          "required": ["uncertain"]
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "evidence_selector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exact"],
+      "properties": {
+        "exact": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prefix": {
+          "type": "string",
+          "minLength": 1
+        },
+        "suffix": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "anyOf": [
+        {
+          "properties": {
+            "prefix": {
+              "type": "string"
+            }
+          },
+          "required": ["prefix"]
+        },
+        {
+          "properties": {
+            "suffix": {
+              "type": "string"
+            }
+          },
+          "required": ["suffix"]
+        }
+      ]
+    },
+    "atom_candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claim", "significance", "evidence_selectors"],
+      "properties": {
+        "claim": {
+          "type": "string",
+          "minLength": 1
+        },
+        "significance": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence_selectors": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/evidence_selector"
+          }
+        }
+      }
+    }
+  }
+}

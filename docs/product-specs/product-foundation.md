@@ -42,27 +42,43 @@ Capture the current product intent in one place until detailed scope decisions a
 
 ## First Delivery Slice
 
-- Single-source, text-first workflow.
-- Store a canonical normalized text snapshot for each source and treat it as immutable for the first slice.
-- Extract candidate `Atom` records from the full source.
-- Attach evidence through reusable `Segment` objects that are validated and materialized on demand.
-- Persist accepted `Atom` decisions only; `Artifact` extraction and persistence stay out of scope for the first slice.
-- Treat cross-source alignment as deferred or no-op in the first slice.
-- Review candidates in an internal evidence view that can highlight the supporting source text.
-- Allow opening the original source URL as a convenience, but do not make external-page highlighting a correctness requirement.
+- Start with a pnpm-workspace monorepo so the first CLI can later grow into
+  web, Docker, mobile, or extension surfaces without flattening product code
+  into one package.
+- Use a single-source, URL-only, text-first workflow for the first slice.
+- Create a `run_dir` for each non-dry run and treat its canonical normalized
+  markdown snapshot as immutable within that run.
+- Use Codex as the current extraction engine through a product-facing skill in
+  `skills/`; a custom embedded runtime agent remains deferred.
+- Produce a `TLDR`, a knowledge-base-agnostic reading decision
+  (`deep_read|skim|skip`), ordered claim-first atom candidates, quote-oriented
+  evidence selectors, and optional compact self-check notes.
+- Validate evidence selectors against canonical text and materialize a
+  read-only internal review package with highlighted evidence.
+- Stop at the review package boundary in the first slice; persistence, commit,
+  and cross-source alignment remain deferred.
 
 ## Acceptance Bar
 
-- A submitted text source can be fetched, normalized, and stored as canonical text.
-- The system can produce candidate `Atom` records plus candidate evidence selectors.
-- Runtime can validate evidence selectors and materialize reusable `Segment` records.
-- Persisted accepted atoms always reference at least one validated `Segment`.
-- Evidence validation failures surface as `needs_review` rather than slipping into accepted state.
-- A reviewer can inspect highlighted evidence inside the system before deciding what persists.
+- A submitted URL can be fetched, normalized, and stored in a stable `run_dir`
+  with source metadata and canonical text.
+- The system can produce a structured extraction draft that includes a TLDR,
+  explicit `deep_read|skim|skip` decision, decision reasons, claim-first atom
+  candidates, and candidate evidence selectors.
+- Runtime can validate the draft contract and fail closed with clear
+  diagnostics when schema or evidence invariants are violated.
+- Runtime can validate candidate evidence selectors and render a read-only HTML
+  review package that highlights supporting canonical text.
+- Human review happens before any persistence boundary; the first slice does
+  not commit accepted atoms.
 
 ## Deferred From the First Slice
 
-- Which interface should be used first for real usage?
+- Knowledge-aware personalized decisions based on the user's existing
+  knowledge base. This is a core product differentiator, but it remains
+  outside the first slice.
 - When refresh/re-ingest and source versioning should be introduced.
-- When non-text sources (`podcast`, `audio`, `pdf`) become first-class evidence inputs.
-- Which quality bars are required before expanding interfaces or alignment depth.
+- When non-text sources (`podcast`, `audio`, `pdf`) become first-class
+  evidence inputs.
+- Which quality bars are required before expanding interfaces, alignment
+  depth, or persistence scope.

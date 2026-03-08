@@ -56,7 +56,7 @@ Implement the first real `missless` product slice as a pnpm-workspace monorepo w
 
 ### Step 1
 
-- Status: pending
+- Status: completed
 - Objective: Bootstrap the pnpm-workspace monorepo, define the first package boundaries, lock the run directory and extraction draft contracts, and update source-of-truth docs before runtime behavior grows.
 - Expected files:
   - `pnpm-workspace.yaml`
@@ -74,16 +74,23 @@ Implement the first real `missless` product slice as a pnpm-workspace monorepo w
 - Validation commands:
   - `corepack enable pnpm`
   - `pnpm install`
+  - `pnpm -r build`
   - `pnpm -r typecheck`
   - `pnpm -r test`
+  - `node apps/cli/dist/index.js --help`
   - `rg -n "deep_read|skim|skip|knowledge-aware|review package|Codex-backed extraction|run directory|pnpm workspace|skills/" docs/product-specs/product-foundation.md docs/design-docs/system-design.md docs/specs/pipeline-contracts.md docs/exec-plans/tracker.md`
+- Validation evidence:
+  - Bootstrapped a pnpm workspace and recorded the resolved toolchain in `package.json` and `pnpm-lock.yaml`.
+  - Added `apps/cli`, `packages/contracts`, `packages/core`, `packages/rendering`, and `skills/` with package boundaries that typecheck and build.
+  - Locked first-slice contracts in code through `packages/contracts/extraction-draft.schema.json`, `getRunArtifactPaths`, and deterministic contract tests.
+  - Verified the built CLI can print the planned command surface from `apps/cli/dist/index.js`.
 - Documentation impact:
   - Promote the approved discovery decisions into product/design/spec docs.
   - Record the first runtime/skill boundary, monorepo layout, and deferred knowledge-aware differentiator explicitly.
 
 ### Step 2
 
-- Status: pending
+- Status: in_progress
 - Objective: Implement deterministic ingestion and contract validation for `fetch-normalize` and `validate-draft`, including Jina-backed normalization and fail-closed diagnostics.
 - Expected files:
   - `apps/cli/src/commands/fetch-normalize.ts`

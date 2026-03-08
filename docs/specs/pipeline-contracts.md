@@ -30,17 +30,28 @@ Define the baseline processing contract from source ingestion to commit-ready pr
 
 ## First Delivery Slice Profile
 
-- Required source kind: text sources with a canonical normalized text snapshot.
-- Required stages in the first slice: `fetch`, `normalize`, `extract`, `anchor_evidence`, `propose`, `review`, `commit`.
-- Required candidate output in the first slice: `Atom` candidates only.
-- Required persisted output in the first slice: accepted `Atom` decisions with validated `Segment` references.
-- Out of scope in the first slice: `Artifact` extraction and persistence.
-- Deferred from the first slice: refresh/versioning, non-text locator variants, evidence-role semantics, and external-page deep-link guarantees.
-- `align` remains part of the broader baseline architecture but may be a no-op in the first delivery slice.
+- Required source kind: URL-backed text sources with a canonical normalized
+  markdown snapshot.
+- Required stages in the first slice: `fetch`, `normalize`, `extract`,
+  `anchor_evidence`, `propose`, `review`.
+- Current run handle after ingest: `run_dir`.
+- Current extractor boundary: Codex-backed extraction outside the
+  deterministic runtime.
+- Required candidate output in the first slice: a TLDR,
+  knowledge-base-agnostic `deep_read|skim|skip` decision, ordered claim-first
+  `Atom` candidates, and quote-oriented evidence selectors.
+- Required persisted output in the first slice: none. The first slice stops at
+  a review package.
+- Out of scope in the first slice: `Artifact` extraction, persistence,
+  knowledge-aware personalized decisions, and user-editable review flows.
+- Deferred from the first slice: refresh/versioning, non-text locator
+  variants, evidence-role semantics, and external-page deep-link guarantees.
+- `align` and `commit` remain part of the broader baseline architecture but may
+  be omitted or no-op for the first delivery slice.
 
 ## Review Contract
 
-Review actions must support:
+Long-term review actions must support:
 - accept selected items
 - reject selected items
 - edit candidate fields
@@ -48,6 +59,12 @@ Review actions must support:
 - override alignment decisions
 - inspect evidence in the internal canonical source view
 - identify items blocked in `needs_review`
+
+First-slice review requires only:
+- inspect the TLDR and explicit reading decision
+- inspect ordered claim-first candidates
+- inspect evidence in the internal canonical source view
+- read fail-closed diagnostics when draft or evidence validation fails
 
 ## Interface Contract (Adapter-Agnostic)
 
@@ -61,12 +78,18 @@ Any interface (skill/CLI/web/mobile) must preserve:
 ## Run Artifact Contract (Baseline)
 
 Each non-trivial run should emit machine-readable artifacts:
-- `extraction_output.json`
+- `run.json`
+- `source.json`
+- `canonical_text.md`
+- `extraction_draft.json`
 - `evidence_result.json`
+- `review_bundle.json`
+- `review.html`
 - `alignment_result.json` when `align` executes
 - `commit_plan.json`
 
-Exact schemas are draft and should evolve with implementation feedback.
+Exact schemas remain draft and should evolve with implementation feedback, but
+the first-slice artifact names above are now part of the runtime contract.
 
 ## Scoring Contract (Baseline)
 
@@ -74,5 +97,7 @@ The system may output a read-priority label with reasons.
 
 Contract requirements:
 - label is explicit
+- first-slice labels are `deep_read`, `skim`, or `skip`
+- first-slice labels are knowledge-base-agnostic
 - reasons are human-readable
 - scoring inputs are auditable

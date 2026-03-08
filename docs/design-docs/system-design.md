@@ -6,6 +6,17 @@ Status: Draft
 
 Capture the current system design rationale at a level suitable for early implementation discussions.
 
+## Repository Layout for the First Slice
+
+- Repository management starts as a pnpm-workspace monorepo.
+- `apps/cli` holds the first local runtime surface.
+- `packages/contracts` owns cross-surface schemas and stable run-artifact
+  naming.
+- `packages/core` owns deterministic pipeline logic.
+- `packages/rendering` owns the read-only review surface primitives.
+- `skills/` holds product-facing skills and prompt assets.
+- `.agents/skills/` remains developer-only workflow support.
+
 ## Baseline Flow
 
 1. Acquire and normalize source content.
@@ -29,6 +40,16 @@ Current baseline for the first delivery slice is:
 - Let the extraction agent propose evidence candidates, then let runtime validate and materialize reusable `Segment` records on demand.
 - Treat the internal canonical source view as the primary evidence-reading surface; opening the original source remains an enhancement.
 
+## Current Extraction Boundary
+
+- The deterministic runtime owns `fetch`, `normalize`, draft validation,
+  evidence validation, artifact shaping, and review rendering.
+- Codex is the current extraction engine and lives outside the runtime core.
+- Product-facing orchestration belongs in `skills/`, not in developer-only
+  helper folders.
+- The first runtime contract should make the Codex boundary replaceable later
+  by a custom embedded agent core.
+
 ## Evidence Anchoring Contract (Text Baseline)
 
 - `Segment` is a reusable evidence-location object, not an editable semantic object.
@@ -41,12 +62,20 @@ Current baseline for the first delivery slice is:
 
 ## First Delivery Slice
 
-- Source kind: normalized text snapshots only.
-- Source snapshot policy: canonical text is stored and treated as immutable after ingest for the first slice.
-- Candidate/persistence scope: the first slice closes the `Atom` evidence-review loop only; `Artifact` extraction and persistence stay out of scope.
-- Alignment scope: cross-source alignment remains outside the first slice and may exist only as a no-op placeholder.
-- User experience: review candidate atoms with highlighted evidence in the internal source view.
-- Deferred from the first slice: non-text locator contracts, refresh/versioning flows, evidence-role taxonomies, and external-page deep-link guarantees.
+- Source kind: URL-ingested canonical markdown snapshots only.
+- Source snapshot policy: canonical text is stored in a `run_dir` and treated
+  as immutable after ingest within that run.
+- Candidate scope: the first slice produces a TLDR, a knowledge-base-agnostic
+  `deep_read|skim|skip` decision, and ordered claim-first atom candidates.
+- Persistence scope: the first slice ends at a read-only review package;
+  commit-ready persistence stays out of scope.
+- Alignment scope: cross-source alignment remains outside the first slice and
+  may exist only as a no-op placeholder.
+- User experience: review candidate atoms with highlighted evidence in an
+  internal HTML page generated from run artifacts.
+- Deferred from the first slice: non-text locator contracts,
+  refresh/versioning flows, knowledge-aware personalized decisions, and
+  external-page deep-link guarantees.
 
 ## Design Priorities
 
