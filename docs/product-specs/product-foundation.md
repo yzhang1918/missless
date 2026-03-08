@@ -58,6 +58,9 @@ Capture the current product intent in one place until detailed scope decisions a
   evidence selectors, and optional compact self-check notes.
 - Validate evidence selectors against canonical text and materialize a
   read-only internal review package with highlighted evidence.
+- Write the first review package as machine-readable artifacts plus a local
+  read-only HTML page, so the evidence surface is reviewable before any web app
+  exists.
 - Stop at the review package boundary in the first slice; persistence, commit,
   and cross-source alignment remain deferred.
 
@@ -74,6 +77,10 @@ Capture the current product intent in one place until detailed scope decisions a
   review package that highlights supporting canonical text.
 - `validate-draft` provides concise summary output by default and structured
   JSON diagnostics when `--json` is requested.
+- `anchor-evidence` writes reusable evidence ranges and fails closed when
+  selectors cannot be resolved.
+- `render-review` writes a review bundle and a local HTML review page from run
+  artifacts.
 - Human review happens before any persistence boundary; the first slice does
   not commit accepted atoms.
 

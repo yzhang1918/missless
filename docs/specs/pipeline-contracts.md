@@ -70,6 +70,23 @@ Define the baseline processing contract from source ingestion to commit-ready pr
   JSON is malformed, schema validation fails, or duplicate atom claims are
   detected
 
+`anchor-evidence --run-dir <dir>`:
+- reads `canonical_text.md` and `extraction_draft.json`
+- reuses `validate-draft` as a hard precondition
+- resolves quote-oriented selectors into deterministic evidence records with
+  `char_range` and `context_excerpt`
+- writes `evidence_result.json`
+- fails closed when exact quotes are missing, selector context does not narrow
+  the match, or the selector still resolves ambiguously
+
+`render-review --run-dir <dir>`:
+- requires a successful `evidence_result.json`
+- assembles `review_bundle.json` from draft, anchored evidence, and canonical
+  text
+- writes a read-only local `review.html`
+- preserves the same ordered candidate list that came from extraction and draft
+  validation
+
 ## Review Contract
 
 Long-term review actions must support:

@@ -117,7 +117,7 @@ Implement the first real `missless` product slice as a pnpm-workspace monorepo w
 
 ### Step 3
 
-- Status: in_progress
+- Status: completed
 - Objective: Implement evidence anchoring, review bundle assembly, and read-only HTML rendering for the first review package.
 - Expected files:
   - `apps/cli/src/commands/anchor-evidence.ts`
@@ -131,13 +131,18 @@ Implement the first real `missless` product slice as a pnpm-workspace monorepo w
   - `pnpm -r build`
   - `pnpm -r typecheck`
   - `pnpm -r test`
+- Validation evidence:
+  - Implemented deterministic selector anchoring and `evidence_result.json` emission in `packages/core/src/evidence/anchor-evidence.ts`.
+  - Implemented review bundle assembly in `packages/core/src/review/build-review-bundle.ts`.
+  - Implemented read-only HTML rendering in `packages/rendering/src/index.ts` plus CLI orchestration in `apps/cli/src/commands/anchor-evidence.ts` and `apps/cli/src/commands/render-review.ts`.
+  - Added core unit tests, rendering unit tests, and CLI integration tests that exercise `anchor-evidence -> render-review` on fixture-backed runs.
 - Documentation impact:
   - Align pipeline/doc language with the implemented evidence validation and review surface.
   - Keep fail-closed behavior and read-only review semantics explicit in the docs.
 
 ### Step 4
 
-- Status: pending
+- Status: in_progress
 - Objective: Add a product-facing skill under `skills/` that orchestrates real Codex-backed extraction on top of the deterministic CLI, then capture manual E2E evidence with the actual Codex CLI.
 - Expected files:
   - `skills/missless-review/SKILL.md`

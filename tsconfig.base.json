@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "target": "ES2023",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
@@ -14,11 +13,6 @@
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "paths": {
-      "@missless/contracts": ["packages/contracts/src/index.ts"],
-      "@missless/core": ["packages/core/src/index.ts"],
-      "@missless/rendering": ["packages/rendering/src/index.ts"]
-    }
+    "forceConsistentCasingInFileNames": true
   }
 }

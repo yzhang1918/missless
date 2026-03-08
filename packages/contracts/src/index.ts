@@ -14,3 +14,11 @@ export type {
 } from "./extraction-draft.js";
 export { getRunArtifactPaths, RUN_ARTIFACT_FILES } from "./run-directory.js";
 export type { RunArtifactPaths } from "./run-directory.js";
+export type {
+  AnchoredAtom,
+  AnchoredEvidence,
+  CharRange,
+  EvidenceAnchoringResult,
+  ReviewBundle,
+  RunDiagnostic
+} from "./review-package.js";

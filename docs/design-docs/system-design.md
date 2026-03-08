@@ -65,6 +65,19 @@ Current baseline for the first delivery slice is:
   runtime can reject obviously unstable atom sets even before evidence
   anchoring begins.
 
+## Evidence Materialization Boundary
+
+- `anchor-evidence` is deterministic runtime work, not prompt work.
+- The first implementation resolves quote-oriented selectors into
+  `char_range + context_excerpt` evidence records inside `evidence_result.json`.
+- Selector matching is strict on the exact quote and tolerant on surrounding
+  whitespace in `prefix`/`suffix`, which keeps markdown line wrapping from
+  breaking otherwise-valid anchors.
+- Anchor failures are fail-closed and produce explicit diagnostics instead of
+  silently dropping evidence.
+- `render-review` assembles a `review_bundle.json` artifact and a local
+  read-only `review.html` page from anchored evidence plus canonical text.
+
 ## Evidence Anchoring Contract (Text Baseline)
 
 - `Segment` is a reusable evidence-location object, not an editable semantic object.

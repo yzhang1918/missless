@@ -4,7 +4,9 @@ import { RUN_ARTIFACT_FILES } from "@missless/contracts";
 import { FIRST_SLICE_RUNTIME_BOUNDARY } from "@missless/core";
 import { REVIEW_RENDERING_MODE } from "@missless/rendering";
 
+import { runAnchorEvidenceCommand } from "./commands/anchor-evidence.js";
 import { runFetchNormalizeCommand } from "./commands/fetch-normalize.js";
+import { runRenderReviewCommand } from "./commands/render-review.js";
 import { runValidateDraftCommand } from "./commands/validate-draft.js";
 
 const COMMANDS = [
@@ -15,7 +17,9 @@ const COMMANDS = [
 ] as const;
 
 const COMMAND_HANDLERS = {
+  "anchor-evidence": runAnchorEvidenceCommand,
   "fetch-normalize": runFetchNormalizeCommand,
+  "render-review": runRenderReviewCommand,
   "validate-draft": runValidateDraftCommand
 } as const;
 

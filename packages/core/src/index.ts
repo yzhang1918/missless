@@ -29,6 +29,8 @@ export type {
   RunManifest,
   SourceArtifact
 } from "./source/fetch-normalize.js";
+export { anchorEvidenceInRunDir } from "./evidence/anchor-evidence.js";
+export { buildReviewBundleInRunDir } from "./review/build-review-bundle.js";
 export { validateDraftInRunDir } from "./diagnostics/validate-draft.js";
 export type {
   DraftValidationResult,

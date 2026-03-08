@@ -3,13 +3,7 @@
   "compilerOptions": {
     "composite": true,
     "rootDir": "src",
-    "outDir": "dist",
-    "baseUrl": "../..",
-    "paths": {
-      "@missless/contracts": ["packages/contracts/src/index.ts"],
-      "@missless/core": ["packages/core/src/index.ts"],
-      "@missless/rendering": ["packages/rendering/src/index.ts"]
-    }
+    "outDir": "dist"
   },
   "references": [
     {
