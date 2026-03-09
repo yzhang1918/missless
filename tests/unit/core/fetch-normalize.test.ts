@@ -39,6 +39,24 @@ test("fetchNormalizeSource rejects localhost and private IPv4 hosts", async () =
       }),
     /localhost, private, link-local, and single-label hosts/
   );
+
+  await assert.rejects(
+    () =>
+      fetchNormalizeSource({
+        sourceUrl: "http://localhost./private",
+        runsDir
+      }),
+    /localhost, private, link-local, and single-label hosts/
+  );
+
+  await assert.rejects(
+    () =>
+      fetchNormalizeSource({
+        sourceUrl: "http://foo.localhost./private",
+        runsDir
+      }),
+    /localhost, private, link-local, and single-label hosts/
+  );
 });
 
 test("fetchNormalizeSource rejects loopback IPv6 hosts", async () => {
@@ -95,5 +113,19 @@ test("fetchNormalizeSource creates missing parent directories for runsDir", asyn
   assert.match(
     await readFile(join(result.runDir, "canonical_text.md"), "utf8"),
     /Canonical text/
+  );
+});
+
+test("fetchNormalizeSource rejects unsafe run IDs that escape runsDir", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-runid-"));
+
+  await assert.rejects(
+    () =>
+      fetchNormalizeSource({
+        sourceUrl: "https://example.com/article",
+        runsDir,
+        runId: "../../outside"
+      }),
+    /run IDs with path separators or unsafe segments/
   );
 });

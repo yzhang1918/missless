@@ -28,9 +28,14 @@ For medium/large tasks, discovery + plan are required (do not skip steps 1-2).
 6. Repeat 3-5 until all steps are complete
 7. `loop-review-loop` (full-pr mode)
 8. `commit` (optional final fix commit; if new changes are introduced here, rerun step 7)
-9. `loop-publish` (push branch and open/update PR)
-10. `loop-final-gate`
-11. `loop-land`
+9. Archive completed plans and sync trackers
+   - Move finished product plans from `docs/exec-plans/active/` to `docs/exec-plans/completed/`.
+   - Move finished harness/process plans from `docs/harness/active/` to `docs/harness/completed/`.
+   - Update completed-plan catalogs and tracker links in the same change.
+   - `loop-publish`, `loop-final-gate`, and `loop-land` must not treat a task as closed while its completed plan still lives only in `active/`.
+10. `loop-publish` (push branch and open/update PR)
+11. `loop-final-gate`
+12. `loop-land`
 
 ## Janitor Loop
 

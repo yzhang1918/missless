@@ -8,6 +8,8 @@ import { getRunArtifactPaths, type RunArtifactPaths } from "@missless/contracts"
 import { createJinaReaderProvider } from "../providers/jina.js";
 import type { SourceProvider } from "../providers/provider.js";
 
+const SAFE_RUN_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
+
 export interface RunManifest {
   readonly run_id: string;
   readonly created_at: string;
@@ -120,6 +122,10 @@ function stripIpv6Brackets(hostname: string): string {
     : hostname;
 }
 
+function stripTrailingDnsDots(hostname: string): string {
+  return hostname.replace(/\.+$/u, "");
+}
+
 function isBlockedIpv6Host(hostname: string): boolean {
   const normalized = stripIpv6Brackets(hostname).toLowerCase();
   const mappedIpv4 = parseIpv4MappedIpv6(normalized);
@@ -145,7 +151,9 @@ function isBlockedIpv6Host(hostname: string): boolean {
 }
 
 function isBlockedHostname(hostname: string): boolean {
-  const normalized = stripIpv6Brackets(hostname).toLowerCase();
+  const normalized = stripTrailingDnsDots(
+    stripIpv6Brackets(hostname).toLowerCase()
+  );
   const ipVersion = isIP(normalized);
 
   if (ipVersion === 4) {
@@ -162,6 +170,14 @@ function isBlockedHostname(hostname: string): boolean {
     normalized.endsWith(".local") ||
     !normalized.includes(".")
   );
+}
+
+function assertSafeRunId(runId: string): void {
+  if (!SAFE_RUN_ID_PATTERN.test(runId)) {
+    throw new Error(
+      "fetch-normalize rejects run IDs with path separators or unsafe segments"
+    );
+  }
 }
 
 function assertSafeHttpUrl(sourceUrl: string): void {
@@ -200,6 +216,7 @@ export async function fetchNormalizeSource(
   const runsDir = resolve(input.runsDir ?? ".local/runs");
   const now = input.now ?? new Date();
   const runId = input.runId ?? createRunId(now);
+  assertSafeRunId(runId);
   const runDir = resolve(runsDir, runId);
   const artifactPaths = getRunArtifactPaths(runDir);
 

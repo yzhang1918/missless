@@ -36,6 +36,7 @@ Single product-delivery tracker for priorities, follow-ups, and debt.
 
 | ID | Title | Priority | Status | Owner | Links | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| FUP-0003 | Package missless as an installable skill plus stable runtime entrypoint | P2 | todo | Human+Codex | `README.md`, `skills/missless/SKILL.md`, `apps/cli/package.json`, `docs/exec-plans/completed/2026-03-09-first-review-package-product-facing-v0.md` | The current slice is repository-coupled. Future work should let users install `missless` into an agent environment and invoke a stable runtime command without depending on this repo layout. |
 
 ## Technical Debt
 
@@ -47,6 +48,6 @@ Single product-delivery tracker for priorities, follow-ups, and debt.
 
 | ID | Title | Priority | Status | Owner | Links | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| TASK-0003 | Remediate the first slice into a product-facing `missless v0` | P1 | done | Human+Codex | `docs/exec-plans/active/2026-03-09-product-facing-v0-remediation.md`, `docs/exec-plans/active/2026-03-08-first-review-package-slice.md`, PR `#8`, `.local/e2e/20260309T150137Z/runs/run-20260309T150138Z-a5c6ed21/ai_review.json`, `.local/loop/review-20260309-150816.json`, `.local/loop/final-gate-20260309-151010.json` | Completed: the branch removed Codex-only product coupling, renamed the product skill to `missless`, added repository-native AI-reviewed E2E, resolved the open PR review threads, and aligned product/docs/specs with the user-facing contract. |
+| TASK-0003 | Deliver the first review-package slice as product-facing `missless v0` | P1 | done | Human+Codex | `docs/exec-plans/completed/2026-03-09-first-review-package-product-facing-v0.md`, PR `#8`, `.local/e2e/20260309T150137Z/runs/run-20260309T150138Z-a5c6ed21/ai_review.json`, `.local/loop/review-20260309-150816.json`, `.local/loop/final-gate-20260309-151010.json` | Completed: the branch delivered the first real slice, removed Codex-only product coupling, renamed the product skill to `missless`, added repository-native AI-reviewed E2E, resolved the open PR review threads, and archived the task as one completed plan. |
 | TASK-0002 | Define the first implementation slice and acceptance bar | P1 | done | Human+Codex | `docs/product-specs/product-foundation.md`, `docs/specs/pipeline-contracts.md`, `docs/design-docs/system-design.md`, `docs/exec-plans/completed/2026-03-06-evidence-contract-first-slice.md` | Completed: first delivery slice is defined as text-first, review-first, and `Atom`-only for persistence, with deferred artifact and alignment expansion. |
 | TASK-0001 | Decide evidence anchor representation profile | P1 | done | Human+Codex | `docs/design-docs/system-design.md`, `docs/specs/core-data-model.md`, `docs/specs/pipeline-contracts.md`, `docs/exec-plans/completed/2026-03-06-evidence-contract-first-slice.md` | Completed: text-source evidence now uses runtime-materialized `Segment` objects with validated locators and internal evidence review. |

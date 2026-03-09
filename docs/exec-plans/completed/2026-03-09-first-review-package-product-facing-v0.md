@@ -1,18 +1,18 @@
-# Product-Facing v0 Remediation for PR #8
+# First Review Package Slice and Product-Facing v0
 
 ## Metadata
 
-- Plan name: Product-Facing v0 Remediation for PR #8
+- Plan name: First Review Package Slice and Product-Facing v0
 - Owner: Human+Codex
 - Date: 2026-03-09
 - Related tasks: TASK-0003
-- Tracker IDs: TASK-0003
-- Baseline implementation plan: `docs/exec-plans/active/2026-03-08-first-review-package-slice.md`
+- Tracker IDs: TASK-0003, FUP-0003
+- Consolidation note: This completed plan is the single durable record for TASK-0003. It consolidates the original first-slice execution plan from 2026-03-08 and the product-facing remediation pass from 2026-03-09.
 - PR: [#8](https://github.com/yzhang1918/missless/pull/8)
 
 ## Objective
 
-Refit the existing first slice into a user-facing `missless v0` without expanding scope. The branch should keep the same product boundary, but the product story, skill entrypoint, runtime contract, and validation loop must become agent-agnostic and product-first rather than Codex-specific implementation notes.
+Deliver the first real `missless` review-package slice and close it out as a user-facing `missless v0`. The finished branch keeps the same product boundary, but the final repository record is product-first, agent-agnostic at the contract level, and archived as one completed task instead of a baseline plan plus a separate remediation plan.
 
 ## Scope
 
@@ -143,8 +143,8 @@ Refit the existing first slice into a user-facing `missless v0` without expandin
   - Record rubric-based AI review as backlog rather than implementing a broad rubric system in this slice.
 - Expected files:
   - `scripts/e2e/`
-  - `docs/exec-plans/active/2026-03-09-product-facing-v0-remediation.md`
-  - `docs/harness/active/2026-03-09-post-first-slice-loop-remediation.md`
+  - `docs/exec-plans/completed/2026-03-09-first-review-package-product-facing-v0.md`
+  - `docs/harness/completed/2026-03-09-post-first-slice-loop-remediation.md`
   - `docs/exec-plans/tracker.md`
   - `docs/harness/tracker.md`
 - Validation commands:
@@ -168,7 +168,7 @@ Refit the existing first slice into a user-facing `missless v0` without expandin
   - Sync `docs/exec-plans/tracker.md` and `docs/harness/tracker.md` with any new follow-ups or debt discovered during implementation.
   - Re-run full-PR review and final gate only after plan state, docs, and validation evidence are current.
 - Expected files:
-  - `docs/exec-plans/active/2026-03-09-product-facing-v0-remediation.md`
+  - `docs/exec-plans/completed/2026-03-09-first-review-package-product-facing-v0.md`
   - `docs/exec-plans/tracker.md`
   - `docs/harness/tracker.md`
 - Validation commands:
@@ -245,4 +245,6 @@ Refit the existing first slice into a user-facing `missless v0` without expandin
 - Final-gate artifact:
   - `.local/loop/final-gate-20260309-151010.json`
 - Review-loop note:
-  - Subagent orchestration in the desktop session was unstable, so the round finished through explicit fallback reviewer artifacts rather than silent abandonment. That failure mode is captured in `docs/harness/active/2026-03-09-post-first-slice-loop-remediation.md`.
+  - Subagent orchestration in the desktop session was unstable, so the round finished through explicit fallback reviewer artifacts rather than silent abandonment. That failure mode is captured in `docs/harness/completed/2026-03-09-post-first-slice-loop-remediation.md`.
+- Open follow-up/debt IDs:
+  - FUP-0003

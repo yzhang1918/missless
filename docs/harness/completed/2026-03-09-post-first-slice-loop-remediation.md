@@ -7,7 +7,7 @@
 - Date: 2026-03-09
 - Related tasks: TASK-0003
 - Tracker IDs: TASK-0003, FUP-0004, FUP-0005, FUP-0006
-- Triggering product slice: `docs/exec-plans/active/2026-03-09-product-facing-v0-remediation.md`
+- Triggering product slice: `docs/exec-plans/completed/2026-03-09-first-review-package-product-facing-v0.md`
 
 ## Objective
 
@@ -36,6 +36,7 @@ Capture the harness/process gaps exposed by the first real product slice so they
 - Reviewer-subagent availability was noisy enough that review completion required main-agent fallback, but the harness did not treat that as a first-class contract.
 - The first AI-review prompt left too much room for the reviewer to inspect repository docs and prior examples instead of staying artifact-scoped, which weakens the review contract unless the harness constrains context more tightly.
 - Publish/final-gate state could drift ahead of plan completion because active-plan checkbox discipline was not enforced strongly enough.
+- Completed plans could remain in `active/` even after the task was effectively done, which makes publish/final-gate state look cleaner than the repository record actually is.
 - Cleanup/retention behavior was not aligned tightly enough with the files referenced by plan and final-gate artifacts.
 - Real-E2E validation now needs AI review to close the loop, but the harness does not yet provide a formal rubric/reviewer stage for that path.
 
@@ -61,6 +62,8 @@ Capture the harness/process gaps exposed by the first real product slice so they
 - Objective: Tighten publish/final-gate discipline around active plans.
 - Key changes for the future harness pass:
   - Require active plan statuses and acceptance checkboxes to be current before publish/final gate passes.
+  - Require completed plans to move from `active/` to `completed/` before publish/final gate passes.
+  - Require completed-plan catalog and tracker links to be updated in the same close-the-loop step.
   - Refuse to treat a branch as gate-ready when the active plan still misstates completion.
   - Make tracker updates part of the same close-the-loop requirement.
 - Expected files:
@@ -68,7 +71,7 @@ Capture the harness/process gaps exposed by the first real product slice so they
   - `.agents/skills/loop-final-gate/SKILL.md`
   - `.agents/skills/AGENT_LOOP_WORKFLOW.md`
 - Exit criteria for the future harness pass:
-  - Publish/final-gate cannot outrun the active plan and tracker state.
+  - Publish/final-gate cannot outrun the active plan, completed-plan archival, or tracker state.
 
 ### Step 3
 
@@ -109,4 +112,4 @@ Capture the harness/process gaps exposed by the first real product slice so they
 
 - This harness plan is documentation-only in the current branch.
 - Product remediation work remains the active implementation priority.
-- Documentation capture for this plan is complete in PR `#8`; the implementation work remains deferred to a future harness pass.
+- Documentation capture for this plan is complete in PR `#8`; harness implementation work remains deferred to a future follow-up pass.
