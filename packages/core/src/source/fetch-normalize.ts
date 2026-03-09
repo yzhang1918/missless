@@ -53,6 +53,46 @@ function sha256(input: string): string {
   return createHash("sha256").update(input, "utf8").digest("hex");
 }
 
+function parseIpv4MappedIpv6(hostname: string): string | null {
+  const normalized = stripIpv6Brackets(hostname).toLowerCase();
+
+  if (!normalized.startsWith("::ffff:")) {
+    return null;
+  }
+
+  const suffix = normalized.slice("::ffff:".length);
+
+  if (isIP(suffix) === 4) {
+    return suffix;
+  }
+
+  if (/^[0-9a-f]{1,8}$/u.test(suffix)) {
+    const value = Number.parseInt(suffix, 16);
+
+    return [
+      (value >>> 24) & 0xff,
+      (value >>> 16) & 0xff,
+      (value >>> 8) & 0xff,
+      value & 0xff
+    ].join(".");
+  }
+
+  const parts = suffix.split(":");
+
+  if (parts.length !== 2 || parts.some((part) => !/^[0-9a-f]{1,4}$/u.test(part))) {
+    return null;
+  }
+
+  const [first, second] = parts.map((part) => Number.parseInt(part, 16));
+
+  return [
+    (first >>> 8) & 0xff,
+    first & 0xff,
+    (second >>> 8) & 0xff,
+    second & 0xff
+  ].join(".");
+}
+
 function isBlockedIpv4Host(hostname: string): boolean {
   const octets = hostname.split(".").map((part) => Number(part));
 
@@ -82,6 +122,7 @@ function stripIpv6Brackets(hostname: string): string {
 
 function isBlockedIpv6Host(hostname: string): boolean {
   const normalized = stripIpv6Brackets(hostname).toLowerCase();
+  const mappedIpv4 = parseIpv4MappedIpv6(normalized);
 
   if (
     normalized === "::" ||
@@ -96,8 +137,8 @@ function isBlockedIpv6Host(hostname: string): boolean {
     return true;
   }
 
-  if (normalized.startsWith("::ffff:")) {
-    return isBlockedIpv4Host(normalized.slice("::ffff:".length));
+  if (mappedIpv4 !== null) {
+    return isBlockedIpv4Host(mappedIpv4);
   }
 
   return false;
@@ -162,6 +203,7 @@ export async function fetchNormalizeSource(
   const runDir = resolve(runsDir, runId);
   const artifactPaths = getRunArtifactPaths(runDir);
 
+  await mkdir(runsDir, { recursive: true });
   await mkdir(runDir, { recursive: false });
 
   const fetched = await provider.fetch(input.sourceUrl);

@@ -61,3 +61,43 @@ test("createJinaReaderProvider does not forward auth to override hosts by defaul
 
   assert.equal(seenAuthorization, null);
 });
+
+test("createJinaReaderProvider wraps transport failures with provider context", async () => {
+  const provider = createJinaReaderProvider({
+    fetchImpl: async () => {
+      throw new TypeError("fetch failed");
+    }
+  });
+
+  await assert.rejects(
+    () => provider.fetch("https://example.com/agent-harness"),
+    /Jina Reader fetch failed for https:\/\/r\.jina\.ai\/https:\/\/example\.com\/agent-harness: fetch failed/
+  );
+});
+
+test("createJinaReaderProvider rejects upstream warning pages", async () => {
+  const provider = createJinaReaderProvider({
+    fetchImpl: async () =>
+      new Response(
+        [
+          "Title: Just a moment...",
+          "",
+          "URL Source: https://example.com/agent-harness",
+          "",
+          "Warning: Target URL returned error 403: Forbidden",
+          "Warning: This page maybe not yet fully loaded, consider explicitly specify a timeout.",
+          "",
+          "Markdown Content:",
+          "Just a moment...",
+          "===============",
+          "",
+          "Verification successful. Waiting for example.com to respond"
+        ].join("\n")
+      )
+  });
+
+  await assert.rejects(
+    () => provider.fetch("https://example.com/agent-harness"),
+    /Jina Reader returned an upstream warning page: 403: Forbidden/
+  );
+});

@@ -6,14 +6,12 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
-    "./extraction-draft.schema.json": "./extraction-draft.schema.json",
-    "./extraction-draft.codex-output-schema.json": "./extraction-draft.codex-output-schema.json"
+    "./extraction-draft.schema.json": "./extraction-draft.schema.json"
   },
   "files": [
     "dist",
     "src",
-    "extraction-draft.schema.json",
-    "extraction-draft.codex-output-schema.json"
+    "extraction-draft.schema.json"
   ],
   "scripts": {
     "build": "tsc -b tsconfig.json",

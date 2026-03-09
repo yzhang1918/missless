@@ -1,0 +1,4 @@
+interface:
+  display_name: "missless"
+  short_description: "Turn one public URL into a review package"
+  default_prompt: "Use $missless to turn one public URL into a review package with evidence and a local HTML review page."

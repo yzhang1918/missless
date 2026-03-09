@@ -1,96 +1,97 @@
 # Product Foundation
 
-Status: Draft
+Status: Active
 
 ## Purpose
 
-Capture the current product intent in one place until detailed scope decisions are made.
+State the durable product promise, decision model, and first-slice boundary.
 
 ## Positioning
 
 - From FOMO to Focus.
-- missless is an AI judgment engine for links and ideas.
+- missless turns information overload into decision clarity.
 - Read less. Know more. Miss less.
 - Drop a link. Get a decision.
 
 ## Problem
 
 - Information overload and derivative content reduce signal.
-- Link collection alone does not create durable understanding.
-- Users want concise judgment with evidence they can inspect.
+- Summaries without evidence are hard to trust.
+- Link collection alone does not tell a user what deserves more attention.
 
-## Product Intent
+## Product Promise
 
-`missless` converts sources into reusable knowledge and clear reading decisions.
+`missless` gives the user a reading decision with enough evidence to inspect
+why that decision was made.
 
 ## Core Principles
 
 - Decision over collection.
-- Citation is not destination.
-- Human control at persistence boundaries.
-- Evidence traceability for important conclusions.
-- Interface-agnostic core semantics.
+- Evidence over unsupported judgment.
+- Review before persistence.
+- Interface-agnostic product semantics.
+- Repository-legible contracts.
 
-## Baseline Workflow (Discussion Draft)
+## Decision Model
 
-1. User submits a source.
-2. System reads full content and extracts candidate knowledge.
-3. System validates and materializes supporting evidence anchors.
-4. System aligns candidates against existing knowledge.
-5. System proposes what to accept, reject, edit, or defer.
-6. Human decides what persists.
+- `deep_read`
+  - the source contains detail or density that the extracted package cannot
+    safely replace
+- `skim`
+  - the TLDR and ordered atoms capture most of the value, with selective
+    source reading still useful
+- `skip`
+  - the TLDR and supporting evidence are enough; further reading has low
+    expected return in this slice
+
+These first-slice decisions are knowledge-base-agnostic. They do not yet use
+the user's existing knowledge to judge novelty.
 
 ## First Delivery Slice
 
-- Start with a pnpm-workspace monorepo so the first CLI can later grow into
-  web, Docker, mobile, or extension surfaces without flattening product code
-  into one package.
-- Use a single-source, URL-only, text-first workflow for the first slice.
-- Create a `run_dir` for each non-dry run and treat its canonical normalized
-  markdown snapshot as immutable within that run.
-- Use a provider abstraction for fetch/normalize. The first implementation uses
-  Jina Reader, with `MISSLESS_JINA_BASE_URL` reserved for local and mocked
-  runs and optional `JINA_API_KEY` support for authenticated environments.
-- Use Codex as the current extraction engine through a product-facing skill in
-  `skills/`; a custom embedded runtime agent remains deferred.
-- Produce a `TLDR`, a knowledge-base-agnostic reading decision
-  (`deep_read|skim|skip`), ordered claim-first atom candidates, quote-oriented
-  evidence selectors, and optional compact self-check notes.
-- Validate evidence selectors against canonical text and materialize a
-  read-only internal review package with highlighted evidence.
-- Write the first review package as machine-readable artifacts plus a local
-  read-only HTML page, so the evidence surface is reviewable before any web app
-  exists.
-- Stop at the review package boundary in the first slice; persistence, commit,
-  and cross-source alignment remain deferred.
+- Input: one public URL.
+- Output:
+  - a 1-2 sentence TLDR
+  - a `deep_read|skim|skip` recommendation
+  - concise reasons for that recommendation
+  - ordered claim-first atoms
+  - evidence-backed review artifacts, including a local read-only review page
+- Interaction model:
+  - the first slice is `single-run URL -> review package`
+  - human inspection happens at the review-package boundary
+- Boundary:
+  - the first slice stops before persistence, commit, or knowledge-base
+    alignment
+- Evidence model:
+  - important conclusions must remain inspectable against the canonical source
+    text
+- Surface:
+  - the runtime may have multiple technical entrypoints, but the product story
+    is one user action: drop a link and get a decision
 
 ## Acceptance Bar
 
-- A submitted URL can be fetched, normalized, and stored in a stable `run_dir`
-  with source metadata and canonical text.
-- The system can produce a structured extraction draft that includes a TLDR,
-  explicit `deep_read|skim|skip` decision, decision reasons, claim-first atom
-  candidates, and candidate evidence selectors.
-- Runtime can validate the draft contract and fail closed with clear
-  diagnostics when schema or draft-contract invariants are violated.
-- Runtime can validate candidate evidence selectors and render a read-only HTML
-  review package that highlights supporting canonical text.
-- `validate-draft` provides concise summary output by default and structured
-  JSON diagnostics when `--json` is requested.
-- `anchor-evidence` writes reusable evidence ranges and fails closed when
-  selectors cannot be resolved.
-- `render-review` writes a review bundle and a local HTML review page from run
-  artifacts.
-- Human review happens before any persistence boundary; the first slice does
-  not commit accepted atoms.
+- The user can submit one public URL and receive a review package.
+- The package includes a TLDR, an explicit reading decision, reasons, ordered
+  claim-first atoms, and inspectable evidence.
+- Runtime validation fails closed when draft or evidence requirements are not
+  met.
+- The first slice does not persist accepted atoms.
 
-## Deferred From the First Slice
+## Long-Term Differentiator
 
-- Knowledge-aware personalized decisions based on the user's existing
-  knowledge base. This is a core product differentiator, but it remains
-  outside the first slice.
-- When refresh/re-ingest and source versioning should be introduced.
-- When non-text sources (`podcast`, `audio`, `pdf`) become first-class
-  evidence inputs.
-- Which quality bars are required before expanding interfaces, alignment
-  depth, or persistence scope.
+The long-term product differentiator is knowledge-aware personalized judgment:
+the same source may be `deep_read`, `skim`, or `skip` for different users
+depending on what they already know.
+
+That differentiator is core to `missless`, but it is intentionally outside the
+first delivery slice.
+
+## Deferred Beyond the First Slice
+
+- Knowledge-aware personalized decisions backed by the user's existing
+  knowledge base.
+- Persistence and commit flows for accepted atoms.
+- Cross-source alignment and relation-heavy reasoning.
+- Non-text source support such as audio or PDF-native evidence.
+- Web, mobile, and extension delivery surfaces.

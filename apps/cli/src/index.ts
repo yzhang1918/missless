@@ -1,37 +1,59 @@
 #!/usr/bin/env node
 
-import { RUN_ARTIFACT_FILES } from "@missless/contracts";
-import { FIRST_SLICE_RUNTIME_BOUNDARY } from "@missless/core";
+import { DECISION_LABELS, RUN_ARTIFACT_FILES } from "@missless/contracts";
 import { REVIEW_RENDERING_MODE } from "@missless/rendering";
 
 import { runAnchorEvidenceCommand } from "./commands/anchor-evidence.js";
 import { runFetchNormalizeCommand } from "./commands/fetch-normalize.js";
+import { runPrintDraftContractCommand } from "./commands/print-draft-contract.js";
 import { runRenderReviewCommand } from "./commands/render-review.js";
 import { runValidateDraftCommand } from "./commands/validate-draft.js";
 
 const COMMANDS = [
-  "fetch-normalize",
-  "validate-draft",
-  "anchor-evidence",
-  "render-review"
+  {
+    name: "fetch-normalize",
+    description: "Create a run directory and canonical text from one public URL."
+  },
+  {
+    name: "print-draft-contract",
+    description: "Print the runtime-owned extraction_draft.json contract."
+  },
+  {
+    name: "validate-draft",
+    description: "Validate an agent-authored extraction draft in a run directory."
+  },
+  {
+    name: "anchor-evidence",
+    description: "Validate and materialize evidence from extraction selectors."
+  },
+  {
+    name: "render-review",
+    description: "Render a read-only HTML review package from run artifacts."
+  }
 ] as const;
 
 const COMMAND_HANDLERS = {
   "anchor-evidence": runAnchorEvidenceCommand,
   "fetch-normalize": runFetchNormalizeCommand,
+  "print-draft-contract": runPrintDraftContractCommand,
   "render-review": runRenderReviewCommand,
   "validate-draft": runValidateDraftCommand
 } as const;
 
 function renderHelp(): string {
   return [
-    "missless CLI (bootstrap)",
+    "missless",
     "",
-    "Planned commands:",
-    ...COMMANDS.map((command) => `- ${command}`),
+    "Deterministic runtime for the first review-package slice.",
     "",
-    `Run directory artifacts start with: ${RUN_ARTIFACT_FILES.runManifest}, ${RUN_ARTIFACT_FILES.source}, ${RUN_ARTIFACT_FILES.canonicalText}`,
-    `Extractor boundary: ${FIRST_SLICE_RUNTIME_BOUNDARY.extractor}`,
+    "Commands:",
+    ...COMMANDS.map((command) => `- ${command.name}: ${command.description}`),
+    "",
+    "Runtime contract:",
+    "- run handle: run_dir",
+    `- agent-authored draft: ${RUN_ARTIFACT_FILES.extractionDraft}`,
+    `- derived artifacts: ${RUN_ARTIFACT_FILES.evidenceResult}, ${RUN_ARTIFACT_FILES.reviewBundle}, ${RUN_ARTIFACT_FILES.reviewHtml}`,
+    `- decision labels: ${DECISION_LABELS.join(", ")}`,
     `Review rendering mode: ${REVIEW_RENDERING_MODE}`
   ].join("\n");
 }
@@ -50,7 +72,7 @@ async function main(): Promise<number> {
     return 0;
   }
 
-  if (!COMMANDS.includes(command as (typeof COMMANDS)[number])) {
+  if (!COMMANDS.some((candidate) => candidate.name === command)) {
     console.error(`Unknown command: ${command}`);
     console.error("");
     console.error(renderHelp());

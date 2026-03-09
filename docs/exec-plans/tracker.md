@@ -26,7 +26,6 @@ Single product-delivery tracker for priorities, follow-ups, and debt.
 
 | ID | Title | Priority | Status | Owner | Links | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| TASK-0003 | Implement the first URL-to-review-package slice | P1 | ready | Human+Codex | `docs/exec-plans/active/2026-03-08-first-review-package-slice.md`, PR `#8` | All four implementation steps are complete locally, the review-driven security/test follow-up fixes are in, delta review round `20260308-170151` is clear, and final gate passed. Knowledge-aware personalized decisions remain the key differentiator but are deferred from this slice. |
 
 ## Queue
 
@@ -37,7 +36,6 @@ Single product-delivery tracker for priorities, follow-ups, and debt.
 
 | ID | Title | Priority | Status | Owner | Links | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| FUP-0001 | Investigate `codex exec` hangs when structured-output runs read local files before final JSON emission | P2 | todo | Codex | `docs/exec-plans/active/2026-03-08-first-review-package-slice.md` | Manual E2E succeeded with the same canonical text inlined into the prompt plus `packages/contracts/extraction-draft.codex-output-schema.json`, but direct local-file-read prompts stalled after context gathering. |
 
 ## Technical Debt
 
@@ -49,5 +47,6 @@ Single product-delivery tracker for priorities, follow-ups, and debt.
 
 | ID | Title | Priority | Status | Owner | Links | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| TASK-0003 | Remediate the first slice into a product-facing `missless v0` | P1 | done | Human+Codex | `docs/exec-plans/active/2026-03-09-product-facing-v0-remediation.md`, `docs/exec-plans/active/2026-03-08-first-review-package-slice.md`, PR `#8`, `.local/e2e/20260309T150137Z/runs/run-20260309T150138Z-a5c6ed21/ai_review.json`, `.local/loop/review-20260309-150816.json`, `.local/loop/final-gate-20260309-150816.json` | Completed: the branch removed Codex-only product coupling, renamed the product skill to `missless`, added repository-native AI-reviewed E2E, resolved the open PR review threads, and aligned product/docs/specs with the user-facing contract. |
 | TASK-0002 | Define the first implementation slice and acceptance bar | P1 | done | Human+Codex | `docs/product-specs/product-foundation.md`, `docs/specs/pipeline-contracts.md`, `docs/design-docs/system-design.md`, `docs/exec-plans/completed/2026-03-06-evidence-contract-first-slice.md` | Completed: first delivery slice is defined as text-first, review-first, and `Atom`-only for persistence, with deferred artifact and alignment expansion. |
 | TASK-0001 | Decide evidence anchor representation profile | P1 | done | Human+Codex | `docs/design-docs/system-design.md`, `docs/specs/core-data-model.md`, `docs/specs/pipeline-contracts.md`, `docs/exec-plans/completed/2026-03-06-evidence-contract-first-slice.md` | Completed: text-source evidence now uses runtime-materialized `Segment` objects with validated locators and internal evidence review. |

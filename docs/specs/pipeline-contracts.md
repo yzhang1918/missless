@@ -4,29 +4,36 @@ Status: Draft
 
 ## Purpose
 
-Define the baseline processing contract from source ingestion to commit-ready proposal.
+Define the baseline processing contract from source ingestion to commit-ready
+proposal.
 
 ## Baseline Stages
 
 1. `fetch`: acquire source and metadata.
 2. `normalize`: produce the canonical normalized content snapshot.
-3. `extract`: produce candidate atoms/artifacts from full content.
-4. `anchor_evidence`: validate and materialize evidence anchors for candidates.
+3. `extract`: produce candidate atoms and review artifacts from full content.
+4. `anchor_evidence`: validate and materialize evidence anchors for
+   candidates.
 5. `align`: compare with existing knowledge and propose relations.
-6. `propose`: assemble human-review package.
-7. `review`: human accepts/rejects/edits/defers/overrides.
+6. `propose`: assemble a human-review package.
+7. `review`: human accepts, rejects, edits, defers, or overrides.
 8. `commit`: optional persistence step.
 
 ## Evidence Anchoring Contract (Text Baseline)
 
-- `extract` may propose candidate atoms before stable evidence identifiers exist.
+- `extract` may propose candidate atoms before stable evidence identifiers
+  exist.
 - `anchor_evidence` runs as `candidate -> validate -> refine -> materialize`.
-- Candidate evidence is proposed by the extraction agent as quote-oriented selectors rather than direct offsets.
+- Candidate evidence is proposed by the extraction agent as quote-oriented
+  selectors rather than direct offsets.
 - Runtime validates candidates against the canonical normalized source text.
 - When validation succeeds, runtime `lookup-or-create`s a reusable `Segment`.
-- When validation fails, runtime returns a concrete reason and requests refinement.
-- When bounded refinement still fails, the candidate item must be marked `needs_review` instead of persisting as an evidence-free accepted item.
-- Validated text locators are stored as `exact quote + prefix/suffix + char_range`.
+- When validation fails, runtime returns a concrete reason and requests
+  refinement.
+- When bounded refinement still fails, the candidate item must be marked
+  `needs_review` instead of persisting as an evidence-free accepted item.
+- Validated text locators are stored as `exact quote + prefix/suffix +
+  char_range`.
 
 ## First Delivery Slice Profile
 
@@ -35,7 +42,7 @@ Define the baseline processing contract from source ingestion to commit-ready pr
 - Required stages in the first slice: `fetch`, `normalize`, `extract`,
   `anchor_evidence`, `propose`, `review`.
 - Current run handle after ingest: `run_dir`.
-- Current extractor boundary: Codex-backed extraction outside the
+- Current extractor boundary: agent-authored extraction outside the
   deterministic runtime.
 - Required candidate output in the first slice: a TLDR,
   knowledge-base-agnostic `deep_read|skim|skip` decision, ordered claim-first
@@ -46,12 +53,8 @@ Define the baseline processing contract from source ingestion to commit-ready pr
   knowledge-aware personalized decisions, and user-editable review flows.
 - Deferred from the first slice: refresh/versioning, non-text locator
   variants, evidence-role semantics, and external-page deep-link guarantees.
-- `align` and `commit` remain part of the broader baseline architecture but may
-  be omitted or no-op for the first delivery slice.
-- Live `codex exec` structured-output runs currently use
-  `packages/contracts/extraction-draft.codex-output-schema.json`, a stricter
-  subset of the runtime draft contract that omits `self_check` and requires
-  `exact + prefix + suffix` for each evidence selector.
+- `align` and `commit` remain part of the broader baseline architecture but
+  may be omitted or no-op for the first delivery slice.
 
 ## First Deterministic CLI Contracts
 
@@ -73,8 +76,8 @@ Define the baseline processing contract from source ingestion to commit-ready pr
 - validates the extraction draft schema
 - validates deterministic contract invariants that do not require evidence
   materialization
-- remains the authoritative runtime gate even when the draft was produced via
-  the stricter `codex-output` schema used by manual live Codex CLI runs
+- remains the authoritative runtime gate regardless of which agent backend
+  authored the draft
 - returns concise summary output by default
 - returns structured JSON diagnostics when `--json` is requested
 - fails closed with a non-zero exit code when required artifacts are missing,
@@ -95,17 +98,15 @@ Define the baseline processing contract from source ingestion to commit-ready pr
 - assembles `review_bundle.json` from draft, anchored evidence, and canonical
   text
 - writes a read-only local `review.html`
-- preserves the same ordered candidate list that came from extraction and draft
-  validation
+- preserves the same ordered candidate list that came from extraction and
+  draft validation
 
-Manual real-Codex E2E:
-- uses `codex exec` against the live canonical text produced by
+Real E2E:
+- must use a live agent backend against the canonical text produced by
   `fetch-normalize`
-- uses `packages/contracts/extraction-draft.codex-output-schema.json` for the
-  model handoff
-- may inline canonical text into the prompt when a direct local-file-read
-  prompt proves unstable in the current Codex CLI
-- still must pass `validate-draft`, `anchor-evidence`, and `render-review`
+- must author `extraction_draft.json` directly rather than relying on a
+  product-level structured-output subset contract
+- must still pass `validate-draft`, `anchor-evidence`, and `render-review`
   without special-case runtime behavior
 
 ## Review Contract
@@ -127,7 +128,7 @@ First-slice review requires only:
 
 ## Interface Contract (Adapter-Agnostic)
 
-Any interface (skill/CLI/web/mobile) must preserve:
+Any interface such as skill, CLI, web, or mobile must preserve:
 - stable run identifier for non-dry runs
 - review-before-commit semantics
 - auditable evidence references

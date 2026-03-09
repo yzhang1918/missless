@@ -44,6 +44,25 @@ function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
 }
 
+function detectReaderWarning(canonicalText: string): string | null {
+  const upstreamWarning = canonicalText.match(
+    /^Warning: Target URL returned error ([^\n]+)$/mu
+  );
+
+  if (upstreamWarning !== null) {
+    return `Jina Reader returned an upstream warning page: ${upstreamWarning[1]}`;
+  }
+
+  if (
+    canonicalText.startsWith("Title: Just a moment...") ||
+    canonicalText.includes("Verification successful. Waiting for")
+  ) {
+    return "Jina Reader returned an interstitial page instead of canonical content";
+  }
+
+  return null;
+}
+
 function isOfficialJinaReaderOrigin(baseUrl: string): boolean {
   const parsed = new URL(normalizeBaseUrl(baseUrl));
 
@@ -107,7 +126,15 @@ export function createJinaReaderProvider(
         headers.set("Authorization", `Bearer ${apiKey}`);
       }
 
-      const response = await fetchImpl(providerUrl, { headers });
+      let response: Response;
+
+      try {
+        response = await fetchImpl(providerUrl, { headers });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+
+        throw new Error(`Jina Reader fetch failed for ${providerUrl}: ${message}`);
+      }
 
       if (!response.ok) {
         throw new Error(
@@ -119,6 +146,12 @@ export function createJinaReaderProvider(
 
       if (canonicalText === "") {
         throw new Error("Jina Reader returned empty canonical text");
+      }
+
+      const warning = detectReaderWarning(canonicalText);
+
+      if (warning !== null) {
+        throw new Error(warning);
       }
 
       return {

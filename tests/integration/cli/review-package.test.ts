@@ -11,7 +11,7 @@ const fixtureDraftPath = new URL("../../fixtures/drafts/valid-extraction-draft.j
 const fixtureCanonicalPath = new URL("../../fixtures/jina/harness-engineering.md", import.meta.url);
 
 test("anchor-evidence and render-review produce the first review package artifacts", async () => {
-  const runsRoot = await mkdtemp(join(tmpdir(), "missless-review-"));
+  const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-review");
 
   await mkdir(runDir, { recursive: true });

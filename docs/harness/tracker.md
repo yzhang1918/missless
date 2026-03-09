@@ -32,7 +32,7 @@ Single tactical tracker for agent-harness workflow/process priorities, follow-up
 
 | ID | Title | Priority | Status | Owner | Links | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| TASK-0003 | Validate agent loop ergonomics after first real feature cycle | P2 | todo | Human+Codex | `.agents/skills/AGENT_LOOP_WORKFLOW.md` | Re-tune loop only after real usage data. |
+| TASK-0003 | Validate agent loop ergonomics after first real feature cycle | P2 | ready | Human+Codex | `.agents/skills/AGENT_LOOP_WORKFLOW.md`, `docs/harness/active/2026-03-09-post-first-slice-loop-remediation.md` | Real usage in PR `#8` exposed reviewer no-response fallback gaps, plan-completion drift before publish/final gate, and artifact-retention issues. The remediation plan is now captured; implementation remains deferred until the current product branch lands. |
 
 ## Follow-ups
 
@@ -40,6 +40,9 @@ Single tactical tracker for agent-harness workflow/process priorities, follow-up
 | --- | --- | --- | --- | --- | --- | --- |
 | FUP-0001 | Add optional CI status exporter for final-gate input | P2 | todo | Codex | `.agents/skills/loop-final-gate/scripts/final_gate.sh` | Emit machine-readable status file. |
 | FUP-0002 | Add helper to spawn reviewer subagents by selected dimensions | P2 | todo | Codex | `.agents/skills/loop-review-loop/SKILL.md` | Keep dimensions configurable. |
+| FUP-0004 | Make review-loop reviewer fallback fail closed and explicit | P1 | todo | Codex | `docs/harness/active/2026-03-09-post-first-slice-loop-remediation.md`, `.agents/skills/loop-review-loop/SKILL.md` | If reviewer agents do not return, the loop should retry or fallback with recorded evidence instead of silently completing without reviewer output. |
+| FUP-0005 | Enforce active-plan completion before publish and final gate | P1 | todo | Codex | `docs/harness/active/2026-03-09-post-first-slice-loop-remediation.md`, `.agents/skills/loop-publish/SKILL.md`, `.agents/skills/loop-final-gate/SKILL.md` | Publish/final-gate should refuse to outrun stale plan checkboxes, statuses, or tracker state. |
+| FUP-0006 | Add rubric-based AI review for real E2E runs | P2 | todo | Codex | `docs/harness/active/2026-03-09-post-first-slice-loop-remediation.md` | Future live-E2E validation should close the loop with an explicit AI-review rubric and artifact-scoped reviewer context rather than ad-hoc review prompting. |
 
 ## Technical Debt
 

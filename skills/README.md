@@ -1,10 +1,17 @@
 # Product-Facing Skills
 
-This directory holds product-facing skills and prompt assets that ship with
-`missless`.
+This directory holds repository-owned product skills and prompt assets that
+ship with `missless`.
 
-- Use `.agents/skills/` for developer workflow skills such as discovery,
-  planning, execution, review, and landing.
-- Use `skills/` for runtime behavior that should remain visible in repository
-  source control as part of the product.
-- The first product-facing skill is planned as `skills/missless-review/`.
+## Current Skill
+
+- `skills/missless/`
+  - turns one public URL into a review package
+  - produces a TLDR, a reading decision, evidence-backed atoms, and a local
+    review page
+
+## Scope
+
+Product skills in this directory should describe repository-owned product
+behavior. They should not depend on developer workflow notes to explain the
+user-facing contract.
