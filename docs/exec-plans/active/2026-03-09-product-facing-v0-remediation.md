@@ -243,6 +243,6 @@ Refit the existing first slice into a user-facing `missless v0` without expandin
 - Full-PR review artifact:
   - `.local/loop/review-20260309-150816.json`
 - Final-gate artifact:
-  - `.local/loop/final-gate-20260309-150816.json`
+  - `.local/loop/final-gate-20260309-151010.json`
 - Review-loop note:
   - Subagent orchestration in the desktop session was unstable, so the round finished through explicit fallback reviewer artifacts rather than silent abandonment. That failure mode is captured in `docs/harness/active/2026-03-09-post-first-slice-loop-remediation.md`.

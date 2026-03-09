@@ -32,7 +32,6 @@ Single tactical tracker for agent-harness workflow/process priorities, follow-up
 
 | ID | Title | Priority | Status | Owner | Links | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| TASK-0003 | Validate agent loop ergonomics after first real feature cycle | P2 | ready | Human+Codex | `.agents/skills/AGENT_LOOP_WORKFLOW.md`, `docs/harness/active/2026-03-09-post-first-slice-loop-remediation.md` | Real usage in PR `#8` exposed reviewer no-response fallback gaps, plan-completion drift before publish/final gate, and artifact-retention issues. The remediation plan is now captured; implementation remains deferred until the current product branch lands. |
 
 ## Follow-ups
 
@@ -53,6 +52,7 @@ Single tactical tracker for agent-harness workflow/process priorities, follow-up
 
 | ID | Title | Priority | Status | Owner | Links | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
+| TASK-0003 | Validate agent loop ergonomics after first real feature cycle | P2 | done | Human+Codex | `.agents/skills/AGENT_LOOP_WORKFLOW.md`, `docs/harness/active/2026-03-09-post-first-slice-loop-remediation.md` | Completed: the ergonomics review was captured in a documentation-first remediation plan for PR `#8`; implementation work was decomposed into follow-ups `FUP-0004` through `FUP-0006`. |
 | TASK-0005 | Refine discovery option framing ergonomics | P2 | done | Human+Codex | `.agents/skills/loop-discovery/SKILL.md`, `.agents/skills/loop-discovery/agents/openai.yaml`, `docs/harness/completed/2026-03-06-discovery-option-framing.md` | Completed: discovery now uses context-shaped 2-4 options with concise tradeoff notes, validated with isolated subagent tests. |
 | TASK-0004 | Calibrate task-intake and discovery flow in AGENTS/skills | P0 | done | Human+Codex | `AGENTS.md`, `.agents/skills/AGENT_LOOP_WORKFLOW.md`, `.agents/skills/loop-discovery/SKILL.md`, `.agents/skills/loop-plan/SKILL.md`, `docs/harness/completed/2026-03-05-skill-flow-calibration.md` | Completed: task confirmation gate + conversation-only Socratic discovery are now codified. |
 | FUP-0003 | Harden review-loop and final-gate artifact contracts | P1 | done | Codex | `.agents/skills/loop-review-loop/scripts/`, `.agents/skills/loop-final-gate/scripts/final_gate.sh`, commit `cbd4636` | Added fail-closed validation, safe cleanup behavior, and regression harness. |
