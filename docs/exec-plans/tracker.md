@@ -37,6 +37,7 @@ Single product-delivery tracker for priorities, follow-ups, and debt.
 | ID | Title | Priority | Status | Owner | Links | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | FUP-0003 | Package missless as an installable skill plus stable runtime entrypoint | P2 | todo | Human+Codex | `README.md`, `skills/missless/SKILL.md`, `apps/cli/package.json`, `docs/exec-plans/completed/2026-03-09-first-review-package-product-facing-v0.md` | The current slice is repository-coupled. Future work should let users install `missless` into an agent environment and invoke a stable runtime command without depending on this repo layout. |
+| FUP-0004 | Add provider fallback strategy beyond the default Jina reader | P2 | todo | Human+Codex | `packages/core/src/providers/`, `packages/core/src/source/fetch-normalize.ts`, `docs/design-docs/system-design.md`, `docs/specs/pipeline-contracts.md` | Keep localhost/private rejection as runtime policy, but define which provider failures should stay fail-closed and which should trigger fallback to a second fetch provider. |
 
 ## Technical Debt
 

@@ -273,3 +273,4 @@ Deliver the first real `missless` slice as a product-facing, repository-coupled 
   - Subagent orchestration in the desktop session was unstable, so the round finished through explicit fallback reviewer artifacts rather than silent abandonment. That failure mode is captured in `docs/harness/completed/2026-03-09-post-first-slice-loop-remediation.md`.
 - Open follow-up/debt IDs:
   - FUP-0003
+  - FUP-0004
