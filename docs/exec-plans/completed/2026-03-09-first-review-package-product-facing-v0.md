@@ -184,6 +184,8 @@ Deliver the first real `missless` slice as a product-facing, repository-coupled 
   - Add an AI review stage that inspects the produced artifacts and records a pass/fail-style judgment plus evidence notes.
   - Keep AI review artifact-scoped so the reviewer judges the current run rather than reading unrelated repo docs or prior runs for context.
   - Record review-loop fallback behavior as evidence and harness follow-up rather than silent success.
+  - Tighten live-E2E acceptance so the run fails when AI review returns `ok: false` or when required review artifacts are missing.
+  - Keep `anchor-evidence` fail-closed even for nonexistent run directories by returning diagnostics instead of turning the failure into an uncaught filesystem error.
   - Update this plan's step statuses and acceptance checkboxes so they match the branch state.
   - Sync `docs/exec-plans/tracker.md` and `docs/harness/tracker.md` with any new follow-ups or debt discovered during implementation.
   - Archive TASK-0003 as one completed plan instead of leaving a baseline plan plus a later patch-up plan.

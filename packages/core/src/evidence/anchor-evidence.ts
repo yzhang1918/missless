@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, stat, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import {
@@ -53,6 +53,23 @@ interface TextMatch {
 
 function writeJsonFile(path: string, value: unknown): Promise<void> {
   return writeFile(path, JSON.stringify(value, null, 2) + "\n", "utf8");
+}
+
+async function canPersistRunArtifact(runDir: string): Promise<boolean> {
+  try {
+    const result = await stat(runDir);
+    return result.isDirectory();
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      (error.code === "ENOENT" || error.code === "ENOTDIR")
+    ) {
+      return false;
+    }
+
+    throw error;
+  }
 }
 
 function findExactMatches(text: string, exact: string): TextMatch[] {
@@ -215,7 +232,9 @@ export async function anchorEvidenceInRunDir(
       diagnostics: draftValidation.diagnostics
     };
 
-    await writeJsonFile(artifactPaths.evidenceResult, failedResult);
+    if (await canPersistRunArtifact(resolvedRunDir)) {
+      await writeJsonFile(artifactPaths.evidenceResult, failedResult);
+    }
 
     return failedResult;
   }

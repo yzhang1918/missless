@@ -144,3 +144,14 @@ test("anchorEvidenceInRunDir writes failed evidence results when validate-draft 
   assert.equal(persisted.ok, false);
   assert.equal(persisted.diagnostics[0]?.code, "duplicate_atom_claim");
 });
+
+test("anchorEvidenceInRunDir returns diagnostics for a missing run dir without throwing", async () => {
+  const runsRoot = await mkdtemp(join(tmpdir(), "missless-anchor-missing-"));
+  const runDir = join(runsRoot, "missing-run-dir");
+
+  const result = await anchorEvidenceInRunDir(runDir);
+
+  assert.equal(result.ok, false);
+  assert.equal(result.run_dir, runDir);
+  assert.equal(result.diagnostics[0]?.code, "canonical_text_missing");
+});

@@ -85,37 +85,9 @@ EOF
 
 validate_ai_review_file() {
   local file_path="$1"
+  local run_dir="$2"
 
-  node - "$file_path" <<'EOF'
-const fs = require("node:fs");
-
-const [filePath] = process.argv.slice(2);
-const payload = JSON.parse(fs.readFileSync(filePath, "utf8"));
-
-if (typeof payload !== "object" || payload === null) {
-  throw new Error("AI review must be a JSON object");
-}
-
-if (typeof payload.ok !== "boolean") {
-  throw new Error("AI review must include boolean ok");
-}
-
-if (typeof payload.summary !== "string" || payload.summary.length === 0) {
-  throw new Error("AI review must include non-empty summary");
-}
-
-if (!Array.isArray(payload.findings)) {
-  throw new Error("AI review must include findings[]");
-}
-
-if (typeof payload.reviewer_backend !== "string" || payload.reviewer_backend.length === 0) {
-  throw new Error("AI review must include non-empty reviewer_backend");
-}
-
-if (!Array.isArray(payload.reviewed_artifacts) || payload.reviewed_artifacts.length === 0) {
-  throw new Error("AI review must include reviewed_artifacts[]");
-}
-EOF
+  node "$ROOT_DIR/scripts/e2e/validate_ai_review.mjs" "$file_path" "$run_dir"
 }
 
 pnpm -r build
@@ -214,7 +186,7 @@ Goals:
 EOF
 
   if run_backend_prompt "$prompt_file" "$last_message_file" "$jsonl_file"; then
-    if [[ -f "$AI_REVIEW_FILE" ]] && validate_ai_review_file "$AI_REVIEW_FILE"; then
+    if [[ -f "$AI_REVIEW_FILE" ]] && validate_ai_review_file "$AI_REVIEW_FILE" "$RUN_DIR"; then
       write_status_file \
         "$status_file" \
         "ai_review" \
@@ -236,7 +208,7 @@ EOF
       "$AI_REVIEW_FILE" \
       "$jsonl_file" \
       "$last_message_file" \
-      "Backend exited successfully but did not produce a valid ai_review.json. $note"
+      "Backend exited successfully but did not produce an acceptable ai_review.json. $note"
     return 1
   else
     local backend_exit_code=$?
