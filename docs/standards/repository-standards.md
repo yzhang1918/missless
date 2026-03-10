@@ -19,6 +19,16 @@ Define detailed operational standards for documentation, status semantics, revie
 - Keep each folder `index.md` updated when docs change.
 - Avoid duplicating the same policy text across many files.
 
+## Intake Standards
+
+- Open backlog, asynchronous ideas, and community-reported work live in GitHub Issues for `yzhang1918/missless`.
+- A direct human request may enter discovery without a pre-existing issue, but the resulting active plan must record its intake source.
+- Once work has an active plan, the repository becomes the authoritative execution record for that task.
+- New backlog issues should default to `needs-triage`.
+- Triage should assign exactly one `scope:*` label, exactly one `kind:*` label, and at most one `state:*` label.
+- Supported `state:*` labels are `state:accepted`, `state:blocked`, and `state:parked`.
+- Active execution is represented by a repository plan, not by a separate GitHub `state:active` label.
+
 ## Placement Standards
 
 - Product intent/workflow -> `docs/product-specs/`
@@ -37,7 +47,7 @@ Use these statuses for docs:
 
 Clarification:
 - Do not use `Completed` as a product/spec status.
-- Completion is tracked in execution trackers and plan archives (`docs/exec-plans/*` for product, `docs/harness/*` for harness/process).
+- Completion is tracked in plan archives (`docs/exec-plans/*` for product, `docs/harness/*` for harness/process).
 
 ## Review and Merge Standards
 
@@ -45,9 +55,8 @@ For non-trivial work:
 - run step-level delta review during execution
 - run full review before final merge
 - resolve blocking/important findings before final gate
-- track unresolved follow-ups or debt in the appropriate tracker:
-  - product scope -> `docs/exec-plans/tracker.md`
-  - harness/process scope -> `docs/harness/tracker.md`
+- convert unresolved follow-ups or debt into GitHub issues before closing the current plan
+- keep completed-plan docs linked to any spawned or source issues
 
 ## Skills Alignment Standards
 

@@ -8,12 +8,15 @@ Store completed plans as durable execution history.
 
 ## Rules
 
-Each completed plan should include:
+For plans created on or after 2026-03-10, each completed plan should include:
+- intake source (`issue #...` or `direct request`)
 - delivered scope
 - validation summary
-- open follow-up/debt IDs (if any)
-- mapping to tracker IDs in `../tracker.md`
+- linked issue updates (if any)
+- spawned follow-up issues (if any)
 - when the catalog changes, a validation check that every completed plan file in this folder is listed below
+
+Earlier archived plans may preserve their original metadata and evidence wording.
 
 Recommended catalog sync check:
 

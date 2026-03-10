@@ -111,8 +111,8 @@ This note is a retrieval-oriented distillation of agent-harness practices from t
 
 - Use this reference as external distillation, not as a tactical backlog.
 - When adopting a recommendation here:
-  - harness/process work -> track in `docs/harness/tracker.md`
-  - product-facing implementation work -> track in `docs/exec-plans/tracker.md`
+  - create or update a GitHub issue for the open backlog item
+  - once approved for execution, create a plan under `docs/harness/active/` or `docs/exec-plans/active/`
 
 ## Implementation Prompts (Reusable)
 

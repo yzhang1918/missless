@@ -24,13 +24,13 @@ Run recurring hygiene passes to keep the codebase and docs legible for future ag
 2. Classify findings:
    - fix-now, queue, or ignore-with-rationale
 3. For behavior-preserving refactors, implement small and reviewable patches.
-4. Log unresolved items in the appropriate tracker under Technical Debt:
-   - product scope -> `docs/exec-plans/tracker.md`
-   - harness/process scope -> `docs/harness/tracker.md`
+4. Log unresolved items as GitHub issues with the appropriate scope and kind labels:
+   - product scope -> create or update a product-scoped issue
+   - harness/process scope -> create or update a harness-scoped issue
 
 ## Output
 
-- Cleanup changes and/or debt tracker updates.
+- Cleanup changes and/or GitHub issue updates for unresolved debt.
 - Short janitor summary with risk notes.
 
 ## Guardrails
