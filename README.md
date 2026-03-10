@@ -1,6 +1,10 @@
 # missless
 
+From FOMO to Focus.
+
 missless turns a URL into a reading decision you can inspect.
+
+Drop a link. Get a decision.
 
 ## First Slice
 
