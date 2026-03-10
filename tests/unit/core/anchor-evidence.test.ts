@@ -34,7 +34,11 @@ async function createFixtureRun(
   const paths = getRunArtifactPaths(runDir);
 
   await mkdir(runDir, { recursive: true });
-  await writeFile(paths.runManifest, `{\n  "run_id": "${runName}"\n}\n`, "utf8");
+  await writeFile(
+    paths.runManifest,
+    `{\n  "run_id": "${runName}",\n  "stage": "normalized"\n}\n`,
+    "utf8"
+  );
   await writeFile(
     paths.source,
     '{\n  "source_url": "https://example.com/agent-harness"\n}\n',
@@ -145,6 +149,23 @@ test("anchorEvidenceInRunDir writes failed evidence results when validate-draft 
   assert.equal(persisted.diagnostics[0]?.code, "duplicate_atom_claim");
 });
 
+test("anchorEvidenceInRunDir fails closed when run.json is invalid", async () => {
+  const draft = await loadFixtureDraft();
+  const { runDir, paths } = await createFixtureRun("run-invalid-manifest", draft);
+
+  await writeFile(paths.runManifest, "{not-json\n", "utf8");
+
+  const result = await anchorEvidenceInRunDir(runDir);
+  const persisted = JSON.parse(
+    await readFile(paths.evidenceResult, "utf8")
+  ) as { ok: boolean; diagnostics: Array<{ code: string }> };
+
+  assert.equal(result.ok, false);
+  assert.equal(result.diagnostics[0]?.code, "run_manifest_invalid_json");
+  assert.equal(persisted.ok, false);
+  assert.equal(persisted.diagnostics[0]?.code, "run_manifest_invalid_json");
+});
+
 test("anchorEvidenceInRunDir returns diagnostics for a missing run dir without throwing", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-anchor-missing-"));
   const runDir = join(runsRoot, "missing-run-dir");
@@ -153,5 +174,5 @@ test("anchorEvidenceInRunDir returns diagnostics for a missing run dir without t
 
   assert.equal(result.ok, false);
   assert.equal(result.run_dir, runDir);
-  assert.equal(result.diagnostics[0]?.code, "canonical_text_missing");
+  assert.equal(result.diagnostics[0]?.code, "run_manifest_missing");
 });

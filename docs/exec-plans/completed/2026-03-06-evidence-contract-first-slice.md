@@ -1,5 +1,11 @@
 # Evidence Contract and First Delivery Slice
 
+Historical note: TASK-0003 later shipped a narrower first-slice runtime
+contract based on runtime-validated anchored evidence records in
+`evidence_result.json` and `review_bundle.json`. This document remains
+valuable as pre-implementation design history, but its `Segment`-materialized
+contract is no longer the live repository truth for the shipped first slice.
+
 ## Metadata
 
 - Plan name: Evidence Contract and First Delivery Slice

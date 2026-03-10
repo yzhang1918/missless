@@ -16,15 +16,16 @@ async function writeRequiredArtifacts(runDir: string): Promise<void> {
   await Promise.all([
     writeFile(join(runDir, "review_bundle.json"), "{}\n", "utf8"),
     writeFile(join(runDir, "evidence_result.json"), "{}\n", "utf8"),
+    writeFile(join(runDir, "canonical_text.md"), "# Canonical\n", "utf8"),
     writeFile(join(runDir, "review.html"), "<html></html>\n", "utf8")
   ]);
 }
 
-test("validateAiReviewPayload rejects negative reviewer verdicts", async () => {
+test("validateAiReviewPayload accepts negative reviewer verdicts when the artifact is schema-valid", async () => {
   const runDir = await createRunDir("missless-ai-review-negative");
   await writeRequiredArtifacts(runDir);
 
-  assert.throws(
+  assert.doesNotThrow(
     () =>
       validateAiReviewPayload(
         {
@@ -35,12 +36,12 @@ test("validateAiReviewPayload rejects negative reviewer verdicts", async () => {
           reviewed_artifacts: [
             "review_bundle.json",
             "evidence_result.json",
+            "canonical_text.md",
             "review.html"
           ]
         },
         runDir
-      ),
-    /ok: true/
+      )
   );
 });
 
@@ -59,6 +60,7 @@ test("validateAiReviewPayload requires concrete required run artifacts", async (
           reviewed_artifacts: [
             "review_bundle.json",
             "evidence_result.json",
+            "canonical_text.md",
             "review.html"
           ]
         },
@@ -79,12 +81,13 @@ test("validateAiReviewPayload accepts successful reviews with required artifacts
         summary: "The review package satisfies the first-slice contract.",
         findings: [],
         reviewer_backend: "codex",
-        reviewed_artifacts: [
-          "review_bundle.json",
-          "evidence_result.json",
-          "review.html"
-        ]
-      },
+          reviewed_artifacts: [
+            "review_bundle.json",
+            "evidence_result.json",
+            "canonical_text.md",
+            "review.html"
+          ]
+        },
       runDir
     )
   );

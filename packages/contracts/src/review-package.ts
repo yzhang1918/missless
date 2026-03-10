@@ -31,6 +31,8 @@ export interface EvidenceAnchoringResult {
   readonly ok: boolean;
   readonly summary: string;
   readonly run_dir: string;
+  readonly draft_sha256?: string;
+  readonly canonical_text_sha256?: string;
   readonly atoms: readonly AnchoredAtom[];
   readonly diagnostics: readonly RunDiagnostic[];
 }

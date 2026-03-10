@@ -23,17 +23,18 @@ proposal.
 
 - `extract` may propose candidate atoms before stable evidence identifiers
   exist.
-- `anchor_evidence` runs as `candidate -> validate -> refine -> materialize`.
+- `anchor_evidence` runs as `candidate -> validate -> anchor`.
 - Candidate evidence is proposed by the extraction agent as quote-oriented
   selectors rather than direct offsets.
 - Runtime validates candidates against the canonical normalized source text.
-- When validation succeeds, runtime `lookup-or-create`s a reusable `Segment`.
+- When validation succeeds, runtime writes atom-local anchored evidence into
+  `evidence_result.json`.
 - When validation fails, runtime returns a concrete reason and requests
   refinement.
-- When bounded refinement still fails, the candidate item must be marked
-  `needs_review` instead of persisting as an evidence-free accepted item.
 - Validated text locators are stored as `exact quote + prefix/suffix +
-  char_range`.
+  char_range + context_excerpt`.
+- Reusable `Segment` identities remain a deferred persistence-layer concern,
+  not part of the current first-slice runtime contract.
 
 ## First Delivery Slice Profile
 
@@ -72,8 +73,9 @@ proposal.
   credentials to a custom override host
 
 `validate-draft --run-dir <dir>`:
-- reads `canonical_text.md` and `extraction_draft.json`
+- reads `run.json`, `canonical_text.md`, and `extraction_draft.json`
 - validates the extraction draft schema
+- validates that the run directory still describes a normalized missless run
 - validates deterministic contract invariants that do not require evidence
   materialization
 - remains the authoritative runtime gate regardless of which agent backend
@@ -81,8 +83,8 @@ proposal.
 - returns concise summary output by default
 - returns structured JSON diagnostics when `--json` is requested
 - fails closed with a non-zero exit code when required artifacts are missing,
-  JSON is malformed, schema validation fails, or duplicate atom claims are
-  detected
+  JSON is malformed, the run manifest is invalid, schema validation fails, or
+  duplicate atom claims are detected
 
 `anchor-evidence --run-dir <dir>`:
 - reads `canonical_text.md` and `extraction_draft.json`
@@ -121,7 +123,6 @@ Long-term review actions must support:
 - defer selected items
 - override alignment decisions
 - inspect evidence in the internal canonical source view
-- identify items blocked in `needs_review`
 
 First-slice review requires only:
 - inspect the TLDR and explicit reading decision

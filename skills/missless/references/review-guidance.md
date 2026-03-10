@@ -1,7 +1,8 @@
 # Review Guidance
 
-Use this guidance for judgment quality. Use `missless print-draft-contract` for
-the mechanical draft contract.
+Use this guidance for judgment quality. Use
+`node apps/cli/dist/index.js print-draft-contract` for the mechanical draft
+contract.
 
 ## Decision Semantics
 

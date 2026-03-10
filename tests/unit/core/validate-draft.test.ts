@@ -41,7 +41,11 @@ async function createFixtureRun(
   const draft = options.draft ?? (await loadFixtureDraft());
 
   await mkdir(runDir, { recursive: true });
-  await writeFile(paths.runManifest, `{\n  "run_id": "${runName}"\n}\n`, "utf8");
+  await writeFile(
+    paths.runManifest,
+    `{\n  "run_id": "${runName}",\n  "stage": "normalized"\n}\n`,
+    "utf8"
+  );
   await writeFile(
     paths.source,
     '{\n  "source_url": "https://example.com/agent-harness"\n}\n',
@@ -86,6 +90,17 @@ test("validateDraftInRunDir rejects malformed JSON drafts", async () => {
 
   assert.equal(result.ok, false);
   assert.equal(result.diagnostics[0]?.code, "extraction_draft_invalid_json");
+});
+
+test("validateDraftInRunDir rejects invalid run manifests", async () => {
+  const { runDir, paths } = await createFixtureRun("run-invalid-manifest");
+
+  await writeFile(paths.runManifest, "{ not valid json }\n", "utf8");
+
+  const result = await validateDraftInRunDir(runDir);
+
+  assert.equal(result.ok, false);
+  assert.equal(result.diagnostics[0]?.code, "run_manifest_invalid_json");
 });
 
 test("validateDraftInRunDir rejects schema violations", async () => {

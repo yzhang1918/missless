@@ -30,20 +30,23 @@ implementation discussions.
 
 ## Knowledge Shape
 
-- Core objects: `Source`, `Atom`, `Artifact`, `Segment`.
-- For text sources, evidence is represented by first-class `Segment` objects
-  rather than embedded-only anchors.
+- Core objects for the current slice: `Source`, `Atom`, `Artifact`, plus
+  run-artifact-local anchored evidence records.
+- Reusable `Segment` objects remain a possible future persistence-layer
+  abstraction, not the current first-slice runtime contract.
 - Relations between atoms remain draft-level contracts in the first slice.
 
 ## Evidence Modeling Choice
 
 Current baseline for the first delivery slice is:
-- Keep a stable evidence-anchor contract around independent `Segment` objects.
 - Do not pre-cut source text into segments at ingest time.
 - Let the extraction agent propose evidence candidates, then let runtime
-  validate and materialize reusable `Segment` records on demand.
+  validate selectors and write deterministic anchored evidence records on
+  demand.
 - Treat the internal canonical source view as the primary evidence-reading
   surface; opening the original source remains an enhancement.
+- Defer reusable evidence identities until persistence and cross-run reuse
+  justify them.
 
 ## Current Extraction Boundary
 
@@ -74,6 +77,8 @@ Current baseline for the first delivery slice is:
   forwarding for a custom override host.
 - `validate-draft` reads the run artifacts and fails closed on schema or
   contract issues before any later evidence/materialization steps run.
+- Run-level preconditions are enforced there as well, so `anchor-evidence`
+  and `render-review` both depend on the same validated `run.json` boundary.
 - The first non-schema draft invariant is duplicate claim detection so the
   runtime can reject obviously unstable atom sets even before evidence
   anchoring begins.
@@ -100,18 +105,18 @@ Current baseline for the first delivery slice is:
 
 ## Evidence Anchoring Contract (Text Baseline)
 
-- `Segment` is a reusable evidence-location object, not an editable semantic
-  object.
 - `Atom` carries semantic judgment and references one or more supporting
-  `Segment` objects.
-- Runtime owns evidence identity. LLM output is only a candidate selector
-  until validation succeeds.
-- The baseline loop is `candidate -> validate -> refine -> materialize`.
-- Validation failure does not silently drop evidence requirements. Candidates
-  that still fail after bounded refinement are surfaced as `needs_review`.
+  anchored-evidence records inside `evidence_result.json`.
+- Runtime owns evidence validation. LLM output is only a candidate selector
+  until anchoring succeeds.
+- The baseline loop is `candidate -> validate -> anchor`.
+- Validation failure does not silently drop evidence requirements; the run
+  fails closed and returns diagnostics for repair.
 - A validated text locator contains `exact quote + prefix/suffix + char_range`.
 - `char_range` is derived by runtime for fast highlighting; `exact/prefix`
   and `suffix` preserve a more robust text-anchor identity.
+- Reusable `Segment` records remain deferred until the product actually
+  persists graph-shaped evidence across runs.
 
 ## First Delivery Slice
 

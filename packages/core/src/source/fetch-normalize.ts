@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { isIP } from "node:net";
 import { resolve } from "node:path";
 
@@ -221,7 +221,6 @@ export async function fetchNormalizeSource(
   const artifactPaths = getRunArtifactPaths(runDir);
 
   await mkdir(runsDir, { recursive: true });
-  await mkdir(runDir, { recursive: false });
 
   const fetched = await provider.fetch(input.sourceUrl);
   const normalizedTextHash = sha256(fetched.canonicalText);
@@ -243,11 +242,18 @@ export async function fetchNormalizeSource(
     normalized_text_sha256: normalizedTextHash
   };
 
-  await Promise.all([
-    writeJsonFile(artifactPaths.runManifest, runManifest),
-    writeJsonFile(artifactPaths.source, sourceArtifact),
-    writeFile(artifactPaths.canonicalText, fetched.canonicalText, "utf8")
-  ]);
+  await mkdir(runDir, { recursive: false });
+
+  try {
+    await Promise.all([
+      writeJsonFile(artifactPaths.runManifest, runManifest),
+      writeJsonFile(artifactPaths.source, sourceArtifact),
+      writeFile(artifactPaths.canonicalText, fetched.canonicalText, "utf8")
+    ]);
+  } catch (error) {
+    await rm(runDir, { recursive: true, force: true });
+    throw error;
+  }
 
   return {
     runId,

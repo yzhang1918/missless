@@ -1,4 +1,4 @@
-import { writeFile } from "node:fs/promises";
+import { rename, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { getRunArtifactPaths } from "@missless/contracts";
@@ -40,8 +40,15 @@ export async function runRenderReviewCommand(
   const artifactPaths = getRunArtifactPaths(resolvedRunDir);
   const reviewBundle = await buildReviewBundleInRunDir(resolvedRunDir);
   const html = renderReviewHtml(reviewBundle);
+  const reviewHtmlTemp = `${artifactPaths.reviewHtml}.tmp`;
 
-  await writeFile(artifactPaths.reviewHtml, html, "utf8");
+  try {
+    await writeFile(reviewHtmlTemp, html, "utf8");
+    await rename(reviewHtmlTemp, artifactPaths.reviewHtml);
+  } catch (error) {
+    await rm(reviewHtmlTemp, { force: true });
+    throw error;
+  }
 
   console.log(`Review package written: ${artifactPaths.reviewHtml}`);
 

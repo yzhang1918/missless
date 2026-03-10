@@ -28,7 +28,7 @@ find docs/exec-plans/completed -maxdepth 1 -name '*.md' ! -name 'README.md' -exe
 
 | Plan | Date | Summary |
 | --- | --- | --- |
-| [`2026-03-06-evidence-contract-first-slice.md`](./2026-03-06-evidence-contract-first-slice.md) | 2026-03-06 | Locked the text-source `Segment` evidence contract and defined the first delivery slice plus acceptance bar. |
+| [`2026-03-06-evidence-contract-first-slice.md`](./2026-03-06-evidence-contract-first-slice.md) | 2026-03-06 | Locked a pre-implementation `Segment`-oriented evidence plan and the first delivery slice acceptance bar; later implementation history superseded the shipped first-slice contract with anchored evidence run artifacts. |
 | [`2026-03-09-first-review-package-product-facing-v0.md`](./2026-03-09-first-review-package-product-facing-v0.md) | 2026-03-09 | Delivered the first URL-to-review-package slice and archived the whole branch as one unified TASK-0003 record. |
 
 Harness/process plan history is stored separately under `docs/harness/completed/`.

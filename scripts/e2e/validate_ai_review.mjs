@@ -6,6 +6,7 @@ import path from "node:path";
 const REQUIRED_REVIEW_ARTIFACTS = [
   "review_bundle.json",
   "evidence_result.json",
+  "canonical_text.md",
   "review.html"
 ];
 
@@ -16,10 +17,6 @@ export function validateAiReviewPayload(payload, runDir) {
 
   if (typeof payload.ok !== "boolean") {
     throw new Error("AI review must include boolean ok");
-  }
-
-  if (payload.ok !== true) {
-    throw new Error("AI review must report ok: true for the E2E run to pass");
   }
 
   if (typeof payload.summary !== "string" || payload.summary.length === 0) {
@@ -70,6 +67,16 @@ export function validateAiReviewFile(filePath, runDir) {
   const payload = JSON.parse(fs.readFileSync(filePath, "utf8"));
   validateAiReviewPayload(payload, runDir);
   return payload;
+}
+
+export function readAiReviewVerdict(filePath) {
+  const payload = JSON.parse(fs.readFileSync(filePath, "utf8"));
+
+  if (typeof payload !== "object" || payload === null || typeof payload.ok !== "boolean") {
+    throw new Error("AI review verdict requires a boolean ok field");
+  }
+
+  return payload.ok;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

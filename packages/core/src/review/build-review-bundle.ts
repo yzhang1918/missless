@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, rm, stat, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import {
@@ -30,22 +30,252 @@ function sha256(input: string): string {
   return createHash("sha256").update(input, "utf8").digest("hex");
 }
 
+function isTrustedRunManifest(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  return (
+    typeof record.run_id === "string" &&
+    typeof record.stage === "string" &&
+    record.stage === "normalized"
+  );
+}
+
+function isTrustedReviewBundleMarker(value: unknown, runDir: string): boolean {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  return typeof record.run_dir === "string" && resolve(record.run_dir) === runDir;
+}
+
+async function cleanupReviewArtifacts(
+  reviewBundlePath: string,
+  reviewHtmlPath: string
+): Promise<void> {
+  await Promise.all([
+    rm(reviewBundlePath, { force: true }),
+    rm(reviewHtmlPath, { force: true })
+  ]);
+}
+
+async function statOrError(
+  path: string
+): Promise<Awaited<ReturnType<typeof stat>> | Error> {
+  try {
+    return await stat(path);
+  } catch (error) {
+    return error instanceof Error ? error : new Error(String(error));
+  }
+}
+
+async function canCleanupReviewArtifacts(
+  artifactPaths: ReturnType<typeof getRunArtifactPaths>
+): Promise<boolean> {
+  try {
+    const [runDirStat, reviewBundleStat, reviewHtmlStat, runManifestStat] =
+      await Promise.all([
+      stat(artifactPaths.runDir),
+      statOrError(artifactPaths.reviewBundle),
+      statOrError(artifactPaths.reviewHtml),
+      statOrError(artifactPaths.runManifest)
+    ]);
+    const isExistingFile = (
+      value: Awaited<ReturnType<typeof stat>> | Error
+    ): boolean => !(value instanceof Error) && value.isFile();
+
+    const hasRenderedOutputs =
+      isExistingFile(reviewBundleStat) || isExistingFile(reviewHtmlStat);
+
+    if (!runDirStat.isDirectory() || !hasRenderedOutputs) {
+      return false;
+    }
+
+    if (isExistingFile(reviewBundleStat)) {
+      try {
+        const reviewBundle = JSON.parse(
+          await readFile(artifactPaths.reviewBundle, "utf8")
+        ) as unknown;
+
+        if (isTrustedReviewBundleMarker(reviewBundle, artifactPaths.runDir)) {
+          return true;
+        }
+      } catch {
+        // Fall through to the run-manifest check below.
+      }
+    }
+
+    if (!isExistingFile(runManifestStat)) {
+      return false;
+    }
+
+    try {
+      const runManifest = JSON.parse(
+        await readFile(artifactPaths.runManifest, "utf8")
+      ) as unknown;
+
+      return isTrustedRunManifest(runManifest);
+    } catch {
+      return false;
+    }
+
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      (error.code === "ENOENT" || error.code === "ENOTDIR")
+    ) {
+      return false;
+    }
+
+    throw error;
+  }
+}
+
+async function failClosedRenderReview(
+  artifactPaths: ReturnType<typeof getRunArtifactPaths>,
+  message: string
+): Promise<never> {
+  if (await canCleanupReviewArtifacts(artifactPaths)) {
+    await cleanupReviewArtifacts(
+      artifactPaths.reviewBundle,
+      artifactPaths.reviewHtml
+    );
+  }
+
+  throw new Error(message);
+}
+
 export async function buildReviewBundleInRunDir(
   runDir: string,
   now = new Date()
 ): Promise<ReviewBundle> {
   const resolvedRunDir = resolve(runDir);
   const artifactPaths = getRunArtifactPaths(resolvedRunDir);
-  const [canonicalText, draftText, evidenceText] = await Promise.all([
-    readFile(artifactPaths.canonicalText, "utf8"),
-    readFile(artifactPaths.extractionDraft, "utf8"),
-    readFile(artifactPaths.evidenceResult, "utf8")
-  ]);
-  const draft = JSON.parse(draftText) as ExtractionDraft;
-  const evidenceResult = JSON.parse(evidenceText) as EvidenceAnchoringResult;
+  let runManifestText: string;
+
+  try {
+    runManifestText = await readFile(artifactPaths.runManifest, "utf8");
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      (error.code === "ENOENT" || error.code === "ENOTDIR")
+    ) {
+      return failClosedRenderReview(
+        artifactPaths,
+        "render-review requires a valid missless run.json before it can rebuild review artifacts."
+      );
+    }
+
+    throw error;
+  }
+
+  let runManifest: unknown;
+
+  try {
+    runManifest = JSON.parse(runManifestText) as unknown;
+  } catch {
+    return failClosedRenderReview(
+      artifactPaths,
+      "render-review requires a valid missless run.json before it can rebuild review artifacts."
+    );
+  }
+
+  if (!isTrustedRunManifest(runManifest)) {
+    return failClosedRenderReview(
+      artifactPaths,
+      "render-review requires a valid missless run.json before it can rebuild review artifacts."
+    );
+  }
+
+  let canonicalText: string;
+
+  try {
+    canonicalText = await readFile(artifactPaths.canonicalText, "utf8");
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      (error.code === "ENOENT" || error.code === "ENOTDIR")
+    ) {
+      return failClosedRenderReview(
+        artifactPaths,
+        "Cannot render review until canonical_text.md exists for the run."
+      );
+    }
+
+    throw error;
+  }
+
+  let draftText: string;
+
+  try {
+    draftText = await readFile(artifactPaths.extractionDraft, "utf8");
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      (error.code === "ENOENT" || error.code === "ENOTDIR")
+    ) {
+      return failClosedRenderReview(
+        artifactPaths,
+        "Cannot render review until extraction_draft.json exists for the run."
+      );
+    }
+
+    throw error;
+  }
+
+  let draft: ExtractionDraft;
+
+  try {
+    draft = JSON.parse(draftText) as ExtractionDraft;
+  } catch {
+    return failClosedRenderReview(
+      artifactPaths,
+      "Cannot render review until extraction_draft.json is valid for the run."
+    );
+  }
+
+  let evidenceText: string;
+
+  try {
+    evidenceText = await readFile(artifactPaths.evidenceResult, "utf8");
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      (error.code === "ENOENT" || error.code === "ENOTDIR")
+    ) {
+      return failClosedRenderReview(
+        artifactPaths,
+        "Cannot render review until anchor-evidence succeeds for the run."
+      );
+    }
+
+    throw error;
+  }
+
+  let evidenceResult: EvidenceAnchoringResult;
+
+  try {
+    evidenceResult = JSON.parse(evidenceText) as EvidenceAnchoringResult;
+  } catch {
+    return failClosedRenderReview(
+      artifactPaths,
+      "Cannot render review until a valid evidence_result.json exists for the run."
+    );
+  }
 
   if (!evidenceResult.ok) {
-    throw new Error(
+    return failClosedRenderReview(
+      artifactPaths,
       "Cannot render review until anchor-evidence succeeds for the run."
     );
   }
@@ -54,7 +284,8 @@ export async function buildReviewBundleInRunDir(
     evidenceResult.draft_sha256 !== sha256(draftText) ||
     evidenceResult.canonical_text_sha256 !== sha256(canonicalText)
   ) {
-    throw new Error(
+    return failClosedRenderReview(
+      artifactPaths,
       "Cannot render review until anchor-evidence is rerun for the current extraction draft and canonical text."
     );
   }

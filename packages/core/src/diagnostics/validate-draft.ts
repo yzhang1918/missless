@@ -7,6 +7,11 @@ import {
   type ExtractionDraft
 } from "@missless/contracts";
 
+interface RunManifest {
+  readonly run_id: string;
+  readonly stage: "normalized";
+}
+
 export interface ValidationDiagnostic {
   readonly code: string;
   readonly message: string;
@@ -59,6 +64,20 @@ async function readUtf8(
 
 function normalizeClaim(claim: string): string {
   return claim.trim().replace(/\s+/gu, " ").toLowerCase();
+}
+
+function isValidRunManifest(value: unknown): value is RunManifest {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  return (
+    typeof record.run_id === "string" &&
+    typeof record.stage === "string" &&
+    record.stage === "normalized"
+  );
 }
 
 function findDuplicateClaimDiagnostics(
@@ -150,6 +169,10 @@ export async function validateDraftInRunDir(
   const artifactPaths = getRunArtifactPaths(resolvedRunDir);
   const diagnostics: ValidationDiagnostic[] = [];
 
+  const runManifestText = await readUtf8(
+    artifactPaths.runManifest,
+    "run_manifest_missing"
+  );
   const canonicalText = await readUtf8(
     artifactPaths.canonicalText,
     "canonical_text_missing"
@@ -159,6 +182,10 @@ export async function validateDraftInRunDir(
     "extraction_draft_missing"
   );
 
+  if (!runManifestText.ok) {
+    diagnostics.push(runManifestText.diagnostic);
+  }
+
   if (!canonicalText.ok) {
     diagnostics.push(canonicalText.diagnostic);
   }
@@ -167,11 +194,15 @@ export async function validateDraftInRunDir(
     diagnostics.push(draftText.diagnostic);
   }
 
+  const runManifestValue = runManifestText.ok
+    ? runManifestText.value
+    : undefined;
   const canonicalTextValue = canonicalText.ok ? canonicalText.value : undefined;
   const draftTextValue = draftText.ok ? draftText.value : undefined;
 
   if (
     diagnostics.length > 0 ||
+    runManifestValue === undefined ||
     canonicalTextValue === undefined ||
     draftTextValue === undefined
   ) {
@@ -179,6 +210,56 @@ export async function validateDraftInRunDir(
       ok: false,
       summary: summarizeFailure(diagnostics),
       diagnostics,
+      runDir: resolvedRunDir,
+      artifacts: {
+        runManifest: artifactPaths.runManifest,
+        source: artifactPaths.source,
+        canonicalText: artifactPaths.canonicalText,
+        extractionDraft: artifactPaths.extractionDraft
+      }
+    };
+  }
+
+  let parsedRunManifest: unknown;
+
+  try {
+    parsedRunManifest = JSON.parse(runManifestValue);
+  } catch (error) {
+    const diagnostic: ValidationDiagnostic = {
+      code: "run_manifest_invalid_json",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Run manifest could not be parsed as JSON.",
+      path: artifactPaths.runManifest
+    };
+
+    return {
+      ok: false,
+      summary: summarizeFailure([diagnostic]),
+      diagnostics: [diagnostic],
+      runDir: resolvedRunDir,
+      artifacts: {
+        runManifest: artifactPaths.runManifest,
+        source: artifactPaths.source,
+        canonicalText: artifactPaths.canonicalText,
+        extractionDraft: artifactPaths.extractionDraft
+      }
+    };
+  }
+
+  if (!isValidRunManifest(parsedRunManifest)) {
+    const diagnostic: ValidationDiagnostic = {
+      code: "run_manifest_invalid_contract",
+      message:
+        "run.json must describe a normalized missless run before draft validation can proceed.",
+      path: artifactPaths.runManifest
+    };
+
+    return {
+      ok: false,
+      summary: summarizeFailure([diagnostic]),
+      diagnostics: [diagnostic],
       runDir: resolvedRunDir,
       artifacts: {
         runManifest: artifactPaths.runManifest,

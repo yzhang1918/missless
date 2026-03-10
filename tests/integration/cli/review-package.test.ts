@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -10,14 +10,19 @@ const cliEntrypoint = new URL("../../../apps/cli/dist/index.js", import.meta.url
 const fixtureDraftPath = new URL("../../fixtures/drafts/valid-extraction-draft.json", import.meta.url);
 const fixtureCanonicalPath = new URL("../../fixtures/jina/harness-engineering.md", import.meta.url);
 
-test("anchor-evidence and render-review produce the first review package artifacts", async () => {
-  const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
-  const runDir = join(runsRoot, "run-review");
-
+async function seedReviewRun(runDir: string): Promise<void> {
   await mkdir(runDir, { recursive: true });
   await writeFile(
     join(runDir, "run.json"),
-    "{\n  \"run_id\": \"run-review\",\n  \"stage\": \"normalized\"\n}\n",
+    [
+      "{",
+      '  "run_id": "' + runDir.split("/").at(-1) + '",',
+      '  "created_at": "2026-03-09T00:00:00.000Z",',
+      '  "stage": "normalized",',
+      '  "source_kind": "url",',
+      '  "source_url": "https://example.com/agent-harness"',
+      "}"
+    ].join("\n") + "\n",
     "utf8"
   );
   await writeFile(
@@ -35,28 +40,31 @@ test("anchor-evidence and render-review produce the first review package artifac
     await readFile(fixtureDraftPath, "utf8"),
     "utf8"
   );
+}
 
-  const anchored = spawnSync(
+function runCli(command: string, runDir: string) {
+  return spawnSync(
     process.execPath,
-    [cliEntrypoint.pathname, "anchor-evidence", "--run-dir", runDir],
+    [cliEntrypoint.pathname, command, "--run-dir", runDir],
     {
       cwd: repoRoot,
       encoding: "utf8",
       env: process.env
     }
   );
+}
+
+test("anchor-evidence and render-review produce the first review package artifacts", async () => {
+  const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
+  const runDir = join(runsRoot, "run-review");
+
+  await seedReviewRun(runDir);
+
+  const anchored = runCli("anchor-evidence", runDir);
 
   assert.equal(anchored.status, 0, anchored.stderr);
 
-  const rendered = spawnSync(
-    process.execPath,
-    [cliEntrypoint.pathname, "render-review", "--run-dir", runDir],
-    {
-      cwd: repoRoot,
-      encoding: "utf8",
-      env: process.env
-    }
-  );
+  const rendered = runCli("render-review", runDir);
 
   assert.equal(rendered.status, 0, rendered.stderr);
 
@@ -78,39 +86,14 @@ test("render-review rejects stale evidence generated from an older draft", async
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-stale-review");
 
-  await mkdir(runDir, { recursive: true });
-  await writeFile(
-    join(runDir, "run.json"),
-    "{\n  \"run_id\": \"run-stale-review\",\n  \"stage\": \"normalized\"\n}\n",
-    "utf8"
-  );
-  await writeFile(
-    join(runDir, "source.json"),
-    "{\n  \"source_url\": \"https://example.com/agent-harness\"\n}\n",
-    "utf8"
-  );
-  await writeFile(
-    join(runDir, "canonical_text.md"),
-    await readFile(fixtureCanonicalPath, "utf8"),
-    "utf8"
-  );
-  await writeFile(
-    join(runDir, "extraction_draft.json"),
-    await readFile(fixtureDraftPath, "utf8"),
-    "utf8"
-  );
+  await seedReviewRun(runDir);
 
-  const anchored = spawnSync(
-    process.execPath,
-    [cliEntrypoint.pathname, "anchor-evidence", "--run-dir", runDir],
-    {
-      cwd: repoRoot,
-      encoding: "utf8",
-      env: process.env
-    }
-  );
+  const anchored = runCli("anchor-evidence", runDir);
 
   assert.equal(anchored.status, 0, anchored.stderr);
+
+  const firstRender = runCli("render-review", runDir);
+  assert.equal(firstRender.status, 0, firstRender.stderr);
 
   const staleDraft = JSON.parse(
     await readFile(join(runDir, "extraction_draft.json"), "utf8")
@@ -127,20 +110,26 @@ test("render-review rejects stale evidence generated from an older draft", async
     "utf8"
   );
 
-  const rendered = spawnSync(
-    process.execPath,
-    [cliEntrypoint.pathname, "render-review", "--run-dir", runDir],
-    {
-      cwd: repoRoot,
-      encoding: "utf8",
-      env: process.env
-    }
-  );
+  const rendered = runCli("render-review", runDir);
 
   assert.equal(rendered.status, 1);
   assert.match(
     rendered.stderr,
     /anchor-evidence is rerun for the current extraction draft and canonical text/
+  );
+  await assert.rejects(
+    () => stat(join(runDir, "review_bundle.json")),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+  await assert.rejects(
+    () => stat(join(runDir, "review.html")),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
   );
 });
 
@@ -148,39 +137,14 @@ test("render-review rejects stale evidence generated from an older canonical sna
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-stale-canonical");
 
-  await mkdir(runDir, { recursive: true });
-  await writeFile(
-    join(runDir, "run.json"),
-    "{\n  \"run_id\": \"run-stale-canonical\",\n  \"stage\": \"normalized\"\n}\n",
-    "utf8"
-  );
-  await writeFile(
-    join(runDir, "source.json"),
-    "{\n  \"source_url\": \"https://example.com/agent-harness\"\n}\n",
-    "utf8"
-  );
-  await writeFile(
-    join(runDir, "canonical_text.md"),
-    await readFile(fixtureCanonicalPath, "utf8"),
-    "utf8"
-  );
-  await writeFile(
-    join(runDir, "extraction_draft.json"),
-    await readFile(fixtureDraftPath, "utf8"),
-    "utf8"
-  );
+  await seedReviewRun(runDir);
 
-  const anchored = spawnSync(
-    process.execPath,
-    [cliEntrypoint.pathname, "anchor-evidence", "--run-dir", runDir],
-    {
-      cwd: repoRoot,
-      encoding: "utf8",
-      env: process.env
-    }
-  );
+  const anchored = runCli("anchor-evidence", runDir);
 
   assert.equal(anchored.status, 0, anchored.stderr);
+
+  const firstRender = runCli("render-review", runDir);
+  assert.equal(firstRender.status, 0, firstRender.stderr);
 
   await writeFile(
     join(runDir, "canonical_text.md"),
@@ -188,19 +152,196 @@ test("render-review rejects stale evidence generated from an older canonical sna
     "utf8"
   );
 
-  const rendered = spawnSync(
-    process.execPath,
-    [cliEntrypoint.pathname, "render-review", "--run-dir", runDir],
-    {
-      cwd: repoRoot,
-      encoding: "utf8",
-      env: process.env
-    }
-  );
+  const rendered = runCli("render-review", runDir);
 
   assert.equal(rendered.status, 1);
   assert.match(
     rendered.stderr,
     /anchor-evidence is rerun for the current extraction draft and canonical text/
+  );
+  await assert.rejects(
+    () => stat(join(runDir, "review_bundle.json")),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+  await assert.rejects(
+    () => stat(join(runDir, "review.html")),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+});
+
+test("render-review translates missing evidence artifacts into a stable runtime error and removes stale review outputs", async () => {
+  const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
+  const runDir = join(runsRoot, "run-missing-evidence");
+
+  await seedReviewRun(runDir);
+
+  const anchored = runCli("anchor-evidence", runDir);
+  assert.equal(anchored.status, 0, anchored.stderr);
+
+  const firstRender = runCli("render-review", runDir);
+  assert.equal(firstRender.status, 0, firstRender.stderr);
+
+  await rm(join(runDir, "evidence_result.json"));
+
+  const rendered = runCli("render-review", runDir);
+
+  assert.equal(rendered.status, 1);
+  assert.match(
+    rendered.stderr,
+    /Cannot render review until anchor-evidence succeeds for the run/
+  );
+  await assert.rejects(
+    () => stat(join(runDir, "review_bundle.json")),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+  await assert.rejects(
+    () => stat(join(runDir, "review.html")),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+});
+
+test("render-review removes stale review outputs even when source.json is missing", async () => {
+  const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
+  const runDir = join(runsRoot, "run-missing-source");
+
+  await seedReviewRun(runDir);
+
+  const anchored = runCli("anchor-evidence", runDir);
+  assert.equal(anchored.status, 0, anchored.stderr);
+
+  const firstRender = runCli("render-review", runDir);
+  assert.equal(firstRender.status, 0, firstRender.stderr);
+
+  await rm(join(runDir, "source.json"));
+  const staleDraft = JSON.parse(
+    await readFile(join(runDir, "extraction_draft.json"), "utf8")
+  ) as {
+    tldr: string;
+  };
+  staleDraft.tldr = `${staleDraft.tldr} Changed after rendering.`;
+  await writeFile(
+    join(runDir, "extraction_draft.json"),
+    JSON.stringify(staleDraft, null, 2) + "\n",
+    "utf8"
+  );
+
+  const rendered = runCli("render-review", runDir);
+
+  assert.equal(rendered.status, 1);
+  assert.match(
+    rendered.stderr,
+    /anchor-evidence is rerun for the current extraction draft and canonical text/
+  );
+  await assert.rejects(
+    () => stat(join(runDir, "review_bundle.json")),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+  await assert.rejects(
+    () => stat(join(runDir, "review.html")),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+});
+
+test("render-review removes stale review outputs when run.json is missing after a successful render", async () => {
+  const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
+  const runDir = join(runsRoot, "run-missing-manifest");
+
+  await seedReviewRun(runDir);
+
+  const anchored = runCli("anchor-evidence", runDir);
+  assert.equal(anchored.status, 0, anchored.stderr);
+
+  const firstRender = runCli("render-review", runDir);
+  assert.equal(firstRender.status, 0, firstRender.stderr);
+
+  await rm(join(runDir, "run.json"));
+
+  const rendered = runCli("render-review", runDir);
+
+  assert.equal(rendered.status, 1);
+  assert.match(
+    rendered.stderr,
+    /render-review requires a valid missless run\.json before it can rebuild review artifacts/
+  );
+  await assert.rejects(
+    () => stat(join(runDir, "review_bundle.json")),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+  await assert.rejects(
+    () => stat(join(runDir, "review.html")),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+});
+
+test("render-review removes stale review outputs when run.json has an untrusted stage", async () => {
+  const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
+  const runDir = join(runsRoot, "run-untrusted-manifest");
+
+  await seedReviewRun(runDir);
+
+  const anchored = runCli("anchor-evidence", runDir);
+  assert.equal(anchored.status, 0, anchored.stderr);
+
+  const firstRender = runCli("render-review", runDir);
+  assert.equal(firstRender.status, 0, firstRender.stderr);
+
+  await writeFile(
+    join(runDir, "run.json"),
+    [
+      "{",
+      '  "run_id": "run-untrusted-manifest",',
+      '  "created_at": "2026-03-09T00:00:00.000Z",',
+      '  "stage": "draft",',
+      '  "source_kind": "url",',
+      '  "source_url": "https://example.com/agent-harness"',
+      "}"
+    ].join("\n") + "\n",
+    "utf8"
+  );
+
+  const rendered = runCli("render-review", runDir);
+
+  assert.equal(rendered.status, 1);
+  assert.match(
+    rendered.stderr,
+    /render-review requires a valid missless run\.json before it can rebuild review artifacts/
+  );
+  await assert.rejects(
+    () => stat(join(runDir, "review_bundle.json")),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+  await assert.rejects(
+    () => stat(join(runDir, "review.html")),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
   );
 });

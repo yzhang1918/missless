@@ -5,7 +5,7 @@ Status: Draft
 ## Design Constraints
 
 - Atoms/Claims must remain short and scan-friendly.
-- Evidence must be traceable to source segments.
+- Evidence must be traceable to source text spans.
 - Data model must support slop resistance and deduplication.
 - Artifact growth should happen through subtype schemas, not constant core migrations.
 
@@ -14,18 +14,16 @@ Status: Draft
 - Source
 - Atom
 - Artifact
-- Segment (required for the text-source baseline; materialized on demand after evidence validation)
+- Optional future persistence node: Segment
 - Optional: Concept/Entity
 - Optional: Publisher/Author
 
 ## Edge Types (Minimum)
 
-- `Source -> Atom`: `evidences` (materialized/aggregated from `Segment` support)
+- `Source -> Atom`: `evidences`
 - `Source -> Artifact`: `describes|proposes|introduces`
 - `Artifact -> Atom`: `claims|validated_by|implies`
 - `Atom <-> Atom`: `equivalent_to|duplicate_of|qualifies|entails|contradicts|extends`
-- `Source -> Segment`: `has_segment`
-- `Segment -> Atom`: `states`
 - Optional `Source -> Source`: `duplicates|rewrites|quotes`
 - Optional `Atom -> Concept`: `about`
 - Optional `Artifact <-> Artifact`: `duplicate_of|equivalent_to|variant_of|improves|uses|compares_to`
@@ -49,7 +47,24 @@ Status: Draft
 - `derived`: `summary`, `estimated_time_cost`, `rating_label`, `rating_breakdown`
 - First-slice policy: the stored normalized text snapshot is immutable after ingest.
 
-## Segment Fields
+## First-Slice Runtime Evidence Shape
+
+- `AnchoredEvidence`
+  - `selector_index`
+  - `exact`
+  - optional `prefix`
+  - optional `suffix`
+  - `char_range`: `start`, `end`
+  - `context_excerpt`
+- `AnchoredAtom`
+  - `claim`
+  - `significance`
+  - `evidence[]`
+- Current first-slice rule: these anchored evidence records live inside
+  `evidence_result.json` and `review_bundle.json`; they are not yet persisted
+  as reusable graph nodes.
+
+## Segment Fields (Deferred Persistence Layer)
 
 - `id`, `source_id`
 - `locator` object with:
@@ -60,20 +75,19 @@ Status: Draft
 - `excerpt` snapshot derived from the canonical source text
 - `quote_hash`
 - `created_at`
-- Identity rule for the text baseline: a `Segment` is unique within a `Source` by validated locator, not by raw LLM candidate text.
-- Materialization rule for the text baseline: runtime performs `lookup-or-create` after evidence validation succeeds.
+- Identity rule for a future persistence layer: a `Segment` is unique within a
+  `Source` by validated locator, not by raw LLM candidate text.
 
 ## Atom Fields
 
 - `id`, `text`, `type`
 - optional `scope_text`
-- `evidence_segment_ids[]`
+- first-slice review artifacts use inline anchored evidence, not `Segment` ids
 - `confidence`
 - `canonical_form`
 - `embedding_ref`
 - `created_at`, `updated_at`
 - `stats`: evidence/refute/contradiction counters
-- optional `review_status`: `ready|needs_review`
 
 ## Artifact Fields
 
@@ -85,16 +99,11 @@ Status: Draft
 
 ## Core Edge Properties
 
-### `Segment -> Atom` (`states`)
-
-- `polarity`: `supports|refutes|neutral`
-- `strength`: `0..1`
-- optional `note`
-
 ### `Source -> Atom` (`evidences`)
 
 - `strength_agg`: `0..1`
-- `top_evidence_refs[]` (`Segment` ids)
+- `top_evidence_refs[]` (first-slice: anchored evidence records; future graph
+  persistence may swap this to stable `Segment` ids)
 
 ### `Atom <-> Atom`
 
@@ -106,13 +115,13 @@ Status: Draft
 ### `Source -> Artifact`
 
 - `relation_type`
-- `key_evidence_refs[]` (`Segment` ids)
+- `key_evidence_refs[]` (first-slice: anchored evidence records)
 
 ### `Artifact -> Atom`
 
 - `relation_type`
 - `strength`
-- `evidence_refs[]` (`Segment` ids)
+- `evidence_refs[]` (first-slice: anchored evidence records)
 
 ### Optional `Source -> Source`
 

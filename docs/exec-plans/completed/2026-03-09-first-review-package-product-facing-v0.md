@@ -7,7 +7,7 @@
 - Date opened: 2026-03-08
 - Date completed: 2026-03-10
 - Related tasks: TASK-0003
-- Tracker IDs: TASK-0003, FUP-0003, FUP-0004, FUP-0005
+- Tracker IDs: TASK-0003, FUP-0003, FUP-0004, FUP-0005, FUP-0006
 - Consolidation note: This completed plan is the single durable record for TASK-0003. It replaces the earlier split between the initial implementation plan and later product-facing corrections by recording the whole branch as one task from first plan through final review-driven hardening.
 - PR: [#8](https://github.com/yzhang1918/missless/pull/8)
 
@@ -276,3 +276,4 @@ Deliver the first real `missless` slice as a product-facing, repository-coupled 
   - FUP-0003
   - FUP-0004
   - FUP-0005
+  - FUP-0006

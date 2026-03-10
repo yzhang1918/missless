@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdtemp, readFile, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -127,5 +127,71 @@ test("fetchNormalizeSource rejects unsafe run IDs that escape runsDir", async ()
         runId: "../../outside"
       }),
     /run IDs with path separators or unsafe segments/
+  );
+});
+
+test("fetchNormalizeSource does not leave a run directory behind when provider fetch fails", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-fail-"));
+  const runId = "run-provider-fail";
+
+  await assert.rejects(
+    () =>
+      fetchNormalizeSource({
+        sourceUrl: "https://example.com/article",
+        runsDir,
+        runId,
+        provider: {
+          name: "fixture",
+          async fetch() {
+            throw new Error("fixture provider failed");
+          }
+        }
+      }),
+    /fixture provider failed/
+  );
+
+  await assert.rejects(
+    () => stat(join(runsDir, runId)),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+});
+
+test("fetchNormalizeSource removes the run directory when artifact writes fail after creation", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-write-fail-"));
+  const runId = "run-write-fail";
+
+  await assert.rejects(
+    () =>
+      fetchNormalizeSource({
+        sourceUrl: "https://example.com/article",
+        runsDir,
+        runId,
+        provider: {
+          name: "fixture",
+          async fetch() {
+            return {
+              canonicalText: "Canonical text\n",
+              fetchedAt: "2026-03-09T00:00:00.000Z",
+              providerUrl: "https://reader.example/article",
+              responseStatus: 200,
+              responseHeaders: {
+                "x-bad-header": 1n as unknown as string
+              }
+            };
+          }
+        }
+      }),
+    /Do not know how to serialize a BigInt/
+  );
+
+  await assert.rejects(
+    () => stat(join(runsDir, runId)),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
   );
 });
