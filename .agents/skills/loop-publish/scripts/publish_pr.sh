@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ $# -lt 3 ]]; then
-  echo "Usage: $0 <base-branch> <title> <body-file> [--draft] (--direct-request | [--link-issue <issue-ref>]... [--close-issue <issue-ref>]...)" >&2
+  echo "Usage: $0 <base-branch> <title> <body-file> [--draft] [--direct-request] [--link-issue <issue-ref>]... [--close-issue <issue-ref>]..." >&2
   exit 1
 fi
 
@@ -72,11 +72,6 @@ if [[ ! -f "$body_file" ]]; then
   exit 1
 fi
 
-if [[ "$direct_request" == true && ( ${#linked_issues[@]} -gt 0 || ${#closing_issues[@]} -gt 0 ) ]]; then
-  echo "Use either --direct-request or issue linkage flags, not both" >&2
-  exit 1
-fi
-
 if [[ "$direct_request" == false && ${#linked_issues[@]} -eq 0 && ${#closing_issues[@]} -eq 0 ]]; then
   echo "Provide linked issue metadata or --direct-request before publish" >&2
   exit 1
@@ -89,33 +84,41 @@ if [[ "$direct_request" == true ]]; then
   fi
 fi
 
-for ref in "${linked_issues[@]}"; do
-  if ! grep -Fq "$ref" "$body_file"; then
-    echo "PR body is missing linked issue reference: $ref" >&2
-    exit 1
-  fi
-done
-
-for ref in "${closing_issues[@]}"; do
-  if ! grep -Eqi "(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)[[:space:]]+$ref([^0-9]|$)" "$body_file"; then
-    echo "PR body is missing a closing keyword for issue: $ref" >&2
-    exit 1
-  fi
-done
-
-for ref in "${linked_issues[@]}"; do
-  is_closing_ref=false
-  for closing_ref in "${closing_issues[@]}"; do
-    if [[ "$closing_ref" == "$ref" ]]; then
-      is_closing_ref=true
-      break
+if (( ${#linked_issues[@]} > 0 )); then
+  for ref in "${linked_issues[@]}"; do
+    if ! grep -Fq "$ref" "$body_file"; then
+      echo "PR body is missing linked issue reference: $ref" >&2
+      exit 1
     fi
   done
-  if [[ "$is_closing_ref" == false ]] && grep -Eqi "(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)[[:space:]]+$ref([^0-9]|$)" "$body_file"; then
-    echo "PR body must not use a closing keyword for linked-only issue: $ref" >&2
-    exit 1
-  fi
-done
+fi
+
+if (( ${#closing_issues[@]} > 0 )); then
+  for ref in "${closing_issues[@]}"; do
+    if ! grep -Eqi "(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)[[:space:]]+$ref([^0-9]|$)" "$body_file"; then
+      echo "PR body is missing a closing keyword for issue: $ref" >&2
+      exit 1
+    fi
+  done
+fi
+
+if (( ${#linked_issues[@]} > 0 )); then
+  for ref in "${linked_issues[@]}"; do
+    is_closing_ref=false
+    if (( ${#closing_issues[@]} > 0 )); then
+      for closing_ref in "${closing_issues[@]}"; do
+        if [[ "$closing_ref" == "$ref" ]]; then
+          is_closing_ref=true
+          break
+        fi
+      done
+    fi
+    if [[ "$is_closing_ref" == false ]] && grep -Eqi "(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)[[:space:]]+$ref([^0-9]|$)" "$body_file"; then
+      echo "PR body must not use a closing keyword for linked-only issue: $ref" >&2
+      exit 1
+    fi
+  done
+fi
 
 head_branch="$(git branch --show-current)"
 if [[ -z "$head_branch" ]]; then
