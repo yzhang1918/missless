@@ -90,6 +90,8 @@ Current baseline for the first delivery slice is:
   silently dropping evidence.
 - `render-review` assembles a `review_bundle.json` artifact and a local
   read-only `review.html` page from anchored evidence plus canonical text.
+- `render-review` must reject stale evidence artifacts that were generated from
+  an older draft revision.
 - The repair loop is the same regardless of backend: generate a full draft,
   run deterministic validation, repair the draft from diagnostics, then rerun
   `anchor-evidence` and `render-review`.

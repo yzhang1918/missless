@@ -73,3 +73,73 @@ test("anchor-evidence and render-review produce the first review package artifac
   assert.match(reviewHtml, /<mark/);
   assert.match(reviewHtml, /Repository-local artifacts/);
 });
+
+test("render-review rejects stale evidence generated from an older draft", async () => {
+  const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
+  const runDir = join(runsRoot, "run-stale-review");
+
+  await mkdir(runDir, { recursive: true });
+  await writeFile(
+    join(runDir, "run.json"),
+    "{\n  \"run_id\": \"run-stale-review\",\n  \"stage\": \"normalized\"\n}\n",
+    "utf8"
+  );
+  await writeFile(
+    join(runDir, "source.json"),
+    "{\n  \"source_url\": \"https://example.com/agent-harness\"\n}\n",
+    "utf8"
+  );
+  await writeFile(
+    join(runDir, "canonical_text.md"),
+    await readFile(fixtureCanonicalPath, "utf8"),
+    "utf8"
+  );
+  await writeFile(
+    join(runDir, "extraction_draft.json"),
+    await readFile(fixtureDraftPath, "utf8"),
+    "utf8"
+  );
+
+  const anchored = spawnSync(
+    process.execPath,
+    [cliEntrypoint.pathname, "anchor-evidence", "--run-dir", runDir],
+    {
+      cwd: repoRoot,
+      encoding: "utf8",
+      env: process.env
+    }
+  );
+
+  assert.equal(anchored.status, 0, anchored.stderr);
+
+  const staleDraft = JSON.parse(
+    await readFile(join(runDir, "extraction_draft.json"), "utf8")
+  ) as {
+    tldr: string;
+    decision_reasons: string[];
+  };
+  staleDraft.tldr = `${staleDraft.tldr} Updated after anchoring.`;
+  staleDraft.decision_reasons = [...staleDraft.decision_reasons, "Late edit"];
+
+  await writeFile(
+    join(runDir, "extraction_draft.json"),
+    JSON.stringify(staleDraft, null, 2) + "\n",
+    "utf8"
+  );
+
+  const rendered = spawnSync(
+    process.execPath,
+    [cliEntrypoint.pathname, "render-review", "--run-dir", runDir],
+    {
+      cwd: repoRoot,
+      encoding: "utf8",
+      env: process.env
+    }
+  );
+
+  assert.equal(rendered.status, 1);
+  assert.match(
+    rendered.stderr,
+    /anchor-evidence is rerun for the current extraction draft/
+  );
+});

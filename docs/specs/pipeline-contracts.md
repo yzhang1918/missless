@@ -95,6 +95,7 @@ proposal.
 
 `render-review --run-dir <dir>`:
 - requires a successful `evidence_result.json`
+- requires `evidence_result.json` to come from the current `extraction_draft.json`
 - assembles `review_bundle.json` from draft, anchored evidence, and canonical
   text
 - writes a read-only local `review.html`

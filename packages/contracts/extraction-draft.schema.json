@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://missless.dev/schemas/extraction-draft.schema.json",
+  "$id": "https://missless.catu.ai/schemas/extraction-draft.schema.json",
   "title": "ExtractionDraft",
   "type": "object",
   "additionalProperties": false,

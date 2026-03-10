@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile, stat, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
@@ -42,6 +43,7 @@ export interface EvidenceAnchoringResult {
   readonly ok: boolean;
   readonly summary: string;
   readonly run_dir: string;
+  readonly draft_sha256?: string;
   readonly atoms: readonly AnchoredAtom[];
   readonly diagnostics: readonly EvidenceDiagnostic[];
 }
@@ -53,6 +55,10 @@ interface TextMatch {
 
 function writeJsonFile(path: string, value: unknown): Promise<void> {
   return writeFile(path, JSON.stringify(value, null, 2) + "\n", "utf8");
+}
+
+function sha256(input: string): string {
+  return createHash("sha256").update(input, "utf8").digest("hex");
 }
 
 async function canPersistRunArtifact(runDir: string): Promise<boolean> {
@@ -244,6 +250,7 @@ export async function anchorEvidenceInRunDir(
     readFile(artifactPaths.extractionDraft, "utf8")
   ]);
   const draft = JSON.parse(draftText) as ExtractionDraft;
+  const draftSha256 = sha256(draftText);
   const atoms: AnchoredAtom[] = [];
   const diagnostics: EvidenceDiagnostic[] = [];
 
@@ -280,6 +287,7 @@ export async function anchorEvidenceInRunDir(
         ? `Evidence anchored for ${atoms.length} atom candidate(s).`
         : `Evidence anchoring failed with ${diagnostics.length} issue(s).`,
     run_dir: resolvedRunDir,
+    draft_sha256: draftSha256,
     atoms,
     diagnostics
   };

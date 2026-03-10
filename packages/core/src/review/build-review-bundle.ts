@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
@@ -25,6 +26,10 @@ function writeJsonFile(path: string, value: unknown): Promise<void> {
   return writeFile(path, JSON.stringify(value, null, 2) + "\n", "utf8");
 }
 
+function sha256(input: string): string {
+  return createHash("sha256").update(input, "utf8").digest("hex");
+}
+
 export async function buildReviewBundleInRunDir(
   runDir: string,
   now = new Date()
@@ -42,6 +47,12 @@ export async function buildReviewBundleInRunDir(
   if (!evidenceResult.ok) {
     throw new Error(
       "Cannot render review until anchor-evidence succeeds for the run."
+    );
+  }
+
+  if (evidenceResult.draft_sha256 !== sha256(draftText)) {
+    throw new Error(
+      "Cannot render review until anchor-evidence is rerun for the current extraction draft."
     );
   }
 

@@ -1,6 +1,6 @@
 ---
 name: missless
-description: Use when you need to turn one public URL into a missless review package with the local runtime. This skill fetches canonical text, writes extraction_draft.json, validates the draft, anchors evidence, and renders a read-only local HTML review page.
+description: Missless turns one public URL into a reading decision with inspectable evidence. Use when users want to turn an article URL into a missless review package.
 ---
 
 # missless

@@ -12,7 +12,7 @@ Repository knowledge is the system of record. If it is not in this repository, i
 - `.agents/skills/`: developer-only operational playbooks used while building the product
 - `apps/`: runnable product surfaces such as the first local CLI and later web entry points
 - `packages/`: reusable runtime modules, contracts, and rendering primitives
-- `skills/`: product-facing skills and prompt assets that ship with `missless`
+- `skills/`: agent-facing product skills and prompt assets that ship with `missless`
 - `docs/`: long-lived product and engineering knowledge
 
 ## `docs/` Structure
@@ -33,5 +33,5 @@ Any substantial product or engineering change must update at least one file in `
 ## Product vs. Developer Skills
 
 - `.agents/skills/` exists to help Codex follow repository workflow.
-- `skills/` exists for product behavior that should ship as part of `missless`.
+- `skills/` exists for product behavior that should ship as part of `missless` and be read by coding agents in product use.
 - Product-facing prompt assets must not be hidden inside developer-only helper folders.
