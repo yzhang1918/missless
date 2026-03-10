@@ -14,7 +14,7 @@ Provide one clear place for product-delivery tactical tracking and product plan 
 
 ## First Stop
 
-If you ask "what should we do next?", start from GitHub Issues tagged for product scope.
+If you ask "what should we do next?", start from triaged `state:accepted` GitHub Issues tagged for product scope. Route `needs-triage`, `state:blocked`, and `state:parked` product issues through `issue-triage` before treating them as execution candidates.
 
 For a direct owner request, run discovery first and create a plan under [Active Plans Folder](./active/README.md) once the approach is approved.
 

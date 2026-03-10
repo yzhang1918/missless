@@ -13,6 +13,7 @@ Complete integration after final gate success.
 
 - Final gate outcome marked as pass.
 - Target merge method and repository policy.
+- Linked issue numbers and which ones should close on merge.
 
 ## Execution Contract
 
@@ -23,9 +24,11 @@ Complete integration after final gate success.
 4. Record:
    - merge commit SHA
    - relevant PR link
+   - linked issue closure outcome
    - key validation references
    - deferred follow-up items
 5. Update completion summary in the execution plan.
+6. Verify each issue intended to close is actually closed after merge; if auto-close did not happen, close it manually with the merge reference.
 
 ## Output
 
@@ -35,3 +38,4 @@ Tracked landing summary in plan/PR records.
 
 - Do not land when final gate is fail or unknown.
 - Do not rewrite shared history.
+- Do not close implementation issues before the merge result is known.

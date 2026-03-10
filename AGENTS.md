@@ -29,6 +29,7 @@ Before any discovery/plan/execution work:
 ## Intake Sources
 
 - Asynchronous backlog, future work, and community input live in GitHub Issues for `yzhang1918/missless`.
+- Only triaged `state:accepted` issues are eligible to enter discovery from GitHub intake. `needs-triage`, `state:blocked`, and `state:parked` issues stay out of the execution queue until triage changes them.
 - A direct human request in chat may enter discovery without a pre-existing issue.
 - Once work enters planning/execution, the repository plan becomes the authoritative execution record.
 
@@ -44,7 +45,9 @@ For medium or large work, these steps are mandatory:
 5. Documentation updates
 6. Issue updates
    - If work came from a GitHub issue, sync plan/PR links and disposition back to that issue.
-   - If execution reveals future work, create or update GitHub issues before closing the current plan.
+   - PRs must identify the linked issue(s), or explicitly say `direct request (no issue)` when no intake issue exists. Use GitHub closing keywords only for issues that should close on merge.
+   - Do not close a resolved issue before landing. Prefer merge-time auto-close; otherwise close it manually only after the merge result is known.
+   - If execution reveals future work, create or update GitHub issues, record each issue's origin, and link them before closing the current plan.
 7. Plan archival
    - When a task is complete, move its plan from `active/` to `completed/` before publish/final gate.
    - Keep `active/` reserved for unfinished work only.
@@ -53,7 +56,7 @@ For small work, discovery+plan can be collapsed, but rationale must still be exp
 
 ## Start Points
 
-- Open backlog and async next steps: GitHub Issues in `yzhang1918/missless`
+- Open backlog and async next steps: triaged `state:accepted` GitHub Issues in `yzhang1918/missless`
 - Direct synchronous requests: start from the human's explicit chat request, then enter discovery
 - Product context: `docs/product-specs/index.md`
 - Design rationale: `docs/design-docs/index.md`
@@ -68,6 +71,7 @@ If standards and skills conflict, standards win.
 Primary skills:
 - `loop-discovery`, `loop-plan`, `loop-execute`
 - `loop-review-loop`, `loop-final-gate`, `loop-publish`, `loop-land`, `loop-janitor`
+- `issue-triage`, `issue-create`
 - `loop-reviewer` (subagent reviewer output contract)
 - `commit`
 

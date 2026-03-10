@@ -10,6 +10,10 @@ labels:
 
 Describe the task, problem, or idea in one or two sentences.
 
+## Origin
+
+State how this issue arose: direct idea, spawned from a plan, spawned from another issue, spawned from a PR, user report, or another source. Link the source record when available.
+
 ## Context
 
 Add any context that would help a later discovery session. Rough notes are fine.

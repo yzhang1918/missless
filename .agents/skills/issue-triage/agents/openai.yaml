@@ -1,0 +1,4 @@
+interface:
+  display_name: "Issue Triage"
+  short_description: "Triage GitHub backlog issues"
+  default_prompt: "Use $issue-triage to classify GitHub issues, apply backlog labels, and record disposition."

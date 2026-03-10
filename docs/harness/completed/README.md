@@ -8,7 +8,7 @@ Store completed harness/workflow plans as durable execution history.
 
 ## Rules
 
-For plans created on or after 2026-03-10, each completed plan should include:
+Each completed plan should include:
 - intake source (`issue #...` or `direct request`)
 - delivered scope
 - validation summary
@@ -16,7 +16,7 @@ For plans created on or after 2026-03-10, each completed plan should include:
 - spawned follow-up issues (if any)
 - when the catalog changes, a validation check that every completed plan file in this folder is listed below
 
-Earlier archived plans may preserve their original metadata and evidence wording.
+Older archived plans may preserve equivalent metadata or evidence wording when the workflow later evolved.
 
 Recommended catalog sync check:
 

@@ -27,6 +27,8 @@ Run recurring hygiene passes to keep the codebase and docs legible for future ag
 4. Log unresolved items as GitHub issues with the appropriate scope and kind labels:
    - product scope -> create or update a product-scoped issue
    - harness/process scope -> create or update a harness-scoped issue
+   - record issue origin/provenance and source links, or route the issue body update through `issue-create`
+   - default fresh backlog capture to `needs-triage` unless the human has already approved a stronger state
 
 ## Output
 
