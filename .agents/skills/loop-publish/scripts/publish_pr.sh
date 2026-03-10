@@ -72,7 +72,12 @@ if [[ ! -f "$body_file" ]]; then
   exit 1
 fi
 
-if [[ "$direct_request" == false && ${#linked_issues[@]} -eq 0 && ${#closing_issues[@]} -eq 0 ]]; then
+if [[ "$direct_request" == true ]] && (( ${#linked_issues[@]} > 0 || ${#closing_issues[@]} > 0 )); then
+  echo "Use either --direct-request or issue linkage flags, not both" >&2
+  exit 1
+fi
+
+if [[ "$direct_request" == false ]] && (( ${#linked_issues[@]} == 0 && ${#closing_issues[@]} == 0 )); then
   echo "Provide linked issue metadata or --direct-request before publish" >&2
   exit 1
 fi
