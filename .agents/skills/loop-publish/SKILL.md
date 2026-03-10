@@ -25,6 +25,7 @@ Publish current branch changes into an open PR before landing.
    - PR body must list the linked issue(s).
    - Use GitHub closing keywords only for issues that should close when the PR merges.
    - If the work came from a direct request with no issue, say so explicitly in the PR body.
+   - Treat declared issue metadata and the direct-request no-issue flag as mutually exclusive sources of truth.
    - Fail publish if the caller did not provide any declared issue metadata and also omitted the direct-request no-issue flag.
    - Fail publish if a declared linked issue is missing from the PR body.
    - Fail publish if a declared closing issue is missing the required closing keyword, or if a linked-only issue uses one by mistake.
