@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ $# -lt 3 ]]; then
-  echo "Usage: $0 <base-branch> <title> <body-file> [--draft]" >&2
+  echo "Usage: $0 <base-branch> <title> <body-file> [--draft] (--direct-request | [--link-issue <issue-ref>]... [--close-issue <issue-ref>]...)" >&2
   exit 1
 fi
 
@@ -14,12 +14,108 @@ fi
 base_branch="$1"
 title="$2"
 body_file="$3"
-draft_flag="${4:-}"
+shift 3
+
+draft_flag=""
+direct_request=false
+declare -a linked_issues=()
+declare -a closing_issues=()
+
+normalize_issue_ref() {
+  local raw="$1"
+  if [[ "$raw" =~ ^#?[0-9]+$ ]]; then
+    raw="${raw#\#}"
+    printf '#%s' "$raw"
+    return 0
+  fi
+  echo "Invalid issue reference: $raw" >&2
+  exit 1
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --draft)
+      draft_flag="--draft"
+      shift
+      ;;
+    --direct-request)
+      direct_request=true
+      shift
+      ;;
+    --link-issue)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for --link-issue" >&2
+        exit 1
+      fi
+      linked_issues+=("$(normalize_issue_ref "$2")")
+      shift 2
+      ;;
+    --close-issue)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for --close-issue" >&2
+        exit 1
+      fi
+      ref="$(normalize_issue_ref "$2")"
+      linked_issues+=("$ref")
+      closing_issues+=("$ref")
+      shift 2
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      exit 1
+      ;;
+  esac
+done
 
 if [[ ! -f "$body_file" ]]; then
   echo "Missing body file: $body_file" >&2
   exit 1
 fi
+
+if [[ "$direct_request" == true && ( ${#linked_issues[@]} -gt 0 || ${#closing_issues[@]} -gt 0 ) ]]; then
+  echo "Use either --direct-request or issue linkage flags, not both" >&2
+  exit 1
+fi
+
+if [[ "$direct_request" == false && ${#linked_issues[@]} -eq 0 && ${#closing_issues[@]} -eq 0 ]]; then
+  echo "Provide linked issue metadata or --direct-request before publish" >&2
+  exit 1
+fi
+
+if [[ "$direct_request" == true ]]; then
+  if ! grep -Fqi 'direct request (no issue)' "$body_file"; then
+    echo "PR body must include 'direct request (no issue)' when --direct-request is used" >&2
+    exit 1
+  fi
+fi
+
+for ref in "${linked_issues[@]}"; do
+  if ! grep -Fq "$ref" "$body_file"; then
+    echo "PR body is missing linked issue reference: $ref" >&2
+    exit 1
+  fi
+done
+
+for ref in "${closing_issues[@]}"; do
+  if ! grep -Eqi "(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)[[:space:]]+$ref([^0-9]|$)" "$body_file"; then
+    echo "PR body is missing a closing keyword for issue: $ref" >&2
+    exit 1
+  fi
+done
+
+for ref in "${linked_issues[@]}"; do
+  is_closing_ref=false
+  for closing_ref in "${closing_issues[@]}"; do
+    if [[ "$closing_ref" == "$ref" ]]; then
+      is_closing_ref=true
+      break
+    fi
+  done
+  if [[ "$is_closing_ref" == false ]] && grep -Eqi "(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)[[:space:]]+$ref([^0-9]|$)" "$body_file"; then
+    echo "PR body must not use a closing keyword for linked-only issue: $ref" >&2
+    exit 1
+  fi
+done
 
 head_branch="$(git branch --show-current)"
 if [[ -z "$head_branch" ]]; then

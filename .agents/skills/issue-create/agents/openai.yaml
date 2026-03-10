@@ -1,0 +1,4 @@
+interface:
+  display_name: "Issue Create"
+  short_description: "Open well-linked backlog issues"
+  default_prompt: "Use $issue-create to open or update GitHub backlog issues with origin, context, and links."

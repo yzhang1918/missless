@@ -36,6 +36,10 @@ Define the outcome in one or two sentences.
 - Checks to run:
 - Evidence to capture:
 
+## Validation Summary
+
+- Pending until execution completes.
+
 ## Risks and Mitigations
 
 - Risk:
@@ -45,4 +49,5 @@ Define the outcome in one or two sentences.
 
 - Delivered:
 - Not delivered:
-- Issue updates:
+- Linked issue updates:
+- Spawned follow-up issues:

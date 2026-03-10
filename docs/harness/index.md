@@ -14,7 +14,7 @@ Provide one clear place to track and archive agent-harness workflow/process impr
 
 ## First Stop
 
-If you ask "what should we improve in the harness next?", start from GitHub Issues tagged for harness scope.
+If you ask "what should we improve in the harness next?", start from triaged `state:accepted` GitHub Issues tagged for harness scope. Route `needs-triage`, `state:blocked`, and `state:parked` harness issues through `issue-triage` before treating them as execution candidates.
 
 For a direct owner request, run discovery first and create a plan under [Active Plans Folder](./active/README.md) once the approach is approved.
 

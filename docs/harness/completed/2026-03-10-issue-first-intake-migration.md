@@ -167,7 +167,7 @@ Replace the current tracker-first backlog model with an issue-first intake model
 
 - Full-PR review round `20260310-143423` initially blocked the change with `BLOCKER=0`, `IMPORTANT=4`.
 - The blocked findings covered `loop-janitor` drift, stale migration-plan wording, completed-plan rule scope, and archival timing for the finished migration plan.
-- Addressed those findings by updating `loop-janitor`, tightening the completed-plan README rules to apply only to plans created on or after `2026-03-10`, and moving this plan into `docs/harness/completed/` before publish.
+- Addressed those findings by updating `loop-janitor`, tightening the completed-plan README rules, and moving this plan into `docs/harness/completed/` before publish.
 - Full-PR review round `20260310-143745` passed with `BLOCKER=0`, `IMPORTANT=0`.
 - Retained review artifact: `.local/loop/review-20260310-143745.json`.
 - The `docs-spec-consistency` reviewer required a manual fallback artifact after two subagent timeouts; the fallback check found no remaining findings.
@@ -177,11 +177,13 @@ Replace the current tracker-first backlog model with an issue-first intake model
 - Delivered:
   - Replaced repository tracker-first intake with an issue-first workflow documented across `AGENTS.md`, harness skills, standards, indexes, and plan templates.
   - Added a minimal GitHub backlog intake template plus issue label conventions for `needs-triage`, `scope:*`, `kind:*`, and `state:*`.
+  - Added explicit issue-origin requirements, PR-to-issue linking rules, and merge-time issue-closure guidance to the workflow contract.
+  - Added repository-local `issue-triage` and `issue-create` skills so backlog triage and future-work capture have stable playbooks.
   - Recreated the open backlog as GitHub issues `#9` through `#17`.
   - Removed `docs/harness/tracker.md` and `docs/exec-plans/tracker.md`.
   - Updated recent completed plans and related references so live workflow docs no longer depend on tracker files.
 - Not delivered:
-  - No automation for issue creation, label sync, or project sync beyond manual `gh issue` usage.
+  - No automatic issue/project sync; issue operations still run through explicit `gh` commands and repository-local skills.
   - No migrated backlog item implementation; this change only updates intake/process behavior.
 - Linked issue updates:
   - Created and labeled issues `#9` through `#17` as the accepted open backlog.

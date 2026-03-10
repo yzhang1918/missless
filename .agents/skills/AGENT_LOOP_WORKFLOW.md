@@ -16,8 +16,14 @@ Before entering the primary loop:
 ## Intake Policy
 
 - Open backlog and asynchronous intake live in GitHub Issues for `yzhang1918/missless`.
+- Only triaged `state:accepted` issues are eligible to enter `loop-discovery`. `needs-triage`, `state:blocked`, and `state:parked` issues stay out of the execution queue until triage changes them.
 - A direct human request in chat may enter `loop-discovery` without a pre-existing issue.
 - Once a task has an active plan, the repository plan is the execution source of truth.
+
+## Issue Operations
+
+- Use `issue-triage` for `needs-triage` issues, recurring backlog sweeps, and cron-driven disposition work.
+- Use `issue-create` to capture new backlog items or backfill issue origin/provenance while execution is still fresh.
 
 ## Primary Loop
 
@@ -38,11 +44,16 @@ For medium/large tasks, discovery + plan are required (do not skip steps 1-2).
    - Move finished product plans from `docs/exec-plans/active/` to `docs/exec-plans/completed/`.
    - Move finished harness/process plans from `docs/harness/active/` to `docs/harness/completed/`.
    - Update completed-plan catalogs and issue links in the same change.
-   - If execution discovers future work, create or update the linked GitHub issues before treating the task as closed.
+   - If execution discovers future work, create or update the linked GitHub issues with explicit origin links before treating the task as closed.
    - `loop-publish`, `loop-final-gate`, and `loop-land` must not treat a task as closed while its completed plan still lives only in `active/`.
 10. `loop-publish` (push branch and open/update PR)
+   - Call the publish script with explicit issue metadata: `--direct-request` when no intake issue exists, `--link-issue` for referenced-but-open issues, and `--close-issue` for issues that should close on merge.
+   - PR bodies must list the linked issue(s), or explicitly say `direct request (no issue)` when no intake issue exists.
+   - Use GitHub closing keywords such as `Closes #123` only for issues that should close on merge; otherwise use a plain reference.
 11. `loop-final-gate`
 12. `loop-land`
+   - After merge, verify that each issue intended to close actually closed on GitHub. If auto-close did not happen, close it manually with the merge reference.
+   - Do not close implementation issues before the landing outcome is known.
 
 ## Janitor Loop
 

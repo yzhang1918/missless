@@ -12,6 +12,7 @@ contract is no longer the live repository truth for the shipped first slice.
 - Owner: Human+Codex
 - Date: 2026-03-06
 - Related tasks: TASK-0001, TASK-0002
+- Issue provenance: Deferred issues `#9`, `#10`, and `#17` were later opened from this archived plan and PR `#6` during the 2026-03-10 GitHub issue migration.
 - Current deferred issues: `#9`, `#10`, `#17`
 
 ## Objective

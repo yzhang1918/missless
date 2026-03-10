@@ -8,7 +8,7 @@ This is the canonical entry point for repository knowledge.
 
 - Start from the catalog below.
 - Prefer `Active` docs, then `Draft` docs where needed.
-- For open backlog or asynchronous intake, start from GitHub Issues in `yzhang1918/missless`.
+- For open backlog or asynchronous intake, start from triaged `state:accepted` GitHub Issues in `yzhang1918/missless`. Route `needs-triage`, `state:blocked`, and `state:parked` issues through `issue-triage` before treating them as execution candidates.
 - For synchronous owner-driven work, start from the approved chat request, then enter discovery and plan creation in the repository.
 
 ## Status Legend

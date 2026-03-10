@@ -22,8 +22,10 @@ Define detailed operational standards for documentation, status semantics, revie
 ## Intake Standards
 
 - Open backlog, asynchronous ideas, and community-reported work live in GitHub Issues for `yzhang1918/missless`.
+- Only `state:accepted` issues are eligible to enter discovery and planning. `needs-triage`, `state:blocked`, and `state:parked` issues remain outside the execution queue until triage changes them.
 - A direct human request may enter discovery without a pre-existing issue, but the resulting active plan must record its intake source.
 - Once work has an active plan, the repository becomes the authoritative execution record for that task.
+- Every backlog issue body must record its origin/provenance. At minimum, say whether it came from a direct idea, spawned follow-up, linked issue, plan, or PR, and link the source record when available.
 - New backlog issues should default to `needs-triage`.
 - Triage should assign exactly one `scope:*` label, exactly one `kind:*` label, and at most one `state:*` label.
 - Supported `state:*` labels are `state:accepted`, `state:blocked`, and `state:parked`.
@@ -54,6 +56,8 @@ Clarification:
 For non-trivial work:
 - run step-level delta review during execution
 - run full review before final merge
+- PRs must identify linked issue(s), or explicitly say `direct request (no issue)` when no intake issue exists. Use closing keywords only for issues that should close on merge.
+- Do not close implementation issues as resolved before the merge result is known; after merge, verify auto-close happened or close them manually with the merge reference.
 - resolve blocking/important findings before final gate
 - convert unresolved follow-ups or debt into GitHub issues before closing the current plan
 - keep completed-plan docs linked to any spawned or source issues
@@ -63,4 +67,6 @@ For non-trivial work:
 - Skills under `.agents/skills/` are operational playbooks.
 - Standards remain normative.
 - Skills should be self-contained when practical: scripts used by a skill should live under that skill folder.
+- Use `issue-triage` for recurring backlog triage, label cleanup, and cron-driven disposition work.
+- Use `issue-create` when current work needs to open a new backlog issue or backfill issue provenance.
 - When standards change, update affected skills in the same branch.
