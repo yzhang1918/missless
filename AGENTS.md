@@ -8,7 +8,7 @@ Build `missless` as an agent-first, repository-legible system that turns informa
 
 ## Non-Negotiable Rules
 
-1. Repository is the single source of truth.
+1. Repository is the single source of truth for approved plans, specs, validation evidence, and completed execution history.
 2. All docs and code must be written in English.
 3. Every meaningful change must update docs/specs in the same branch.
 4. Evidence over opinion: decisions link to specs, plans, or run artifacts.
@@ -26,6 +26,12 @@ Before any discovery/plan/execution work:
 - Codex must confirm objective and success criteria before entering discovery.
 - Codex must not start implementation-oriented work on assumed tasks.
 
+## Intake Sources
+
+- Asynchronous backlog, future work, and community input live in GitHub Issues for `yzhang1918/missless`.
+- A direct human request in chat may enter discovery without a pre-existing issue.
+- Once work enters planning/execution, the repository plan becomes the authoritative execution record.
+
 ## Required Workflow
 
 For medium or large work, these steps are mandatory:
@@ -36,9 +42,9 @@ For medium or large work, these steps are mandatory:
 3. Execution (small reviewable increments)
 4. Validation (checks + evidence)
 5. Documentation updates
-6. Tracker updates
-   - Product work: `docs/exec-plans/tracker.md`
-   - Harness/process work: `docs/harness/tracker.md`
+6. Issue updates
+   - If work came from a GitHub issue, sync plan/PR links and disposition back to that issue.
+   - If execution reveals future work, create or update GitHub issues before closing the current plan.
 7. Plan archival
    - When a task is complete, move its plan from `active/` to `completed/` before publish/final gate.
    - Keep `active/` reserved for unfinished work only.
@@ -47,8 +53,8 @@ For small work, discovery+plan can be collapsed, but rationale must still be exp
 
 ## Start Points
 
-- Product next step: `docs/exec-plans/tracker.md`
-- Harness/process next step: `docs/harness/tracker.md`
+- Open backlog and async next steps: GitHub Issues in `yzhang1918/missless`
+- Direct synchronous requests: start from the human's explicit chat request, then enter discovery
 - Product context: `docs/product-specs/index.md`
 - Design rationale: `docs/design-docs/index.md`
 - Technical contracts: `docs/specs/index.md`

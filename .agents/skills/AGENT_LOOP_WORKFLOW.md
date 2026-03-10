@@ -13,6 +13,12 @@ Before entering the primary loop:
 - Confirm task objective and success criteria before running discovery.
 - Do not start discovery/plan/execution on implicit assumptions.
 
+## Intake Policy
+
+- Open backlog and asynchronous intake live in GitHub Issues for `yzhang1918/missless`.
+- A direct human request in chat may enter `loop-discovery` without a pre-existing issue.
+- Once a task has an active plan, the repository plan is the execution source of truth.
+
 ## Primary Loop
 
 For medium/large tasks, discovery + plan are required (do not skip steps 1-2).
@@ -28,10 +34,11 @@ For medium/large tasks, discovery + plan are required (do not skip steps 1-2).
 6. Repeat 3-5 until all steps are complete
 7. `loop-review-loop` (full-pr mode)
 8. `commit` (optional final fix commit; if new changes are introduced here, rerun step 7)
-9. Archive completed plans and sync trackers
+9. Archive completed plans and sync issue state
    - Move finished product plans from `docs/exec-plans/active/` to `docs/exec-plans/completed/`.
    - Move finished harness/process plans from `docs/harness/active/` to `docs/harness/completed/`.
-   - Update completed-plan catalogs and tracker links in the same change.
+   - Update completed-plan catalogs and issue links in the same change.
+   - If execution discovers future work, create or update the linked GitHub issues before treating the task as closed.
    - `loop-publish`, `loop-final-gate`, and `loop-land` must not treat a task as closed while its completed plan still lives only in `active/`.
 10. `loop-publish` (push branch and open/update PR)
 11. `loop-final-gate`
@@ -53,11 +60,6 @@ Run `loop-janitor` independently on a recurring cadence for entropy control and 
   - `.agents/skills/loop-review-loop/scripts/review_cleanup.sh --keep-rounds 1`
 - If loop/gate scripts changed, run:
   - `.agents/skills/loop-review-loop/scripts/review_regression.sh`
-
-## Tracker Policy
-
-- Product delivery priorities/follow-ups/debt are tracked in `docs/exec-plans/tracker.md`.
-- Harness/workflow priorities/follow-ups/debt are tracked in `docs/harness/tracker.md`.
 
 ## Review Policy
 

@@ -6,9 +6,10 @@ Status: Draft
 
 - Plan name:
 - Owner:
-- Date:
-- Related issue/task:
-- Tracker IDs:
+- Date opened:
+- Intake source:
+- Work type:
+- Related issue(s):
 
 ## Objective
 
@@ -44,4 +45,4 @@ Define the outcome in one or two sentences.
 
 - Delivered:
 - Not delivered:
-- Tracker updates:
+- Issue updates:

@@ -38,7 +38,7 @@ Use this file to record high-impact design decisions and reversals.
 - Options considered: many specialized docs, compact foundation docs with split policy.
 - Chosen option: compact foundation docs with split policy.
 - Consequences: easier navigation now, controlled growth later.
-- Related docs: `docs/product-specs/index.md`, `docs/exec-plans/tracker.md`, `docs/standards/repository-standards.md`
+- Related docs: `docs/product-specs/index.md`, `docs/exec-plans/index.md`, `docs/standards/repository-standards.md`
 
 - Date: 2026-03-06
 - Decision: Use first-class `Segment` objects as the text-source evidence contract for the first delivery slice.

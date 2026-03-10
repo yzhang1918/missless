@@ -6,7 +6,7 @@
 - Owner: Human+Codex
 - Date: 2026-03-09
 - Related tasks: TASK-0003
-- Tracker IDs: TASK-0003, FUP-0004, FUP-0005, FUP-0006
+- Spawned issues: `#11`, `#12`, `#13`
 - Triggering product slice: `docs/exec-plans/completed/2026-03-09-first-review-package-product-facing-v0.md`
 
 ## Objective
@@ -18,7 +18,7 @@ Close the documentation loop on the harness/process issues exposed by the first 
 - In scope:
   - Record the concrete loop failures and discipline gaps surfaced by the first product-slice branch.
   - Update workflow/standards docs where this PR actually changed harness-facing rules.
-  - Add tracker entries so the remaining harness work survives beyond chat history.
+  - Record the remaining harness work as GitHub issues so it survives beyond chat history.
 - Out of scope:
   - Implementing reviewer retry/fallback behavior in harness code.
   - Implementing publish/final-gate hard enforcement in harness code.
@@ -28,14 +28,14 @@ Close the documentation loop on the harness/process issues exposed by the first 
 ## Acceptance Criteria
 
 - [x] `AGENTS.md` and `.agents/skills/AGENT_LOOP_WORKFLOW.md` now state that completed plans must move from `active/` to `completed/` before publish/final gate.
-- [x] `docs/harness/tracker.md` records the remaining harness follow-ups for reviewer fallback, plan-closure enforcement, and rubric-based AI review.
+- [x] GitHub issues `#11`, `#12`, and `#13` record the remaining harness follow-ups for reviewer fallback, plan-closure enforcement, and rubric-based AI review.
 - [x] This completed plan distinguishes between what this PR changed and what remains deferred to a future harness implementation pass.
 
 ## What Changed in This PR
 
 - Added explicit plan-archival requirements to `AGENTS.md`.
 - Added explicit plan-archival requirements to `.agents/skills/AGENT_LOOP_WORKFLOW.md`.
-- Added or refined harness tracker follow-ups so reviewer fallback, plan-closure enforcement, and rubric-based AI review stay visible after the product PR lands.
+- Recorded the remaining harness work as GitHub issues so reviewer fallback, plan-closure enforcement, and rubric-based AI review stay visible after the product PR lands.
 - Preserved the observed review-loop failure modes from the first product slice as durable evidence for future harness work.
 
 ## What Did Not Change in This PR
@@ -56,15 +56,15 @@ Close the documentation loop on the harness/process issues exposed by the first 
 
 ## Deferred Harness Follow-ups
 
-- FUP-0004: make review-loop reviewer fallback fail closed and explicit.
-- FUP-0005: enforce plan completion and archival before publish and final gate.
-- FUP-0006: add rubric-based AI review for real E2E runs.
+- Issue `#11`: make review-loop reviewer fallback fail closed and explicit.
+- Issue `#12`: enforce plan completion and archival before publish and final gate.
+- Issue `#13`: add rubric-based AI review for real E2E runs.
 
 ## Validation Evidence for This PR
 
 - `AGENTS.md` now includes a `Plan archival` rule in the required workflow.
-- `.agents/skills/AGENT_LOOP_WORKFLOW.md` now includes an `Archive completed plans and sync trackers` step before publish/final gate.
-- `docs/harness/tracker.md` contains follow-ups `FUP-0004` through `FUP-0006`.
+- `.agents/skills/AGENT_LOOP_WORKFLOW.md` now includes an `Archive completed plans and sync issue state` step before publish/final gate.
+- GitHub issues `#11`, `#12`, and `#13` contain the deferred harness follow-ups from this slice.
 
 ## Notes for the Current PR
 

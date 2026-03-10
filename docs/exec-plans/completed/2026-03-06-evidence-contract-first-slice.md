@@ -12,7 +12,7 @@ contract is no longer the live repository truth for the shipped first slice.
 - Owner: Human+Codex
 - Date: 2026-03-06
 - Related tasks: TASK-0001, TASK-0002
-- Tracker IDs: TASK-0001, TASK-0002
+- Current deferred issues: `#9`, `#10`, `#17`
 
 ## Objective
 
@@ -24,7 +24,7 @@ Convert the approved evidence-anchor discovery into repository source-of-truth d
   - Lock the baseline evidence contract around first-class `Segment` objects for text sources.
   - Align design and spec docs on `candidate -> validate -> refine -> materialize`.
   - Define the first delivery slice, quality bar, and explicit out-of-scope items.
-  - Record the design decision and sync tracker state.
+  - Record the design decision and keep deferred work explicit.
 - Out of scope:
   - Runtime ingestion, extraction, review, or persistence code.
   - Non-text source locator contracts (`audio`, `video`, `pdf` page/time variants).
@@ -39,7 +39,7 @@ Convert the approved evidence-anchor discovery into repository source-of-truth d
 - [x] `docs/specs/pipeline-contracts.md` defines the evidence loop as `candidate -> validate -> refine -> materialize`, including the `needs_review` fallback when validation cannot be resolved.
 - [x] `docs/product-specs/product-foundation.md` defines the first delivery slice and acceptance bar around canonical text, extraction, anchored evidence, and human review.
 - [x] `docs/design-docs/decision-log.md` records the evidence-contract decision and its main consequences.
-- [x] `docs/exec-plans/tracker.md` links this plan and reflects the current status of TASK-0001 and TASK-0002.
+- [x] This archived plan captures the approved slice, and the remaining deferred work is explicit in GitHub issues.
 
 ## Work Breakdown
 
@@ -84,15 +84,14 @@ Convert the approved evidence-anchor discovery into repository source-of-truth d
 - Objective: Sync tactical records and prepare the change for execution review.
 - Expected files:
   - `docs/exec-plans/completed/2026-03-06-evidence-contract-first-slice.md`
-  - `docs/exec-plans/tracker.md`
 - Validation commands:
-  - `rg -n "TASK-0001|TASK-0002|2026-03-06-evidence-contract-first-slice" docs/exec-plans/tracker.md docs/exec-plans/completed/2026-03-06-evidence-contract-first-slice.md`
+  - `rg -n "TASK-0001|TASK-0002|2026-03-06-evidence-contract-first-slice" docs/exec-plans/completed/2026-03-06-evidence-contract-first-slice.md`
   - `git diff --check`
 - Documentation impact:
-  - Keep tracker and active-plan links aligned.
-  - Preserve deferred work in tracker/backlog instead of burying it in prose.
+  - Keep the archived plan aligned with the repository's current execution model.
+  - Preserve deferred work explicitly instead of burying it in prose.
 - Evidence:
-  - Updated `tracker.md` first to link the in-flight plan, then to archive TASK-0001/TASK-0002 as completed work tied to this completed plan.
+  - Archived TASK-0001/TASK-0002 as completed design work tied to this completed plan.
   - Archived this plan into `docs/exec-plans/completed/` and synced the completed-plan catalog.
 
 ## Execution Notes
@@ -103,7 +102,7 @@ Convert the approved evidence-anchor discovery into repository source-of-truth d
 
 - Executed `rg -n "Segment|candidate -> validate -> refine -> materialize|needs_review|validated locator|prefix|suffix|char_range" docs/design-docs/system-design.md docs/specs/core-data-model.md docs/specs/pipeline-contracts.md docs/design-docs/decision-log.md`; expected contract terms were present across the updated design/spec docs.
 - Executed `rg -n "First Delivery Slice|Acceptance Bar|text-first|canonical normalized text snapshot|internal evidence view|opening the original source|Deferred From the First Slice" docs/product-specs/product-foundation.md docs/specs/pipeline-contracts.md docs/design-docs/system-design.md`; the first-slice scope and acceptance-bar language matched the updated docs.
-- Executed `rg -n "TASK-0001|TASK-0002|2026-03-06-evidence-contract-first-slice" docs/exec-plans/tracker.md docs/exec-plans/completed/2026-03-06-evidence-contract-first-slice.md`; tracker/plan links were aligned after archival.
+- Executed `rg -n "TASK-0001|TASK-0002|2026-03-06-evidence-contract-first-slice" docs/exec-plans/completed/2026-03-06-evidence-contract-first-slice.md`; the archived-plan references remained aligned after archival.
 - Executed `git diff --check`; no whitespace or patch-format issues were reported.
 - Executed the completed-plan catalog sync check from `docs/exec-plans/completed/README.md`; no missing catalog entries were reported.
 
@@ -121,18 +120,18 @@ Convert the approved evidence-anchor discovery into repository source-of-truth d
 
 ## Review Summary
 
-- Delta review round `20260306-022805` initially blocked the change with `BLOCKER=0`, `IMPORTANT=3`, `MINOR=2`; findings covered artifact-scope ambiguity, stale tracker/plan state, and first-slice alignment wording.
-- Addressed those findings by explicitly scoping the first slice to `Atom` persistence, marking alignment as deferred/no-op, and syncing tracker/plan terminology.
+- Delta review round `20260306-022805` initially blocked the change with `BLOCKER=0`, `IMPORTANT=3`, `MINOR=2`; findings covered artifact-scope ambiguity, stale archival state, and first-slice alignment wording.
+- Addressed those findings by explicitly scoping the first slice to `Atom` persistence, marking alignment as deferred/no-op, and syncing archival terminology.
 - Delta review round `20260306-023322` then passed with `BLOCKER=0`, `IMPORTANT=0`.
 - Full-PR review round `20260306-023328` passed with `BLOCKER=0`, `IMPORTANT=0`.
-- Post-archive delta review round `20260306-024106` passed with `BLOCKER=0`, `IMPORTANT=0` after moving the plan into `completed/`, syncing the catalog, marking tracker tasks as done, and refreshing the final evidence references.
+- Post-archive delta review round `20260306-024106` passed with `BLOCKER=0`, `IMPORTANT=0` after moving the plan into `completed/`, syncing the catalog, and refreshing the final evidence references.
 
 ## Final Gate Conditions
 
 - All acceptance criteria are checked.
 - No blocking review findings remain open.
 - Product, design, and spec docs agree on the first-generation evidence contract.
-- TASK-0001 and TASK-0002 statuses in `tracker.md` match the actual repository state.
+- The archived TASK-0001/TASK-0002 record matches the actual repository state.
 - Deferred items remain explicitly documented as backlog, not hidden in ambiguous wording.
 
 ## Final Gate Summary
@@ -157,11 +156,11 @@ Convert the approved evidence-anchor discovery into repository source-of-truth d
   - Promoted text-source evidence to first-class runtime-materialized `Segment` objects across design and spec docs.
   - Defined the first delivery slice as text-first, review-first, and `Atom`-only for persistence.
   - Recorded the design decision in the decision log and archived the execution plan with validation/review/final-gate evidence.
-  - Synced tracker state so TASK-0001 and TASK-0002 are recorded as completed outcomes.
+  - Archived TASK-0001 and TASK-0002 as completed outcomes.
 - Not delivered:
   - No runtime ingestion, extraction, review, or persistence code.
   - No refresh/versioning flow, non-text locator contract, or external-page deep-link guarantee.
-- Open follow-up/debt IDs:
-  - DEBT-0001
-  - FUP-0001
-  - FUP-0002
+- Current deferred issues:
+  - `#17` Re-evaluate document split policy after first delivery slice
+  - `#9` Add optional CI status exporter for final-gate input
+  - `#10` Add helper to spawn reviewer subagents by selected dimensions

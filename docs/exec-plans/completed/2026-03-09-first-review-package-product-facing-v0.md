@@ -7,7 +7,7 @@
 - Date opened: 2026-03-08
 - Date completed: 2026-03-10
 - Related tasks: TASK-0003
-- Tracker IDs: TASK-0003, FUP-0003, FUP-0004, FUP-0005, FUP-0006
+- Spawned issues: product `#14`, `#15`, `#16`; harness `#11`, `#12`, `#13`
 - Consolidation note: This completed plan is the single durable record for TASK-0003. It replaces the earlier split between the initial implementation plan and later product-facing corrections by recording the whole branch as one task from first plan through final review-driven hardening.
 - PR: [#8](https://github.com/yzhang1918/missless/pull/8)
 
@@ -29,7 +29,7 @@ Deliver the first real `missless` slice as a product-facing, repository-coupled 
   - Render a read-only local HTML review package from run artifacts.
   - Make `skills/missless/` the product entrypoint and keep backend-specific behavior out of the product contract.
   - Add one repository-native live E2E path that closes the loop with AI review.
-  - Record harness/process gaps exposed by this slice in harness docs and tracker follow-ups without treating them as product implementation work.
+  - Record harness/process gaps exposed by this slice in harness docs and spawned issues without treating them as product implementation work.
 - Out of scope:
   - Open-ended product-level multi-turn sessions.
   - Knowledge-aware personalized decisions backed by a user knowledge base.
@@ -38,7 +38,7 @@ Deliver the first real `missless` slice as a product-facing, repository-coupled 
   - Web UI, Docker packaging, browser extension, or iOS implementation.
   - Auto-installers, binary packaging, or public `npx` distribution decisions.
   - New backend implementations beyond the currently available live-validation backend.
-  - Harness code changes beyond documentation, workflow clarification, and tracker capture.
+  - Harness code changes beyond documentation, workflow clarification, and issue capture.
 
 ## Acceptance Criteria
 
@@ -54,7 +54,7 @@ Deliver the first real `missless` slice as a product-facing, repository-coupled 
 - [x] A repository-native live E2E script can drive the current backend through `URL -> artifacts -> AI review` without requiring human judgment to close the loop.
 - [x] AI review is constrained to the current run artifacts rather than depending on unrelated repository docs or prior runs for contract inference.
 - [x] `README.md`, `skills/README.md`, and `docs/product-specs/product-foundation.md` read as a coherent product-first story for the same slice.
-- [x] The plan/tracker/archive state for TASK-0003 is truthful and consolidated as one completed task record.
+- [x] The plan/archive state for TASK-0003 is truthful and consolidated as one completed task record, with deferred work captured as GitHub issues.
 
 ## Work Breakdown
 
@@ -78,12 +78,11 @@ Deliver the first real `missless` slice as a product-facing, repository-coupled 
   - `docs/product-specs/product-foundation.md`
   - `docs/design-docs/system-design.md`
   - `docs/specs/pipeline-contracts.md`
-  - `docs/exec-plans/tracker.md`
 - Validation commands:
   - `pnpm install`
   - `pnpm -r typecheck`
   - `pnpm -r test`
-  - `rg -n "deep_read|skim|skip|knowledge-aware|review package|run directory|skills/" docs/product-specs/product-foundation.md docs/design-docs/system-design.md docs/specs/pipeline-contracts.md docs/exec-plans/tracker.md`
+  - `rg -n "deep_read|skim|skip|knowledge-aware|review package|run directory|skills/" docs/product-specs/product-foundation.md docs/design-docs/system-design.md docs/specs/pipeline-contracts.md`
 - Documentation impact:
   - Product/design/spec docs agree on the first-slice boundary before runtime code expands.
 - Exit criteria:
@@ -188,16 +187,14 @@ Deliver the first real `missless` slice as a product-facing, repository-coupled 
   - Add script-level regression coverage for the bash E2E driver's primary/fallback AI-review orchestration.
   - Keep `anchor-evidence` fail-closed even for nonexistent run directories by returning diagnostics instead of turning the failure into an uncaught filesystem error.
   - Update this plan's step statuses and acceptance checkboxes so they match the branch state.
-  - Sync `docs/exec-plans/tracker.md` and `docs/harness/tracker.md` with any new follow-ups or debt discovered during implementation.
+  - Create GitHub issues for any new follow-ups or debt discovered during implementation.
   - Archive TASK-0003 as one completed plan instead of leaving a baseline plan plus a later patch-up plan.
   - Re-run full-PR review and final gate only after plan state, docs, and validation evidence are current.
 - Expected files:
   - `scripts/e2e/`
   - `docs/exec-plans/completed/2026-03-09-first-review-package-product-facing-v0.md`
   - `docs/exec-plans/completed/README.md`
-  - `docs/harness/tracker.md`
   - `docs/harness/completed/2026-03-09-post-first-slice-loop-remediation.md`
-  - `docs/exec-plans/tracker.md`
 - Validation commands:
   - `git diff --check`
   - `pnpm -r build`
@@ -206,7 +203,7 @@ Deliver the first real `missless` slice as a product-facing, repository-coupled 
   - Full-PR review round artifact(s)
   - Final-gate artifact
 - Documentation impact:
-  - The branch narrative, live evidence, and tracker state now describe one finished task instead of two loosely-related plans.
+  - The branch narrative, live evidence, and deferred-work links now describe one finished task instead of two loosely-related plans.
 - Exit criteria:
   - The branch is reviewable without hidden context, and TASK-0003 has one complete durable record.
 
@@ -245,7 +242,7 @@ Deliver the first real `missless` slice as a product-facing, repository-coupled 
 - One repository-native real E2E run has been captured.
 - One AI review result exists for that E2E run.
 - Product, design, and spec docs agree on the slice boundary and entrypoint.
-- Product and harness trackers match the repository state.
+- Product and harness follow-up records match the repository state.
 
 ## Risks and Mitigations
 
@@ -256,7 +253,7 @@ Deliver the first real `missless` slice as a product-facing, repository-coupled 
 - Risk: Real-E2E validation drifts into ad-hoc manual work again.
   - Mitigation: Give the repository one script entrypoint and require AI review evidence.
 - Risk: Harness/process issues get ignored because product work is urgent.
-  - Mitigation: Record the observed gaps in a harness completed follow-up-capture document and tracker follow-ups in this same branch.
+  - Mitigation: Record the observed gaps in a harness completed follow-up-capture document and GitHub issues in this same branch.
 
 ## Completion Evidence
 
@@ -272,7 +269,7 @@ Deliver the first real `missless` slice as a product-facing, repository-coupled 
   - `.local/loop/final-gate-20260309-151010.json`
 - Review-loop note:
   - Subagent orchestration in the desktop session was unstable, so the round finished through explicit fallback reviewer artifacts rather than silent abandonment. That failure mode is captured in `docs/harness/completed/2026-03-09-post-first-slice-loop-remediation.md`.
-- Open follow-up/debt IDs:
-  - FUP-0003
-  - FUP-0004
-  - FUP-0005
+- Spawned product issues:
+  - `#14` Package `missless` as an installable skill plus stable runtime entrypoint
+  - `#15` Add provider fallback strategy beyond the default Jina reader
+  - `#16` Finish provider-boundary SSRF policy beyond initial resolved-host checks
