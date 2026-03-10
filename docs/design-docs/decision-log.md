@@ -47,3 +47,11 @@ Use this file to record high-impact design decisions and reversals.
 - Chosen option: extraction agents propose candidate evidence, runtime validates and materializes reusable `Segment` objects using validated text locators.
 - Consequences: text evidence identity is owned by runtime; the first slice depends on canonical stored source text and an internal evidence-reading surface; refresh/versioning and non-text locator variants stay deferred.
 - Related docs: `docs/design-docs/system-design.md`, `docs/specs/core-data-model.md`, `docs/specs/pipeline-contracts.md`, `docs/product-specs/product-foundation.md`
+
+- Date: 2026-03-09
+- Decision: Supersede the planned first-slice `Segment` materialization with runtime-validated anchored evidence records in run artifacts.
+- Context: TASK-0003 shipped a review-package-first runtime that stops before persistence and emits `evidence_result.json` plus `review_bundle.json` rather than reusable graph nodes.
+- Options considered: implement Segment persistence in the first runtime slice, keep the shipped runtime contract aligned with emitted anchored evidence artifacts.
+- Chosen option: the shipped first slice treats anchored evidence in run artifacts as the authoritative contract; reusable `Segment` identities remain deferred to a later persistence layer.
+- Consequences: current docs/specs must describe atom-local anchored evidence as the live contract, while older Segment-oriented plans remain historical design history rather than current repository truth.
+- Related docs: `docs/design-docs/system-design.md`, `docs/specs/core-data-model.md`, `docs/specs/pipeline-contracts.md`, `docs/exec-plans/completed/2026-03-09-first-review-package-product-facing-v0.md`

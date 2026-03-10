@@ -39,6 +39,9 @@ For medium or large work, these steps are mandatory:
 6. Tracker updates
    - Product work: `docs/exec-plans/tracker.md`
    - Harness/process work: `docs/harness/tracker.md`
+7. Plan archival
+   - When a task is complete, move its plan from `active/` to `completed/` before publish/final gate.
+   - Keep `active/` reserved for unfinished work only.
 
 For small work, discovery+plan can be collapsed, but rationale must still be explicit.
 

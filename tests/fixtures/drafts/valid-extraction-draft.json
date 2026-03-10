@@ -1,0 +1,36 @@
+{
+  "tldr": "Harness engineering argues that agent systems work best when repository structure and runtime legibility are deliberately designed.",
+  "decision": "deep_read",
+  "decision_reasons": [
+    "It contains portable operating patterns rather than only opinion.",
+    "The summary does not replace the implementation details."
+  ],
+  "atom_candidates": [
+    {
+      "claim": "Repository-local artifacts should act as the system of record for agent work.",
+      "significance": "This captures the repository-legibility requirement.",
+      "evidence_selectors": [
+        {
+          "exact": "system of record",
+          "prefix": "should act as the",
+          "suffix": "for agent work"
+        }
+      ]
+    },
+    {
+      "claim": "Runtime legibility is a prerequisite for agents to validate and debug their own work.",
+      "significance": "This captures the runtime-legibility requirement.",
+      "evidence_selectors": [
+        {
+          "exact": "Runtime legibility is a prerequisite",
+          "suffix": "for agents to validate and debug their own work"
+        }
+      ]
+    }
+  ],
+  "self_check": {
+    "corrected": [
+      "Kept repository legibility and runtime legibility as separate atoms."
+    ]
+  }
+}

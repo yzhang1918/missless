@@ -1,0 +1,4 @@
+interface:
+  display_name: "missless"
+  short_description: "Turn one public URL into a reading decision with evidence"
+  default_prompt: "Use $missless to turn one public URL into a missless review package with a TLDR, a reading decision, inspectable evidence, and a local HTML review page."

@@ -4,3 +4,7 @@
 !.env.example
 
 .local/
+coverage/
+dist/
+node_modules/
+*.tsbuildinfo
