@@ -83,6 +83,8 @@ Current baseline for the first delivery slice is:
 - `anchor-evidence` is deterministic runtime work, not prompt work.
 - The first implementation resolves quote-oriented selectors into
   `char_range + context_excerpt` evidence records inside `evidence_result.json`.
+- The anchored evidence artifact also records the draft and canonical-text
+  snapshot identities used to produce those evidence ranges.
 - Selector matching is strict on the exact quote and tolerant on surrounding
   whitespace in `prefix` and `suffix`, which keeps markdown line wrapping from
   breaking otherwise-valid anchors.
@@ -91,7 +93,7 @@ Current baseline for the first delivery slice is:
 - `render-review` assembles a `review_bundle.json` artifact and a local
   read-only `review.html` page from anchored evidence plus canonical text.
 - `render-review` must reject stale evidence artifacts that were generated from
-  an older draft revision.
+  an older draft revision or older canonical-text snapshot.
 - The repair loop is the same regardless of backend: generate a full draft,
   run deterministic validation, repair the draft from diagnostics, then rerun
   `anchor-evidence` and `render-review`.

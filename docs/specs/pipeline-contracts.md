@@ -90,12 +90,14 @@ proposal.
 - resolves quote-oriented selectors into deterministic evidence records with
   `char_range` and `context_excerpt`
 - writes `evidence_result.json`
+- records the draft and canonical-text snapshot identities used for anchoring
 - fails closed when exact quotes are missing, selector context does not narrow
   the match, or the selector still resolves ambiguously
 
 `render-review --run-dir <dir>`:
 - requires a successful `evidence_result.json`
 - requires `evidence_result.json` to come from the current `extraction_draft.json`
+- requires `evidence_result.json` to come from the current `canonical_text.md`
 - assembles `review_bundle.json` from draft, anchored evidence, and canonical
   text
 - writes a read-only local `review.html`

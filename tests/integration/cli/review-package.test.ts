@@ -140,6 +140,67 @@ test("render-review rejects stale evidence generated from an older draft", async
   assert.equal(rendered.status, 1);
   assert.match(
     rendered.stderr,
-    /anchor-evidence is rerun for the current extraction draft/
+    /anchor-evidence is rerun for the current extraction draft and canonical text/
+  );
+});
+
+test("render-review rejects stale evidence generated from an older canonical snapshot", async () => {
+  const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
+  const runDir = join(runsRoot, "run-stale-canonical");
+
+  await mkdir(runDir, { recursive: true });
+  await writeFile(
+    join(runDir, "run.json"),
+    "{\n  \"run_id\": \"run-stale-canonical\",\n  \"stage\": \"normalized\"\n}\n",
+    "utf8"
+  );
+  await writeFile(
+    join(runDir, "source.json"),
+    "{\n  \"source_url\": \"https://example.com/agent-harness\"\n}\n",
+    "utf8"
+  );
+  await writeFile(
+    join(runDir, "canonical_text.md"),
+    await readFile(fixtureCanonicalPath, "utf8"),
+    "utf8"
+  );
+  await writeFile(
+    join(runDir, "extraction_draft.json"),
+    await readFile(fixtureDraftPath, "utf8"),
+    "utf8"
+  );
+
+  const anchored = spawnSync(
+    process.execPath,
+    [cliEntrypoint.pathname, "anchor-evidence", "--run-dir", runDir],
+    {
+      cwd: repoRoot,
+      encoding: "utf8",
+      env: process.env
+    }
+  );
+
+  assert.equal(anchored.status, 0, anchored.stderr);
+
+  await writeFile(
+    join(runDir, "canonical_text.md"),
+    `${await readFile(fixtureCanonicalPath, "utf8")}\nChanged after anchoring.\n`,
+    "utf8"
+  );
+
+  const rendered = spawnSync(
+    process.execPath,
+    [cliEntrypoint.pathname, "render-review", "--run-dir", runDir],
+    {
+      cwd: repoRoot,
+      encoding: "utf8",
+      env: process.env
+    }
+  );
+
+  assert.equal(rendered.status, 1);
+  assert.match(
+    rendered.stderr,
+    /anchor-evidence is rerun for the current extraction draft and canonical text/
   );
 });

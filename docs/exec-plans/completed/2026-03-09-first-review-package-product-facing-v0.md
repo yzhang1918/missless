@@ -7,7 +7,7 @@
 - Date opened: 2026-03-08
 - Date completed: 2026-03-10
 - Related tasks: TASK-0003
-- Tracker IDs: TASK-0003, FUP-0003
+- Tracker IDs: TASK-0003, FUP-0003, FUP-0004, FUP-0005
 - Consolidation note: This completed plan is the single durable record for TASK-0003. It replaces the earlier split between the initial implementation plan and later product-facing corrections by recording the whole branch as one task from first plan through final review-driven hardening.
 - PR: [#8](https://github.com/yzhang1918/missless/pull/8)
 
@@ -185,6 +185,7 @@ Deliver the first real `missless` slice as a product-facing, repository-coupled 
   - Keep AI review artifact-scoped so the reviewer judges the current run rather than reading unrelated repo docs or prior runs for context.
   - Record review-loop fallback behavior as evidence and harness follow-up rather than silent success.
   - Tighten live-E2E acceptance so the run fails when AI review returns `ok: false` or when required review artifacts are missing.
+  - Add script-level regression coverage for the bash E2E driver's primary/fallback AI-review orchestration.
   - Keep `anchor-evidence` fail-closed even for nonexistent run directories by returning diagnostics instead of turning the failure into an uncaught filesystem error.
   - Update this plan's step statuses and acceptance checkboxes so they match the branch state.
   - Sync `docs/exec-plans/tracker.md` and `docs/harness/tracker.md` with any new follow-ups or debt discovered during implementation.

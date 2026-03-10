@@ -50,9 +50,12 @@ export async function buildReviewBundleInRunDir(
     );
   }
 
-  if (evidenceResult.draft_sha256 !== sha256(draftText)) {
+  if (
+    evidenceResult.draft_sha256 !== sha256(draftText) ||
+    evidenceResult.canonical_text_sha256 !== sha256(canonicalText)
+  ) {
     throw new Error(
-      "Cannot render review until anchor-evidence is rerun for the current extraction draft."
+      "Cannot render review until anchor-evidence is rerun for the current extraction draft and canonical text."
     );
   }
 

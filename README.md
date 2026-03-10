@@ -2,7 +2,7 @@
 
 From FOMO to Focus.
 
-missless helps you decide what matters from links and ideas.
+missless turns a URL into a reading decision you can inspect.
 
 Drop a link. Get a decision.
 

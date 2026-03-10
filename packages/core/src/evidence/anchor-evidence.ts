@@ -44,6 +44,7 @@ export interface EvidenceAnchoringResult {
   readonly summary: string;
   readonly run_dir: string;
   readonly draft_sha256?: string;
+  readonly canonical_text_sha256?: string;
   readonly atoms: readonly AnchoredAtom[];
   readonly diagnostics: readonly EvidenceDiagnostic[];
 }
@@ -251,6 +252,7 @@ export async function anchorEvidenceInRunDir(
   ]);
   const draft = JSON.parse(draftText) as ExtractionDraft;
   const draftSha256 = sha256(draftText);
+  const canonicalTextSha256 = sha256(canonicalText);
   const atoms: AnchoredAtom[] = [];
   const diagnostics: EvidenceDiagnostic[] = [];
 
@@ -288,6 +290,7 @@ export async function anchorEvidenceInRunDir(
         : `Evidence anchoring failed with ${diagnostics.length} issue(s).`,
     run_dir: resolvedRunDir,
     draft_sha256: draftSha256,
+    canonical_text_sha256: canonicalTextSha256,
     atoms,
     diagnostics
   };
