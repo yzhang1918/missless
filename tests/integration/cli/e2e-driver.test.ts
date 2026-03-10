@@ -74,6 +74,29 @@ if (reviewMatch !== null) {
   const draftPath = path.join(cwd, "tests/fixtures/drafts/valid-extraction-draft.json");
   fs.copyFileSync(draftPath, path.join(runDir, "extraction_draft.json"));
 
+  if (mode === "stale-ai-review") {
+    fs.writeFileSync(
+      path.join(runDir, "ai_review.json"),
+      JSON.stringify(
+        {
+          ok: true,
+          summary: "stale artifact",
+          findings: [],
+          reviewer_backend: "fake-codex",
+          reviewed_artifacts: [
+            "review_bundle.json",
+            "evidence_result.json",
+            "canonical_text.md",
+            "review.html"
+          ]
+        },
+        null,
+        2
+      ) + "\n",
+      "utf8"
+    );
+  }
+
   for (const command of ["validate-draft", "anchor-evidence", "render-review"]) {
     const result = spawnSync(
       process.execPath,
@@ -120,6 +143,11 @@ if (aiReviewMatch !== null) {
   const aiReviewFile = aiReviewFileMatch[1];
 
   if (prompt.includes("Primary AI review attempt.")) {
+    if (mode === "stale-ai-review") {
+      process.stdout.write(JSON.stringify({ stage: "ai-review", attempt: "primary-stale" }) + "\n");
+      process.exit(0);
+    }
+
     if (mode === "primary-negative") {
       const payload = {
         ok: false,
@@ -145,6 +173,11 @@ if (aiReviewMatch !== null) {
 
   if (mode === "all-invalid") {
     process.stdout.write(JSON.stringify({ stage: "ai-review", attempt: "fallback-invalid" }) + "\n");
+    process.exit(0);
+  }
+
+  if (mode === "stale-ai-review") {
+    process.stdout.write(JSON.stringify({ stage: "ai-review", attempt: "fallback-stale" }) + "\n");
     process.exit(0);
   }
 
@@ -463,6 +496,104 @@ test("run_missless_review.sh fails closed when both AI review attempts miss the 
     sessionRoot = result.stdout.match(/^Session root: (.+)$/m)?.[1] ?? "";
 
     await assert.rejects(() => readFile(join(runDir, "ai_review_context.json"), "utf8"));
+    const primaryStatus = JSON.parse(
+      await readFile(join(runDir, "ai_review_primary_status.json"), "utf8")
+    ) as { artifact_exists: boolean; note: string };
+    const fallbackStatus = JSON.parse(
+      await readFile(join(runDir, "ai_review_fallback_status.json"), "utf8")
+    ) as { artifact_exists: boolean; note: string };
+
+    assert.equal(primaryStatus.artifact_exists, false);
+    assert.equal(fallbackStatus.artifact_exists, false);
+    assert.match(primaryStatus.note, /did not produce an acceptable ai_review\.json/);
+    assert.match(fallbackStatus.note, /did not produce an acceptable ai_review\.json/);
+  } finally {
+    server.closeAllConnections();
+    server.close();
+
+    if (sessionRoot !== "") {
+      await rm(sessionRoot, { recursive: true, force: true });
+    }
+
+    await rm(fakeBinDir, { recursive: true, force: true });
+  }
+});
+
+test("run_missless_review.sh ignores stale ai_review.json artifacts from earlier attempts", async () => {
+  const fixtureBody = await readFile(fixturePath, "utf8");
+  const server = createServer((request, response) => {
+    if (request.url === "/https://example.com/agent-harness") {
+      response.writeHead(200, { "content-type": "text/plain; charset=utf-8" });
+      response.end(fixtureBody);
+      return;
+    }
+
+    response.writeHead(404);
+    response.end("missing fixture");
+  });
+
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  server.unref();
+
+  const fakeBinDir = await mkdtemp(join(tmpdir(), "missless-fake-codex-"));
+  const fakeCodexPath = join(fakeBinDir, "codex");
+
+  await writeFile(fakeCodexPath, fakeCodexSource, "utf8");
+  await chmod(fakeCodexPath, 0o755);
+
+  let sessionRoot = "";
+
+  try {
+    const address = server.address();
+
+    if (address === null || typeof address === "string") {
+      throw new Error("mock server did not expose a TCP address");
+    }
+
+    const result = await new Promise<{
+      status: number | null;
+      stdout: string;
+      stderr: string;
+    }>((resolve, reject) => {
+      const child = spawn(
+        "bash",
+        ["scripts/e2e/run_missless_review.sh", "https://example.com/agent-harness"],
+        {
+          cwd: repoRoot,
+          env: {
+            ...process.env,
+            PATH: `${fakeBinDir}:${process.env.PATH ?? ""}`,
+            MISSLESS_FAKE_CODEX_MODE: "stale-ai-review",
+            MISSLESS_JINA_BASE_URL: `http://127.0.0.1:${address.port}/`
+          },
+          stdio: ["ignore", "pipe", "pipe"]
+        }
+      );
+      let stdout = "";
+      let stderr = "";
+
+      child.stdout.on("data", (chunk) => {
+        stdout += chunk.toString();
+      });
+      child.stderr.on("data", (chunk) => {
+        stderr += chunk.toString();
+      });
+      child.on("error", reject);
+      child.on("close", (status) => {
+        resolve({ status, stdout, stderr });
+      });
+    });
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /AI review did not produce a valid artifact/);
+
+    const runDirMatch = result.stdout.match(/^Run directory: (.+)$/m);
+    assert.ok(runDirMatch?.[1], "expected Run directory output");
+    const runDir = runDirMatch?.[1] ?? "";
+
+    sessionRoot = result.stdout.match(/^Session root: (.+)$/m)?.[1] ?? "";
+
     const primaryStatus = JSON.parse(
       await readFile(join(runDir, "ai_review_primary_status.json"), "utf8")
     ) as { artifact_exists: boolean; note: string };

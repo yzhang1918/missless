@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { lookup } from "node:dns/promises";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { isIP } from "node:net";
 import { resolve } from "node:path";
@@ -7,8 +8,17 @@ import { getRunArtifactPaths, type RunArtifactPaths } from "@missless/contracts"
 
 import { createJinaReaderProvider } from "../providers/jina.js";
 import type { SourceProvider } from "../providers/provider.js";
+import { writeCleanupToken } from "../runtime/cleanup-token.js";
+import {
+  registerRunDir,
+  unregisterRunDir
+} from "../runtime/run-registry.js";
 
 const SAFE_RUN_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
+
+export type HostResolver = (
+  hostname: string
+) => Promise<readonly { address: string; family: 4 | 6 }[]>;
 
 export interface RunManifest {
   readonly run_id: string;
@@ -35,6 +45,8 @@ export interface FetchNormalizeInput {
   readonly provider?: SourceProvider;
   readonly now?: Date;
   readonly runId?: string;
+  readonly hostResolver?: HostResolver;
+  readonly cleanupTokenWriter?: (runDir: string) => Promise<void>;
 }
 
 export interface FetchNormalizeResult {
@@ -180,7 +192,24 @@ function assertSafeRunId(runId: string): void {
   }
 }
 
-function assertSafeHttpUrl(sourceUrl: string): void {
+async function defaultHostResolver(
+  hostname: string
+): Promise<readonly { address: string; family: 4 | 6 }[]> {
+  const results = await lookup(hostname, {
+    all: true,
+    verbatim: true
+  });
+
+  return results.filter(
+    (result): result is { address: string; family: 4 | 6 } =>
+      result.family === 4 || result.family === 6
+  );
+}
+
+async function assertSafeHttpUrl(
+  sourceUrl: string,
+  hostResolver: HostResolver
+): Promise<void> {
   const parsed = new URL(sourceUrl);
 
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
@@ -194,6 +223,16 @@ function assertSafeHttpUrl(sourceUrl: string): void {
   if (isBlockedHostname(parsed.hostname)) {
     throw new Error(
       "fetch-normalize rejects localhost, private, link-local, and single-label hosts"
+    );
+  }
+
+  const resolvedAddresses = await hostResolver(
+    stripTrailingDnsDots(stripIpv6Brackets(parsed.hostname).toLowerCase())
+  );
+
+  if (resolvedAddresses.some((result) => isBlockedHostname(result.address))) {
+    throw new Error(
+      "fetch-normalize rejects hostnames that resolve to localhost, private, or link-local addresses"
     );
   }
 }
@@ -210,9 +249,10 @@ export function createRunId(now = new Date()): string {
 export async function fetchNormalizeSource(
   input: FetchNormalizeInput
 ): Promise<FetchNormalizeResult> {
-  assertSafeHttpUrl(input.sourceUrl);
+  await assertSafeHttpUrl(input.sourceUrl, input.hostResolver ?? defaultHostResolver);
 
   const provider = input.provider ?? createJinaReaderProvider();
+  const cleanupTokenWriter = input.cleanupTokenWriter ?? writeCleanupToken;
   const runsDir = resolve(input.runsDir ?? ".local/runs");
   const now = input.now ?? new Date();
   const runId = input.runId ?? createRunId(now);
@@ -250,8 +290,13 @@ export async function fetchNormalizeSource(
       writeJsonFile(artifactPaths.source, sourceArtifact),
       writeFile(artifactPaths.canonicalText, fetched.canonicalText, "utf8")
     ]);
+    await registerRunDir(runDir);
+    await cleanupTokenWriter(runDir);
   } catch (error) {
-    await rm(runDir, { recursive: true, force: true });
+    await Promise.allSettled([
+      unregisterRunDir(runDir),
+      rm(runDir, { recursive: true, force: true })
+    ]);
     throw error;
   }
 

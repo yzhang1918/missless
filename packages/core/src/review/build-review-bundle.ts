@@ -11,6 +11,8 @@ import type {
   AnchoredAtom,
   EvidenceAnchoringResult
 } from "../evidence/anchor-evidence.js";
+import { hasValidCleanupToken } from "../runtime/cleanup-token.js";
+import { isRegisteredRunDir } from "../runtime/run-registry.js";
 
 export interface ReviewBundle {
   readonly generated_at: string;
@@ -44,16 +46,6 @@ function isTrustedRunManifest(value: unknown): boolean {
   );
 }
 
-function isTrustedReviewBundleMarker(value: unknown, runDir: string): boolean {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  const record = value as Record<string, unknown>;
-
-  return typeof record.run_dir === "string" && resolve(record.run_dir) === runDir;
-}
-
 async function cleanupReviewArtifacts(
   reviewBundlePath: string,
   reviewHtmlPath: string
@@ -78,13 +70,20 @@ async function canCleanupReviewArtifacts(
   artifactPaths: ReturnType<typeof getRunArtifactPaths>
 ): Promise<boolean> {
   try {
-    const [runDirStat, reviewBundleStat, reviewHtmlStat, runManifestStat] =
+    const [
+      runDirStat,
+      reviewBundleStat,
+      reviewHtmlStat,
+      registeredRunDir,
+      validCleanupToken
+    ] =
       await Promise.all([
-      stat(artifactPaths.runDir),
-      statOrError(artifactPaths.reviewBundle),
-      statOrError(artifactPaths.reviewHtml),
-      statOrError(artifactPaths.runManifest)
-    ]);
+        stat(artifactPaths.runDir),
+        statOrError(artifactPaths.reviewBundle),
+        statOrError(artifactPaths.reviewHtml),
+        isRegisteredRunDir(artifactPaths.runDir),
+        hasValidCleanupToken(artifactPaths.runDir)
+      ]);
     const isExistingFile = (
       value: Awaited<ReturnType<typeof stat>> | Error
     ): boolean => !(value instanceof Error) && value.isFile();
@@ -92,38 +91,15 @@ async function canCleanupReviewArtifacts(
     const hasRenderedOutputs =
       isExistingFile(reviewBundleStat) || isExistingFile(reviewHtmlStat);
 
-    if (!runDirStat.isDirectory() || !hasRenderedOutputs) {
+    if (
+      !runDirStat.isDirectory() ||
+      !hasRenderedOutputs ||
+      (!registeredRunDir && !validCleanupToken)
+    ) {
       return false;
     }
 
-    if (isExistingFile(reviewBundleStat)) {
-      try {
-        const reviewBundle = JSON.parse(
-          await readFile(artifactPaths.reviewBundle, "utf8")
-        ) as unknown;
-
-        if (isTrustedReviewBundleMarker(reviewBundle, artifactPaths.runDir)) {
-          return true;
-        }
-      } catch {
-        // Fall through to the run-manifest check below.
-      }
-    }
-
-    if (!isExistingFile(runManifestStat)) {
-      return false;
-    }
-
-    try {
-      const runManifest = JSON.parse(
-        await readFile(artifactPaths.runManifest, "utf8")
-      ) as unknown;
-
-      return isTrustedRunManifest(runManifest);
-    } catch {
-      return false;
-    }
-
+    return true;
   } catch (error) {
     if (
       error instanceof Error &&

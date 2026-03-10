@@ -64,6 +64,16 @@ Current baseline for the first delivery slice is:
 
 - `fetch-normalize` is the first deterministic CLI seam. It creates a stable
   `run_dir` and writes `run.json`, `source.json`, and `canonical_text.md`.
+- `fetch-normalize` also registers the run in runtime-owned cleanup state
+  under missless runtime state, outside caller-supplied runs roots, so later
+  repair flows can distinguish real missless run directories from arbitrary
+  caller-supplied folders when cleaning stale derived artifacts.
+- Current cleanup state uses both a runs-root registry and a per-run
+  attestation so stale-output cleanup can stay fail-closed even when one
+  runtime-state file is missing or corrupt.
+- The runtime also writes a signed run-local cleanup token so restored local
+  runs can still prove cleanup ownership without trusting a caller-editable
+  plaintext marker.
 - Fetch/normalize uses a provider abstraction. Jina Reader is the default
   implementation for the first slice.
 - Local and mocked runs may override the reader endpoint with
@@ -72,6 +82,8 @@ Current baseline for the first delivery slice is:
 - `fetch-normalize` rejects embedded credentials plus localhost/private
   targets by default so repository runs do not silently exfiltrate internal or
   credentialed URLs through the third-party reader.
+- `fetch-normalize` now also rejects hostnames whose resolved addresses point
+  at loopback, private, or link-local targets before provider fetch begins.
 - `JINA_API_KEY` is only forwarded to the official `r.jina.ai` origin unless
   `MISSLESS_JINA_FORWARD_API_KEY_TO_OVERRIDE` explicitly opts into credential
   forwarding for a custom override host.
@@ -99,6 +111,9 @@ Current baseline for the first delivery slice is:
   read-only `review.html` page from anchored evidence plus canonical text.
 - `render-review` must reject stale evidence artifacts that were generated from
   an older draft revision or older canonical-text snapshot.
+- `render-review` only deletes stale rendered outputs when the enclosing run
+  directory remains trusted by runtime-owned cleanup state or by a valid
+  signed run-local cleanup token.
 - The repair loop is the same regardless of backend: generate a full draft,
   run deterministic validation, repair the draft from diagnostics, then rerun
   `anchor-evidence` and `render-review`.

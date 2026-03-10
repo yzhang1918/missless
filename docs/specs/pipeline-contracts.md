@@ -63,10 +63,20 @@ proposal.
 - accepts one HTTP(S) URL plus optional `--runs-dir <dir>`
 - creates a stable `run_dir`
 - writes `run.json`, `source.json`, and `canonical_text.md`
+- registers the run in runtime-owned cleanup state under missless runtime
+  state, outside caller-supplied runs roots
+- current cleanup state includes a runs-root registry plus a per-run
+  attestation so cleanup decisions do not depend on caller-writable files
+  inside the run directory
+- runtime also writes a signed run-local cleanup token so restored local runs
+  can still prove stale-output ownership without trusting a plaintext
+  in-directory marker
 - uses a provider abstraction with Jina Reader as the first implementation
 - allows local/mock provider overrides through `MISSLESS_JINA_BASE_URL`
 - rejects source URLs with embedded credentials and rejects localhost,
   private, link-local, and single-label hosts by default
+- rejects hostnames that resolve to loopback, private, or link-local
+  addresses before provider fetch begins
 - may use `JINA_API_KEY` when an authenticated Jina environment is required
 - only forwards `JINA_API_KEY` to the official `r.jina.ai` reader host unless
   `MISSLESS_JINA_FORWARD_API_KEY_TO_OVERRIDE` explicitly opts into forwarding
@@ -97,9 +107,13 @@ proposal.
   the match, or the selector still resolves ambiguously
 
 `render-review --run-dir <dir>`:
+- requires a valid normalized `run.json` for the run
 - requires a successful `evidence_result.json`
 - requires `evidence_result.json` to come from the current `extraction_draft.json`
 - requires `evidence_result.json` to come from the current `canonical_text.md`
+- only cleans stale rendered outputs when the run is still trusted by the
+  runtime-owned cleanup state outside caller-supplied runs roots or by a
+  valid signed run-local cleanup token
 - assembles `review_bundle.json` from draft, anchored evidence, and canonical
   text
 - writes a read-only local `review.html`

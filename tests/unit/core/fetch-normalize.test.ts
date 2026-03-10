@@ -5,6 +5,40 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { fetchNormalizeSource } from "../../../packages/core/src/index.ts";
+import { getCleanupTokenPath } from "../../../packages/core/src/runtime/cleanup-token.ts";
+import {
+  getRunAttestationPath,
+  getRunRegistryPath
+} from "../../../packages/core/src/runtime/run-registry.ts";
+
+const publicHostResolver = async () =>
+  [
+    {
+      address: "93.184.216.34",
+      family: 4 as const
+    }
+  ] satisfies readonly { address: string; family: 4 | 6 }[];
+
+async function readRegistryRunDirs(runDir: string): Promise<readonly string[]> {
+  try {
+    const text = await readFile(getRunRegistryPath(runDir), "utf8");
+    const parsed = JSON.parse(text) as { run_dirs?: unknown };
+
+    return Array.isArray(parsed.run_dirs)
+      ? parsed.run_dirs.filter((value): value is string => typeof value === "string")
+      : [];
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+    ) {
+      return [];
+    }
+
+    throw error;
+  }
+}
 
 test("fetchNormalizeSource rejects source URLs with embedded credentials", async () => {
   const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-sec-"));
@@ -85,6 +119,25 @@ test("fetchNormalizeSource rejects IPv4-mapped IPv6 loopback hosts", async () =>
   );
 });
 
+test("fetchNormalizeSource rejects hostnames that resolve to loopback or private addresses", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-sec-"));
+
+  await assert.rejects(
+    () =>
+      fetchNormalizeSource({
+        sourceUrl: "https://localtest.me/article",
+        runsDir,
+        hostResolver: async () => [
+          {
+            address: "127.0.0.1",
+            family: 4
+          }
+        ]
+      }),
+    /resolve to localhost, private, or link-local addresses/
+  );
+});
+
 test("fetchNormalizeSource creates missing parent directories for runsDir", async () => {
   const tempRoot = await mkdtemp(join(tmpdir(), "missless-fetch-runs-"));
   const runsDir = join(tempRoot, "nested", "runs");
@@ -93,6 +146,7 @@ test("fetchNormalizeSource creates missing parent directories for runsDir", asyn
     runsDir,
     runId: "run-test",
     now: new Date("2026-03-09T00:00:00.000Z"),
+    hostResolver: publicHostResolver,
     provider: {
       name: "fixture",
       async fetch() {
@@ -114,6 +168,8 @@ test("fetchNormalizeSource creates missing parent directories for runsDir", asyn
     await readFile(join(result.runDir, "canonical_text.md"), "utf8"),
     /Canonical text/
   );
+  assert.deepEqual(await readRegistryRunDirs(result.runDir), [result.runDir]);
+  await stat(getCleanupTokenPath(result.runDir));
 });
 
 test("fetchNormalizeSource rejects unsafe run IDs that escape runsDir", async () => {
@@ -124,7 +180,8 @@ test("fetchNormalizeSource rejects unsafe run IDs that escape runsDir", async ()
       fetchNormalizeSource({
         sourceUrl: "https://example.com/article",
         runsDir,
-        runId: "../../outside"
+        runId: "../../outside",
+        hostResolver: publicHostResolver
       }),
     /run IDs with path separators or unsafe segments/
   );
@@ -140,6 +197,7 @@ test("fetchNormalizeSource does not leave a run directory behind when provider f
         sourceUrl: "https://example.com/article",
         runsDir,
         runId,
+        hostResolver: publicHostResolver,
         provider: {
           name: "fixture",
           async fetch() {
@@ -157,6 +215,21 @@ test("fetchNormalizeSource does not leave a run directory behind when provider f
       "code" in error &&
       error.code === "ENOENT"
   );
+  assert.deepEqual(await readRegistryRunDirs(join(runsDir, runId)), []);
+  await assert.rejects(
+    () => stat(getRunAttestationPath(join(runsDir, runId))),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+  await assert.rejects(
+    () => stat(getCleanupTokenPath(join(runsDir, runId))),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
 });
 
 test("fetchNormalizeSource removes the run directory when artifact writes fail after creation", async () => {
@@ -169,6 +242,7 @@ test("fetchNormalizeSource removes the run directory when artifact writes fail a
         sourceUrl: "https://example.com/article",
         runsDir,
         runId,
+        hostResolver: publicHostResolver,
         provider: {
           name: "fixture",
           async fetch() {
@@ -189,6 +263,78 @@ test("fetchNormalizeSource removes the run directory when artifact writes fail a
 
   await assert.rejects(
     () => stat(join(runsDir, runId)),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+  assert.deepEqual(await readRegistryRunDirs(join(runsDir, runId)), []);
+  await assert.rejects(
+    () => stat(getRunAttestationPath(join(runsDir, runId))),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+  await assert.rejects(
+    () => stat(getCleanupTokenPath(join(runsDir, runId))),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+});
+
+test("fetchNormalizeSource removes runtime cleanup state when cleanup-token creation fails after registration", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-token-fail-"));
+  const runId = "run-token-fail";
+  const runDir = join(runsDir, runId);
+
+  await assert.rejects(
+    () =>
+      fetchNormalizeSource({
+        sourceUrl: "https://example.com/article",
+        runsDir,
+        runId,
+        hostResolver: publicHostResolver,
+        provider: {
+          name: "fixture",
+          async fetch() {
+            return {
+              canonicalText: "Canonical text\n",
+              fetchedAt: "2026-03-09T00:00:00.000Z",
+              providerUrl: "https://reader.example/article",
+              responseStatus: 200,
+              responseHeaders: {
+                "content-type": "text/markdown"
+              }
+            };
+          }
+        },
+        async cleanupTokenWriter() {
+          throw new Error("cleanup token write failed");
+        }
+      }),
+    /cleanup token write failed/
+  );
+
+  await assert.rejects(
+    () => stat(runDir),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+  assert.deepEqual(await readRegistryRunDirs(runDir), []);
+  await assert.rejects(
+    () => stat(getRunAttestationPath(runDir)),
+    (error: unknown) =>
+      error instanceof Error &&
+      "code" in error &&
+      error.code === "ENOENT"
+  );
+  await assert.rejects(
+    () => stat(getCleanupTokenPath(runDir)),
     (error: unknown) =>
       error instanceof Error &&
       "code" in error &&

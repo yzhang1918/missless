@@ -187,6 +187,8 @@ run_ai_review_attempt() {
   local jsonl_file="$LOGS_DIR/ai-review-${attempt}.jsonl"
   local status_file="$RUN_DIR/ai_review_${attempt}_status.json"
 
+  rm -f "$AI_REVIEW_FILE"
+
   cat > "$prompt_file" <<EOF
 Review the missless run artifacts in '$RUN_DIR'.
 
