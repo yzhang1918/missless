@@ -136,6 +136,7 @@ Deliver one provider-boundary slice that hardens SSRF enforcement beyond the ini
 ## Completion Evidence
 
 - Branch: `codex/15-16-provider-boundary-ssrf-fallback`
+- PR: [#25](https://github.com/yzhang1918/missless/pull/25)
 - Validation:
   - `pnpm -r build`
   - `pnpm -r typecheck`
@@ -154,8 +155,7 @@ Deliver one provider-boundary slice that hardens SSRF enforcement beyond the ini
   - Delta review round `20260311-143942` passed review gate with `BLOCKER=0` and `IMPORTANT=0` in `.local/loop/review-20260311-143942.json`.
   - One residual `MINOR` remains: CLI integration coverage still does not exercise the shipped fallback boundary directly.
 - Final gate evidence:
-  - Local-equivalent CI metadata in `.local/loop/ci-local-20260311-143942.json` recorded passing `build`, `typecheck`, and `test` checks plus `docs_updated=true`.
-  - `.local/loop/final-gate-20260311-143942.json` failed because `branch_up_to_date=false` after `origin/main` advanced during the session.
-  - Final gate status is `no-go` until the branch is refreshed against `origin/main`; review and local validation signals are otherwise green.
+  - After rebasing the branch onto current `origin/main`, republishing as PR `#25`, and rerunning local-equivalent CI metadata, `.local/loop/final-gate-20260311-143942.json` passed with `review_ok=true`, `ci_ok=true`, `branch_ok=true`, and `docs_ok=true`.
+  - Current final gate status is `go`; the branch is ready for landing, subject to the remaining `MINOR` CLI-integration coverage gap noted in the review artifact.
 - Issue update note:
-  - Work was executed against GitHub issues `#15` and `#16`; issue comments should reference this completed plan path and the validation result until a landing PR exists.
+  - Work was executed against GitHub issues `#15` and `#16`; issue comments now reference both this completed plan path and PR `#25`.
