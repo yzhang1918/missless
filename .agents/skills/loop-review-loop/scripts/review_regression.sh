@@ -30,6 +30,7 @@ trap 'rm -rf "$tmp_root"' EXIT
 origin_dir="$tmp_root/origin.git"
 git init --bare "$origin_dir" >/dev/null 2>&1
 work_dir="$tmp_root/work"
+updater_dir="$tmp_root/updater"
 
 git clone "$origin_dir" "$work_dir" >/dev/null 2>&1
 (
@@ -84,7 +85,66 @@ plan_path="docs/harness/completed/2026-03-11-review-regression-plan.md"
 head_sha="$(cd "$work_dir" && git rev-parse HEAD)"
 base_sha="$(cd "$work_dir" && git rev-parse origin/main)"
 
-# 1) review_init rejects non-timestamp round ids.
+# 1) review_init repo-syncs remote refs before starting the round.
+git clone "$origin_dir" "$updater_dir" >/dev/null 2>&1
+(
+  cd "$updater_dir" &&
+  git config user.name "Codex" &&
+  git config user.email "codex@example.com" &&
+  git checkout -b codex/remote-probe origin/main >/dev/null &&
+  printf 'probe\n' > probe.txt &&
+  git add probe.txt &&
+  git commit -m "probe" >/dev/null &&
+  git push -u origin codex/remote-probe >/dev/null
+)
+if (
+  cd "$work_dir" &&
+  git rev-parse --verify --quiet origin/codex/remote-probe >/dev/null
+); then
+  fail "expected origin/codex/remote-probe to be absent before repo-sync preflight"
+fi
+(
+  cd "$work_dir" &&
+  "$review_init" 20260305-225959 full-pr >/dev/null
+)
+(
+  cd "$work_dir" &&
+  git rev-parse --verify --quiet origin/codex/remote-probe >/dev/null
+) || fail "review_init did not repo-sync remote refs"
+
+# 1.1) review_init prunes stale remote-tracking refs before starting the round.
+(
+  cd "$updater_dir" &&
+  git checkout -b codex/prune-probe origin/main >/dev/null &&
+  printf 'stale\n' > stale.txt &&
+  git add stale.txt &&
+  git commit -m "stale probe" >/dev/null &&
+  git push -u origin codex/prune-probe >/dev/null
+)
+(
+  cd "$work_dir" &&
+  git fetch origin codex/prune-probe:refs/remotes/origin/codex/prune-probe >/dev/null 2>&1
+)
+(
+  cd "$updater_dir" &&
+  git push origin --delete codex/prune-probe >/dev/null
+)
+(
+  cd "$work_dir" &&
+  git rev-parse --verify --quiet origin/codex/prune-probe >/dev/null
+) || fail "expected origin/codex/prune-probe to exist before repo-sync prune preflight"
+(
+  cd "$work_dir" &&
+  "$review_init" 20260305-225960 full-pr >/dev/null
+)
+if (
+  cd "$work_dir" &&
+  git rev-parse --verify --quiet origin/codex/prune-probe >/dev/null
+); then
+  fail "review_init did not prune stale remote-tracking refs"
+fi
+
+# 2) review_init rejects non-timestamp round ids.
 if (
   cd "$work_dir" &&
   "$review_init" bad-round-id full-pr >/dev/null 2>&1
@@ -92,7 +152,7 @@ if (
   fail "review_init accepted invalid round-id"
 fi
 
-# 2) review_prepare rejects non-timestamp round ids.
+# 3) review_prepare rejects non-timestamp round ids.
 if (
   cd "$work_dir" &&
   "$review_prepare" bad-round-id full-pr security >/dev/null 2>&1
@@ -100,7 +160,7 @@ if (
   fail "review_prepare accepted invalid round-id"
 fi
 
-# 3) review_prepare rejects invalid scopes.
+# 4) review_prepare rejects invalid scopes.
 if (
   cd "$work_dir" &&
   "$review_prepare" 20260305-230000 review-all security >/dev/null 2>&1
@@ -108,7 +168,7 @@ if (
   fail "review_prepare accepted invalid scope"
 fi
 
-# 4) review_prepare rejects focus for a dimension that was not selected.
+# 5) review_prepare rejects focus for a dimension that was not selected.
 if (
   cd "$work_dir" &&
   "$review_prepare" 20260305-230000 full-pr --focus "security=Check secrets handling" correctness >/dev/null 2>&1
@@ -116,7 +176,7 @@ if (
   fail "review_prepare accepted focus for an unselected dimension"
 fi
 
-# 5) review_prepare rejects dimensions that normalize to the same artifact slug.
+# 6) review_prepare rejects dimensions that normalize to the same artifact slug.
 if (
   cd "$work_dir" &&
   "$review_prepare" 20260305-230000 full-pr "docs/spec consistency" "docs-spec-consistency" >/dev/null 2>&1
@@ -124,7 +184,7 @@ if (
   fail "review_prepare accepted dimensions with duplicate normalized slugs"
 fi
 
-# 6) review_prepare emits a launch manifest with stable prompt/output fields.
+# 7) review_prepare emits a launch manifest with stable prompt/output fields.
 prepare_manifest_rel="$(
   cd "$work_dir" &&
   "$review_prepare" 20260305-230000 full-pr --focus "security=Check secrets handling" security "docs/spec consistency"
@@ -145,14 +205,14 @@ security_prompt="$(jq -r '.reviewers[] | select(.dimension == "security") | .pro
 [[ "$security_prompt" == *"\$loop-reviewer"* ]] || fail "review_prepare prompt did not reference loop-reviewer"
 [[ "$security_prompt" == *".local/loop/review-20260305-230000-security.json"* ]] || fail "review_prepare prompt did not include reviewer output path"
 
-# 7) initialize a valid review round.
+# 8) initialize a valid review round.
 (
   cd "$work_dir" &&
   "$review_init" 20260305-230000 full-pr >/dev/null
 )
 assert_exists "$work_dir/.local/loop/review-20260305-230000.json"
 
-# 8) aggregate rejects dash-prefixed reviewer filenames.
+# 9) aggregate rejects dash-prefixed reviewer filenames.
 cat > "$work_dir/.local/loop/-bad.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
 JSON
@@ -166,7 +226,7 @@ if (
   fail "review_aggregate accepted dash-prefixed reviewer file"
 fi
 
-# 9) aggregate rejects non-timestamp round ids.
+# 10) aggregate rejects non-timestamp round ids.
 if (
   cd "$work_dir" &&
   "$review_aggregate" bad-round-id .local/loop/reviewer-empty.json >/dev/null 2>&1
@@ -174,7 +234,7 @@ if (
   fail "review_aggregate accepted invalid round-id"
 fi
 
-# 10) aggregate rejects unknown severity values.
+# 11) aggregate rejects unknown severity values.
 cat > "$work_dir/.local/loop/reviewer-bad-severity.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[{"id":"Sx","severity":"WARN"}]}
 JSON
@@ -185,7 +245,7 @@ if (
   fail "review_aggregate accepted unknown severity token"
 fi
 
-# 11) aggregate computes counts from findings payload.
+# 12) aggregate computes counts from findings payload.
 cat > "$work_dir/.local/loop/reviewer-a.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[{"id":"S1","severity":"IMPORTANT"}]}
 JSON
@@ -201,7 +261,7 @@ assert_exists "$agg_file"
 important_count="$(jq -r '.counts.important' "$agg_file")"
 [[ "$important_count" == "1" ]] || fail "expected important count=1, got $important_count"
 
-# 11.1) review_finalize fails when important findings remain and still prints aggregate path.
+# 12.1) review_finalize fails when important findings remain and still prints aggregate path.
 set +e
 finalize_fail_output="$(
   cd "$work_dir" &&
@@ -215,7 +275,7 @@ fi
 [[ "$finalize_fail_status" -eq 2 ]] || fail "review_finalize expected exit status 2, got $finalize_fail_status"
 [[ "$finalize_fail_output" == *".local/loop/review-20260305-230000.json"* ]] || fail "review_finalize did not print aggregate path on failure"
 
-# 11.2) review_finalize passes for clean reviewer artifacts.
+# 12.2) review_finalize passes for clean reviewer artifacts.
 cat > "$work_dir/.local/loop/reviewer-clean-a.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
 JSON
@@ -228,7 +288,7 @@ JSON
 )
 assert_exists "$work_dir/.local/loop/review-20260305-230002.json"
 
-# 12) review_gate fails when counts do not match findings payload.
+# 13) review_gate fails when counts do not match findings payload.
 cat > "$work_dir/.local/loop/review-mismatch.json" <<'JSON'
 {
   "status": "complete",
@@ -243,7 +303,7 @@ if (
   fail "review_gate accepted mismatched counts"
 fi
 
-# 13) final_gate also fails closed on counts mismatch.
+# 14) final_gate also fails closed on counts mismatch.
 cat > "$work_dir/.local/loop/ci-good.json" <<'JSON'
 {
   "schema_version": 1,
@@ -264,7 +324,7 @@ if (
   fail "final_gate accepted mismatched counts"
 fi
 
-# 14) gate scripts reject unknown severity values in findings.
+# 15) gate scripts reject unknown severity values in findings.
 cat > "$work_dir/.local/loop/review-unknown-severity.json" <<'JSON'
 {
   "status": "complete",
@@ -285,7 +345,7 @@ if (
   fail "final_gate accepted unknown severity token"
 fi
 
-# 15) review_gate accepts numerically equivalent count formats.
+# 16) review_gate accepts numerically equivalent count formats.
 cat > "$work_dir/.local/loop/review-decimal-zero.json" <<'JSON'
 {
   "status": "complete",
@@ -298,14 +358,14 @@ JSON
   "$review_gate" .local/loop/review-decimal-zero.json >/dev/null
 )
 
-# 16) final_gate accepts numerically equivalent count formats.
+# 17) final_gate accepts numerically equivalent count formats.
 (
   cd "$work_dir" &&
   "$final_gate" .local/loop/review-decimal-zero.json .local/loop/ci-good.json "$plan_path" main .local/loop/final-gate-decimal.json >/dev/null
 )
 assert_exists "$work_dir/.local/loop/final-gate-decimal.json"
 
-# 17) final_gate rejects stale CI head/base metadata.
+# 18) final_gate rejects stale CI head/base metadata.
 cat > "$work_dir/.local/loop/ci-stale.json" <<'JSON'
 {
   "schema_version": 1,
@@ -325,7 +385,7 @@ if (
   fail "final_gate accepted stale CI head/base metadata"
 fi
 
-# 18) cleanup rejects invalid keep-round arguments.
+# 19) cleanup rejects invalid keep-round arguments.
 if (
   cd "$work_dir" &&
   "$review_cleanup" --keep-round-id --dry-run >/dev/null 2>&1
@@ -345,7 +405,7 @@ if (
   fail "review_cleanup accepted non-numeric keep-rounds"
 fi
 
-# 19) explicit keep-round-id preserves orphan aggregate rounds.
+# 20) explicit keep-round-id preserves orphan aggregate rounds.
 cat > "$work_dir/.local/loop/review-20260305-230099.json" <<'JSON'
 {"round_id":"20260305-230099"}
 JSON
@@ -355,7 +415,7 @@ JSON
 )
 assert_exists "$work_dir/.local/loop/review-20260305-230099.json"
 
-# 20) cleanup dry-run does not delete; real cleanup keeps only latest round and removes launch manifests.
+# 21) cleanup dry-run does not delete; real cleanup keeps only latest round and removes launch manifests.
 prepare_cleanup_manifest_rel="$(
   cd "$work_dir" &&
   "$review_prepare" 20260305-230003 delta security

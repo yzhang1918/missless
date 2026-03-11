@@ -69,20 +69,23 @@ Harden the harness so stateful review/publish/final-gate/land decisions fail clo
   - `.agents/skills/loop-final-gate/scripts/final_gate.sh`
   - `.agents/skills/loop-land/SKILL.md`
   - `.agents/skills/loop-land/scripts/land_preflight.sh`
+  - `.agents/skills/loop-review-loop/scripts/review_init.sh`
 - Validation commands:
   - `bash -n .agents/skills/loop-publish/scripts/publish_pr.sh`
   - `bash -n .agents/skills/loop-final-gate/scripts/export_ci_status.sh`
   - `bash -n .agents/skills/loop-final-gate/scripts/stateful_gate_lib.sh`
   - `bash -n .agents/skills/loop-final-gate/scripts/final_gate.sh`
   - `bash -n .agents/skills/loop-land/scripts/land_preflight.sh`
+  - `bash -n .agents/skills/loop-review-loop/scripts/review_init.sh`
 - Documentation impact:
   - Keep each affected skill contract aligned with the actual script behavior and new required inputs.
 - Evidence:
   - Added `.agents/skills/loop-final-gate/scripts/stateful_gate_lib.sh` so publish/final-gate/land share repo-sync and archived-plan validation logic, including stale active-twin rejection.
   - Added `.agents/skills/loop-final-gate/scripts/export_ci_status.sh` to emit a small CI/status JSON keyed to `head_sha`, `base_ref`, `base_sha`, required checks, and docs/spec update status.
   - Tightened `.agents/skills/loop-publish/scripts/publish_pr.sh`, `.agents/skills/loop-final-gate/scripts/final_gate.sh`, and `.agents/skills/loop-land/scripts/land_preflight.sh` so they fail closed on stale repo state, stale plan state, or stale gate artifacts.
+  - Implemented the review-loop side of the repo-sync contract in `.agents/skills/loop-review-loop/scripts/review_init.sh` so stateful review rounds also fetch fresh remote refs before starting.
   - Updated the publish/final-gate/land skill docs and prompts to match the new script contracts.
-  - Validated shell syntax with `bash -n .agents/skills/loop-publish/scripts/publish_pr.sh`, `bash -n .agents/skills/loop-final-gate/scripts/export_ci_status.sh`, `bash -n .agents/skills/loop-final-gate/scripts/stateful_gate_lib.sh`, `bash -n .agents/skills/loop-final-gate/scripts/final_gate.sh`, and `bash -n .agents/skills/loop-land/scripts/land_preflight.sh`.
+  - Validated shell syntax with `bash -n .agents/skills/loop-publish/scripts/publish_pr.sh`, `bash -n .agents/skills/loop-final-gate/scripts/export_ci_status.sh`, `bash -n .agents/skills/loop-final-gate/scripts/stateful_gate_lib.sh`, `bash -n .agents/skills/loop-final-gate/scripts/final_gate.sh`, `bash -n .agents/skills/loop-land/scripts/land_preflight.sh`, and `bash -n .agents/skills/loop-review-loop/scripts/review_init.sh`.
 
 ### Step 3
 
@@ -96,15 +99,22 @@ Harden the harness so stateful review/publish/final-gate/land decisions fail clo
 - Validation commands:
   - `.agents/skills/loop-review-loop/scripts/review_regression.sh`
   - `.agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh`
-  - `.agents/skills/loop-review-loop/scripts/review_finalize.sh 20260311-014054 .local/loop/review-20260311-014054-*.json`
+  - `.agents/skills/loop-review-loop/scripts/review_finalize.sh 20260311-151838 .local/loop/review-20260311-151838-*.json`
   - `find docs/harness/completed -maxdepth 1 -name '*.md' ! -name 'README.md' -exec basename {} \\; | while read -r file; do rg -q "$file" docs/harness/completed/README.md || echo "missing:$file"; done`
   - `git diff --check`
 - Documentation impact:
   - Record validation evidence, keep indexes current, and leave the plan ready for archive-before-publish workflow.
 - Evidence:
   - Extended `.agents/skills/loop-review-loop/scripts/review_regression.sh` for the new final-gate contract.
-  - Added `.agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh` to cover publish/export/final-gate/land behavior with a temporary git remote and fake `gh` surface, including pending required checks and stale active-twin rejection.
-  - Ran one full-pr review round (`20260311-013800`), addressed the resulting correctness/docs/tests findings, then reran full-pr review round `20260311-014054`, which passed with `BLOCKER=0` and `IMPORTANT=0`.
+  - Added `.agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh` to cover publish/export/final-gate/land behavior with a temporary git remote and fake `gh` surface, including:
+    - publish `gh pr create` and `gh pr edit` repo-sync against remote-only base refs
+    - repo-sync prune of stale remote-tracking refs
+    - dirty working trees
+    - active, incomplete, and stale-twin plan rejection in publish/final-gate/land
+    - pending required checks
+    - stale CI metadata
+    - stale `origin/main` advancement after artifact creation
+  - Ran one full-pr review round (`20260311-013800`), addressed the resulting correctness/docs/tests findings, reran full-pr review round `20260311-014054`, and later reran full-pr review round `20260311-151838`; both clean rounds passed with `BLOCKER=0` and `IMPORTANT=0`.
   - Archived this plan into `docs/harness/completed/` and synced the completed-plan catalog.
 
 ## Review Cadence
@@ -123,13 +133,14 @@ Harden the harness so stateful review/publish/final-gate/land decisions fail clo
 ## Validation Summary
 
 - Executed `rg -n "repo-sync|active/|completed/|Acceptance Criteria|Status:" .agents/skills/AGENT_LOOP_WORKFLOW.md docs/standards/repository-standards.md docs/exec-plans/templates/execution-plan-template.md docs/harness/active/README.md docs/exec-plans/active/README.md docs/harness/completed/README.md docs/exec-plans/completed/README.md`; the documented plan/gate contract terms are present across the updated workflow and standards surfaces.
-- Executed `bash -n .agents/skills/loop-publish/scripts/publish_pr.sh`, `bash -n .agents/skills/loop-final-gate/scripts/export_ci_status.sh`, `bash -n .agents/skills/loop-final-gate/scripts/stateful_gate_lib.sh`, `bash -n .agents/skills/loop-final-gate/scripts/final_gate.sh`, and `bash -n .agents/skills/loop-land/scripts/land_preflight.sh`; all changed shell entry points parsed cleanly.
-- Executed `.agents/skills/loop-review-loop/scripts/review_regression.sh`; the review-loop and final-gate regression suite passed under the new archived-plan and CI-artifact contract.
-- Executed `.agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh`; the targeted stateful-gate regression suite passed, covering active-plan rejection, incomplete archived plans, stale active twins, pending required checks, stale CI metadata, and land preflight freshness.
-- Executed `.agents/skills/loop-review-loop/scripts/review_finalize.sh 20260311-014054 .local/loop/review-20260311-014054-*.json`; the refreshed full-pr review round passed with `BLOCKER=0` and `IMPORTANT=0`.
+- Executed `bash -n .agents/skills/loop-publish/scripts/publish_pr.sh`, `bash -n .agents/skills/loop-final-gate/scripts/export_ci_status.sh`, `bash -n .agents/skills/loop-final-gate/scripts/stateful_gate_lib.sh`, `bash -n .agents/skills/loop-final-gate/scripts/final_gate.sh`, `bash -n .agents/skills/loop-land/scripts/land_preflight.sh`, and `bash -n .agents/skills/loop-review-loop/scripts/review_init.sh`; all changed shell entry points parsed cleanly.
+- Executed `.agents/skills/loop-review-loop/scripts/review_regression.sh`; the review-loop and final-gate regression suite passed under the new archived-plan and CI-artifact contract, including repo-sync fetch/prune coverage for `review_init.sh`.
+- Executed `.agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh`; the targeted stateful-gate regression suite passed, covering publish repo-sync on both create/edit paths, stale remote-tracking ref pruning, active-plan rejection, incomplete archived plans, stale active twins, dirty working trees, pending required checks, stale CI metadata, stale `origin/main` advancement, and land preflight freshness.
+- Executed `.agents/skills/loop-review-loop/scripts/review_finalize.sh 20260311-151838 .local/loop/review-20260311-151838-*.json`; the latest full-pr review round passed with `BLOCKER=0` and `IMPORTANT=0`.
 - Executed `find docs/harness/completed -maxdepth 1 -name '*.md' ! -name 'README.md' -exec basename {} \\; | while read -r file; do rg -q "$file" docs/harness/completed/README.md || echo "missing:$file"; done`; the completed-plan catalog stayed in sync after archival.
 - Executed `git diff --check`; no whitespace or patch-format issues were reported.
 - After `origin/main` advanced to `b63054a` on 2026-03-11, moved the detached worktree state onto `codex/issue-9-12-19-stateful-gate-hardening`, rebased/recommitted the branch as `d704d4b`, then reran `git diff --check`, `.agents/skills/loop-review-loop/scripts/review_regression.sh`, and `.agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh` against the new base.
+- After addressing the final repo-sync prune-coverage gap on 2026-03-11, reran `git diff --check`, `bash -n .agents/skills/loop-review-loop/scripts/review_regression.sh`, `bash -n .agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh`, `.agents/skills/loop-review-loop/scripts/review_regression.sh`, `.agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh`, and `.agents/skills/loop-review-loop/scripts/review_finalize.sh 20260311-151838 .local/loop/review-20260311-151838-*.json`; all passed on the rebased branch.
 
 ## Review Summary
 
@@ -143,6 +154,14 @@ Harden the harness so stateful review/publish/final-gate/land decisions fail clo
   - `final_gate.sh` still allowed a dirty working tree, which meant local unpublished edits could contaminate gate/export/land evidence.
   - This archived plan still reflected the pre-rebase validation and review state rather than the refreshed branch state on top of `b63054a`.
 - Addressed those follow-up findings by requiring a clean working tree in `export_ci_status.sh`, `final_gate.sh`, and `land_preflight.sh`, extending targeted regression coverage for that rule, and refreshing this archived plan with the post-rebase validation/review history.
+- Later review refreshes identified and resolved three more contract/evidence gaps:
+  - `review_init.sh` had not yet implemented the repo-sync preflight that workflow/standards/`loop-review-loop` had already documented.
+  - `stateful_gate_regression.sh` did not yet lock publish repo-sync on the existing-PR `gh pr edit` path.
+  - `stateful_gate_regression.sh` did not yet lock archived-plan rejection in `final_gate` and `land_preflight`, or stale-`origin/main` rejection after gate artifacts were minted.
+- Addressed those follow-up gaps by implementing repo-sync in `review_init.sh`, extending `review_regression.sh` to prove remote refs are fetched before a review round starts, and expanding `stateful_gate_regression.sh` to cover publish create/edit repo-sync plus archived-plan/stale-main negative paths across publish/final-gate/land.
+- A later regression review also pointed out that repo-sync coverage only proved new refs were fetched, not that stale remote-tracking refs were pruned.
+- Addressed that final coverage gap by extending both `review_regression.sh` and `stateful_gate_regression.sh` to assert that repo-sync preflights remove stale `origin/*` refs after the upstream branches are deleted.
+- Full-pr review round `20260311-151838` then passed with `BLOCKER=0`, `IMPORTANT=0`, `MINOR=0`, and `NIT=0`.
 
 ## Risks and Mitigations
 
@@ -157,11 +176,11 @@ Harden the harness so stateful review/publish/final-gate/land decisions fail clo
   - Shared repo-sync and archived-plan validation helpers for stateful publish/final-gate/land decisions.
   - A small GitHub-backed CI/status exporter directly consumable by `final_gate.sh`.
   - Fail-closed enforcement for dirty working trees, incomplete archived plans, stale active twins, stale CI metadata, pending required checks, and stale PR head/base state.
+  - Repo-sync enforcement at the review-loop entry point via `review_init.sh`.
   - Workflow/standards/template updates that make the gateable plan contract explicit.
   - Regression coverage for both the review-loop/final-gate contract and the new stateful publish/export/land surface.
 - Not delivered:
   - No merge/publish action was executed on this branch in this loop.
-  - No `loop-review-loop` script-level repo-sync enforcement beyond the playbook/doc contract adjustment.
 - Linked issue updates:
   - This archived plan implements the intended branch-side changes for `#9`, `#12`, and `#19`.
   - Keep those issues open until the branch is published and landed; use PR linkage/closing keywords at publish time according to the issue disposition.

@@ -22,6 +22,8 @@ trap 'rm -rf "$tmp_root"' EXIT
 
 origin_dir="$tmp_root/origin.git"
 work_dir="$tmp_root/work"
+updater_dir="$tmp_root/updater"
+publish_base_dir="$tmp_root/publish-base"
 fake_bin="$tmp_root/bin"
 mkdir -p "$fake_bin"
 
@@ -51,6 +53,36 @@ emit() {
   fi
 }
 
+require_base_ref_if_requested() {
+  local base_ref=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --base)
+        if [[ $# -lt 2 ]]; then
+          echo "missing value for --base" >&2
+          exit 1
+        fi
+        base_ref="$2"
+        shift 2
+        ;;
+      *)
+        shift
+        ;;
+    esac
+  done
+
+  if [[ "${FAKE_GH_REQUIRE_BASE_REF:-false}" == "true" ]]; then
+    if [[ -z "$base_ref" ]]; then
+      echo "fake gh expected --base" >&2
+      exit 1
+    fi
+    if ! git rev-parse --verify --quiet "origin/$base_ref" >/dev/null; then
+      echo "fake gh missing local remote base ref: origin/$base_ref" >&2
+      exit 1
+    fi
+  fi
+}
+
 cmd1="${1:-}"
 cmd2="${2:-}"
 if [[ -z "$cmd1" ]]; then
@@ -75,9 +107,11 @@ case "$cmd1 $cmd2" in
     emit "$payload" "$@"
     ;;
   "pr create")
+    require_base_ref_if_requested "$@"
     printf '%s\n' "${FAKE_GH_PR_URL:-https://example.test/pr/101}"
     ;;
   "pr edit")
+    require_base_ref_if_requested "$@"
     exit 0
     ;;
   "pr view")
@@ -239,6 +273,42 @@ twin_plan="docs/harness/completed/2026-03-11-twin-plan.md"
 body_file="$tmp_root/pr-body.md"
 printf 'direct request (no issue)\n' > "$body_file"
 
+git clone "$origin_dir" "$publish_base_dir" >/dev/null 2>&1
+(
+  cd "$publish_base_dir" &&
+  git config user.name "Codex" &&
+  git config user.email "codex@example.com" &&
+  git checkout -b publish-base origin/main >/dev/null &&
+  git push -u origin publish-base >/dev/null
+)
+(
+  cd "$publish_base_dir" &&
+  git checkout -b publish-stale-probe origin/main >/dev/null &&
+  printf 'stale publish probe\n' > stale-publish.txt &&
+  git add stale-publish.txt &&
+  git commit -m "stale publish probe" >/dev/null &&
+  git push -u origin publish-stale-probe >/dev/null
+)
+(
+  cd "$work_dir" &&
+  git fetch origin publish-stale-probe:refs/remotes/origin/publish-stale-probe >/dev/null 2>&1
+)
+(
+  cd "$publish_base_dir" &&
+  git push origin --delete publish-stale-probe >/dev/null
+)
+(
+  cd "$work_dir" &&
+  git rev-parse --verify --quiet origin/publish-stale-probe >/dev/null
+) || fail "expected origin/publish-stale-probe to exist before repo-sync prune preflight"
+
+if (
+  cd "$work_dir" &&
+  git rev-parse --verify --quiet origin/publish-base >/dev/null
+); then
+  fail "expected origin/publish-base to be absent before publish repo-sync preflight"
+fi
+
 if (
   cd "$work_dir" &&
   PATH="$fake_bin:$PATH" \
@@ -270,10 +340,40 @@ publish_output="$(
   cd "$work_dir" &&
   PATH="$fake_bin:$PATH" \
   FAKE_GH_PR_NUMBER="" \
+  FAKE_GH_REQUIRE_BASE_REF="true" \
   FAKE_GH_PR_URL="https://example.test/pr/101" \
-  "$publish_script" main "Regression PR" "$body_file" --plan "$complete_plan" --direct-request
+  "$publish_script" publish-base "Regression PR" "$body_file" --plan "$complete_plan" --direct-request
 )"
 [[ "$publish_output" == "created https://example.test/pr/101" ]] || fail "unexpected publish output: $publish_output"
+if (
+  cd "$work_dir" &&
+  git rev-parse --verify --quiet origin/publish-stale-probe >/dev/null
+); then
+  fail "publish_pr did not prune stale remote-tracking refs during repo-sync preflight"
+fi
+
+(
+  cd "$publish_base_dir" &&
+  git checkout -b publish-edit-base origin/main >/dev/null &&
+  git push -u origin publish-edit-base >/dev/null
+)
+
+if (
+  cd "$work_dir" &&
+  git rev-parse --verify --quiet origin/publish-edit-base >/dev/null
+); then
+  fail "expected origin/publish-edit-base to be absent before publish edit repo-sync preflight"
+fi
+
+publish_edit_output="$(
+  cd "$work_dir" &&
+  PATH="$fake_bin:$PATH" \
+  FAKE_GH_PR_NUMBER="101" \
+  FAKE_GH_REQUIRE_BASE_REF="true" \
+  FAKE_GH_PR_URL="https://example.test/pr/101" \
+  "$publish_script" publish-edit-base "Regression PR" "$body_file" --plan "$complete_plan" --direct-request
+)"
+[[ "$publish_edit_output" == "updated https://example.test/pr/101" ]] || fail "unexpected publish edit output: $publish_edit_output"
 
 head_sha="$(cd "$work_dir" && git rev-parse HEAD)"
 base_sha="$(cd "$work_dir" && git rev-parse origin/main)"
@@ -350,6 +450,27 @@ JSON
 assert_exists "$work_dir/.local/loop/final-gate.json"
 [[ "$(jq -r '.result' "$work_dir/.local/loop/final-gate.json")" == "pass" ]] || fail "final_gate did not pass with fresh inputs"
 
+if (
+  cd "$work_dir" &&
+  "$final_gate_script" .local/loop/review-clean.json "$ci_path" "$active_plan" main .local/loop/final-gate-active-plan.json >/dev/null 2>&1
+); then
+  fail "final_gate accepted a plan that still lives under active/"
+fi
+
+if (
+  cd "$work_dir" &&
+  "$final_gate_script" .local/loop/review-clean.json "$ci_path" "$incomplete_plan" main .local/loop/final-gate-incomplete-plan.json >/dev/null 2>&1
+); then
+  fail "final_gate accepted an incomplete archived plan"
+fi
+
+if (
+  cd "$work_dir" &&
+  "$final_gate_script" .local/loop/review-clean.json "$ci_path" "$twin_plan" main .local/loop/final-gate-twin-plan.json >/dev/null 2>&1
+); then
+  fail "final_gate accepted an archived plan with a stale twin under active/"
+fi
+
 (
   cd "$work_dir" &&
   printf 'dirty\n' >> README.md
@@ -390,6 +511,77 @@ fi
   FAKE_GH_PR_BASE_REF="main" \
   "$land_preflight_script" .local/loop/final-gate.json "$complete_plan" main >/dev/null
 )
+
+if (
+  cd "$work_dir" &&
+  PATH="$fake_bin:$PATH" \
+  FAKE_GH_PR_NUMBER="101" \
+  FAKE_GH_PR_URL="https://example.test/pr/101" \
+  FAKE_GH_PR_STATE="OPEN" \
+  FAKE_GH_PR_HEAD_SHA="$head_sha" \
+  FAKE_GH_PR_BASE_REF="main" \
+  "$land_preflight_script" .local/loop/final-gate.json "$active_plan" main >/dev/null 2>&1
+); then
+  fail "land_preflight accepted a plan that still lives under active/"
+fi
+
+if (
+  cd "$work_dir" &&
+  PATH="$fake_bin:$PATH" \
+  FAKE_GH_PR_NUMBER="101" \
+  FAKE_GH_PR_URL="https://example.test/pr/101" \
+  FAKE_GH_PR_STATE="OPEN" \
+  FAKE_GH_PR_HEAD_SHA="$head_sha" \
+  FAKE_GH_PR_BASE_REF="main" \
+  "$land_preflight_script" .local/loop/final-gate.json "$incomplete_plan" main >/dev/null 2>&1
+); then
+  fail "land_preflight accepted an incomplete archived plan"
+fi
+
+if (
+  cd "$work_dir" &&
+  PATH="$fake_bin:$PATH" \
+  FAKE_GH_PR_NUMBER="101" \
+  FAKE_GH_PR_URL="https://example.test/pr/101" \
+  FAKE_GH_PR_STATE="OPEN" \
+  FAKE_GH_PR_HEAD_SHA="$head_sha" \
+  FAKE_GH_PR_BASE_REF="main" \
+  "$land_preflight_script" .local/loop/final-gate.json "$twin_plan" main >/dev/null 2>&1
+); then
+  fail "land_preflight accepted an archived plan with a stale twin under active/"
+fi
+
+git clone "$origin_dir" "$updater_dir" >/dev/null 2>&1
+(
+  cd "$updater_dir" &&
+  git config user.name "Codex" &&
+  git config user.email "codex@example.com" &&
+  git checkout main >/dev/null &&
+  printf 'upstream drift\n' >> README.md &&
+  git add README.md &&
+  git commit -m "advance main" >/dev/null &&
+  git push origin main >/dev/null
+)
+
+if (
+  cd "$work_dir" &&
+  "$final_gate_script" .local/loop/review-clean.json "$ci_path" "$complete_plan" main .local/loop/final-gate-behind-main.json >/dev/null 2>&1
+); then
+  fail "final_gate accepted a branch and CI artifact after origin/main advanced"
+fi
+
+if (
+  cd "$work_dir" &&
+  PATH="$fake_bin:$PATH" \
+  FAKE_GH_PR_NUMBER="101" \
+  FAKE_GH_PR_URL="https://example.test/pr/101" \
+  FAKE_GH_PR_STATE="OPEN" \
+  FAKE_GH_PR_HEAD_SHA="$head_sha" \
+  FAKE_GH_PR_BASE_REF="main" \
+  "$land_preflight_script" .local/loop/final-gate.json "$complete_plan" main >/dev/null 2>&1
+); then
+  fail "land_preflight accepted a stale final-gate artifact after origin/main advanced"
+fi
 
 (
   cd "$work_dir" &&
