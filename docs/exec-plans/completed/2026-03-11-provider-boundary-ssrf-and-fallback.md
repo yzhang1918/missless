@@ -162,7 +162,7 @@ Deliver one provider-boundary slice that hardens SSRF enforcement beyond the ini
   - `#32` Add branch freshness preflight before publish and final gate
   - `#33` Capture PR review threads as a structured comment manifest
 - Final gate evidence:
-  - After rebasing the branch onto current `origin/main`, republishing as PR `#25`, and rerunning local-equivalent CI metadata, `.local/loop/final-gate-20260311-143942.json` passed with `review_ok=true`, `ci_ok=true`, `branch_ok=true`, and `docs_ok=true`.
+  - After refreshing the branch onto latest `origin/main`, force-updating PR `#25`, and rerunning local-equivalent CI metadata, `.local/loop/final-gate-20260311-234959.json` passed with `review_ok=true`, `ci_ok=true`, `branch_ok=true`, and `docs_ok=true`.
   - Current final gate status is `go`; the branch is ready for landing, subject to the remaining `MINOR` CLI-integration coverage gap noted in the review artifact.
 - Issue update note:
   - Work was executed against GitHub issues `#15` and `#16`; issue comments now reference both this completed plan path and PR `#25`.
