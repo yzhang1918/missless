@@ -153,7 +153,14 @@ Deliver one provider-boundary slice that hardens SSRF enforcement beyond the ini
     `runId` validation happened after redirect preflight, and the completed plan overstated added integration coverage.
   - Follow-up fixes moved `runId` validation ahead of redirect preflight, extracted provider-agnostic normalization into `packages/core/src/providers/normalize.ts`, and tightened the completed-plan wording.
   - Delta review round `20260311-143942` passed review gate with `BLOCKER=0` and `IMPORTANT=0` in `.local/loop/review-20260311-143942.json`.
+  - Comment-addressing delta review round `20260311-151715` also passed with `BLOCKER=0` and `IMPORTANT=0` in `.local/loop/review-20260311-151715.json` after restoring original-URL provider fetch semantics.
   - One residual `MINOR` remains: CLI integration coverage still does not exercise the shipped fallback boundary directly.
+- Spawned follow-up issues:
+  - `#29` Record provider attempts and explicit URL identities in ingest artifacts
+  - `#30` Add CLI integration coverage for the default provider fallback boundary
+  - `#31` Retain plan-referenced review and final-gate artifacts during cleanup
+  - `#32` Add branch freshness preflight before publish and final gate
+  - `#33` Capture PR review threads as a structured comment manifest
 - Final gate evidence:
   - After rebasing the branch onto current `origin/main`, republishing as PR `#25`, and rerunning local-equivalent CI metadata, `.local/loop/final-gate-20260311-143942.json` passed with `review_ok=true`, `ci_ok=true`, `branch_ok=true`, and `docs_ok=true`.
   - Current final gate status is `go`; the branch is ready for landing, subject to the remaining `MINOR` CLI-integration coverage gap noted in the review artifact.
