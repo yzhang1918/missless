@@ -71,16 +71,27 @@ proposal.
 - runtime also writes a signed run-local cleanup token so restored local runs
   can still prove stale-output ownership without trusting a plaintext
   in-directory marker
-- uses a provider abstraction with Jina Reader as the first implementation
+- records both the requested source URL and the resolved safe fetch destination
+  in `source.json`
+- resolves redirect hops under the runtime SSRF policy before provider access
+- uses a provider abstraction with explicit recoverable versus terminal
+  failures
+- uses `Jina Reader -> direct origin fetch` as the default provider sequence
 - allows local/mock provider overrides through `MISSLESS_JINA_BASE_URL`
 - rejects source URLs with embedded credentials and rejects localhost,
   private, link-local, and single-label hosts by default
 - rejects hostnames that resolve to loopback, private, or link-local
   addresses before provider fetch begins
+- rejects redirect hops and final destinations that become localhost, private,
+  or link-local before any provider may follow them
 - may use `JINA_API_KEY` when an authenticated Jina environment is required
 - only forwards `JINA_API_KEY` to the official `r.jina.ai` reader host unless
   `MISSLESS_JINA_FORWARD_API_KEY_TO_OVERRIDE` explicitly opts into forwarding
   credentials to a custom override host
+- only falls back after recoverable Jina failures; terminal policy failures
+  remain fail-closed and do not continue to another provider
+- direct-origin fallback performs local HTML-to-markdown normalization after a
+  safe public fetch
 
 `validate-draft --run-dir <dir>`:
 - reads `run.json`, `canonical_text.md`, and `extraction_draft.json`

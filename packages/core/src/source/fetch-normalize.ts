@@ -1,24 +1,27 @@
 import { createHash, randomUUID } from "node:crypto";
-import { lookup } from "node:dns/promises";
 import { mkdir, rm, writeFile } from "node:fs/promises";
-import { isIP } from "node:net";
 import { resolve } from "node:path";
 
 import { getRunArtifactPaths, type RunArtifactPaths } from "@missless/contracts";
 
-import { createJinaReaderProvider } from "../providers/jina.js";
-import type { SourceProvider } from "../providers/provider.js";
+import { createDefaultSourceProvider } from "../providers/default.js";
+import type {
+  FetchLike,
+  SourceProvider
+} from "../providers/provider.js";
 import { writeCleanupToken } from "../runtime/cleanup-token.js";
 import {
   registerRunDir,
   unregisterRunDir
 } from "../runtime/run-registry.js";
+import {
+  assertSafeHttpUrl,
+  defaultHostResolver,
+  resolveSafeRedirectChain,
+  type HostResolver
+} from "./url-safety.js";
 
 const SAFE_RUN_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
-
-export type HostResolver = (
-  hostname: string
-) => Promise<readonly { address: string; family: 4 | 6 }[]>;
 
 export interface RunManifest {
   readonly run_id: string;
@@ -30,6 +33,7 @@ export interface RunManifest {
 
 export interface SourceArtifact {
   readonly source_url: string;
+  readonly resolved_source_url: string;
   readonly provider: string;
   readonly provider_url: string;
   readonly fetched_at: string;
@@ -46,6 +50,7 @@ export interface FetchNormalizeInput {
   readonly now?: Date;
   readonly runId?: string;
   readonly hostResolver?: HostResolver;
+  readonly fetchImpl?: FetchLike;
   readonly cleanupTokenWriter?: (runDir: string) => Promise<void>;
 }
 
@@ -67,172 +72,10 @@ function sha256(input: string): string {
   return createHash("sha256").update(input, "utf8").digest("hex");
 }
 
-function parseIpv4MappedIpv6(hostname: string): string | null {
-  const normalized = stripIpv6Brackets(hostname).toLowerCase();
-
-  if (!normalized.startsWith("::ffff:")) {
-    return null;
-  }
-
-  const suffix = normalized.slice("::ffff:".length);
-
-  if (isIP(suffix) === 4) {
-    return suffix;
-  }
-
-  if (/^[0-9a-f]{1,8}$/u.test(suffix)) {
-    const value = Number.parseInt(suffix, 16);
-
-    return [
-      (value >>> 24) & 0xff,
-      (value >>> 16) & 0xff,
-      (value >>> 8) & 0xff,
-      value & 0xff
-    ].join(".");
-  }
-
-  const parts = suffix.split(":");
-
-  if (parts.length !== 2 || parts.some((part) => !/^[0-9a-f]{1,4}$/u.test(part))) {
-    return null;
-  }
-
-  const [first, second] = parts.map((part) => Number.parseInt(part, 16));
-
-  return [
-    (first >>> 8) & 0xff,
-    first & 0xff,
-    (second >>> 8) & 0xff,
-    second & 0xff
-  ].join(".");
-}
-
-function isBlockedIpv4Host(hostname: string): boolean {
-  const octets = hostname.split(".").map((part) => Number(part));
-
-  if (octets.length !== 4 || octets.some((part) => Number.isNaN(part))) {
-    return false;
-  }
-
-  const [first, second] = octets;
-
-  return (
-    first === 0 ||
-    first === 10 ||
-    first === 127 ||
-    (first === 169 && second === 254) ||
-    (first === 172 && second >= 16 && second <= 31) ||
-    (first === 192 && second === 168) ||
-    (first === 100 && second >= 64 && second <= 127) ||
-    (first === 198 && (second === 18 || second === 19))
-  );
-}
-
-function stripIpv6Brackets(hostname: string): string {
-  return hostname.startsWith("[") && hostname.endsWith("]")
-    ? hostname.slice(1, -1)
-    : hostname;
-}
-
-function stripTrailingDnsDots(hostname: string): string {
-  return hostname.replace(/\.+$/u, "");
-}
-
-function isBlockedIpv6Host(hostname: string): boolean {
-  const normalized = stripIpv6Brackets(hostname).toLowerCase();
-  const mappedIpv4 = parseIpv4MappedIpv6(normalized);
-
-  if (
-    normalized === "::" ||
-    normalized === "::1" ||
-    normalized.startsWith("fe8") ||
-    normalized.startsWith("fe9") ||
-    normalized.startsWith("fea") ||
-    normalized.startsWith("feb") ||
-    normalized.startsWith("fc") ||
-    normalized.startsWith("fd")
-  ) {
-    return true;
-  }
-
-  if (mappedIpv4 !== null) {
-    return isBlockedIpv4Host(mappedIpv4);
-  }
-
-  return false;
-}
-
-function isBlockedHostname(hostname: string): boolean {
-  const normalized = stripTrailingDnsDots(
-    stripIpv6Brackets(hostname).toLowerCase()
-  );
-  const ipVersion = isIP(normalized);
-
-  if (ipVersion === 4) {
-    return isBlockedIpv4Host(normalized);
-  }
-
-  if (ipVersion === 6) {
-    return isBlockedIpv6Host(normalized);
-  }
-
-  return (
-    normalized === "localhost" ||
-    normalized.endsWith(".localhost") ||
-    normalized.endsWith(".local") ||
-    !normalized.includes(".")
-  );
-}
-
 function assertSafeRunId(runId: string): void {
   if (!SAFE_RUN_ID_PATTERN.test(runId)) {
     throw new Error(
       "fetch-normalize rejects run IDs with path separators or unsafe segments"
-    );
-  }
-}
-
-async function defaultHostResolver(
-  hostname: string
-): Promise<readonly { address: string; family: 4 | 6 }[]> {
-  const results = await lookup(hostname, {
-    all: true,
-    verbatim: true
-  });
-
-  return results.filter(
-    (result): result is { address: string; family: 4 | 6 } =>
-      result.family === 4 || result.family === 6
-  );
-}
-
-async function assertSafeHttpUrl(
-  sourceUrl: string,
-  hostResolver: HostResolver
-): Promise<void> {
-  const parsed = new URL(sourceUrl);
-
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new Error("fetch-normalize only supports http and https URLs");
-  }
-
-  if (parsed.username !== "" || parsed.password !== "") {
-    throw new Error("fetch-normalize rejects source URLs with embedded credentials");
-  }
-
-  if (isBlockedHostname(parsed.hostname)) {
-    throw new Error(
-      "fetch-normalize rejects localhost, private, link-local, and single-label hosts"
-    );
-  }
-
-  const resolvedAddresses = await hostResolver(
-    stripTrailingDnsDots(stripIpv6Brackets(parsed.hostname).toLowerCase())
-  );
-
-  if (resolvedAddresses.some((result) => isBlockedHostname(result.address))) {
-    throw new Error(
-      "fetch-normalize rejects hostnames that resolve to localhost, private, or link-local addresses"
     );
   }
 }
@@ -249,20 +92,28 @@ export function createRunId(now = new Date()): string {
 export async function fetchNormalizeSource(
   input: FetchNormalizeInput
 ): Promise<FetchNormalizeResult> {
-  await assertSafeHttpUrl(input.sourceUrl, input.hostResolver ?? defaultHostResolver);
-
-  const provider = input.provider ?? createJinaReaderProvider();
-  const cleanupTokenWriter = input.cleanupTokenWriter ?? writeCleanupToken;
-  const runsDir = resolve(input.runsDir ?? ".local/runs");
   const now = input.now ?? new Date();
   const runId = input.runId ?? createRunId(now);
   assertSafeRunId(runId);
+  const hostResolver = input.hostResolver ?? defaultHostResolver;
+  const fetchImpl = input.fetchImpl ?? globalThis.fetch;
+  await assertSafeHttpUrl(input.sourceUrl, hostResolver);
+  const redirectResolution = await resolveSafeRedirectChain(input.sourceUrl, {
+    fetchImpl,
+    hostResolver
+  });
+  const provider = input.provider ?? createDefaultSourceProvider();
+  const cleanupTokenWriter = input.cleanupTokenWriter ?? writeCleanupToken;
+  const runsDir = resolve(input.runsDir ?? ".local/runs");
   const runDir = resolve(runsDir, runId);
   const artifactPaths = getRunArtifactPaths(runDir);
 
   await mkdir(runsDir, { recursive: true });
 
-  const fetched = await provider.fetch(input.sourceUrl);
+  const fetched = await provider.fetch(redirectResolution.finalUrl, {
+    fetchImpl,
+    assertSafeUrl: async (url) => assertSafeHttpUrl(url, hostResolver)
+  });
   const normalizedTextHash = sha256(fetched.canonicalText);
   const runManifest: RunManifest = {
     run_id: runId,
@@ -273,7 +124,8 @@ export async function fetchNormalizeSource(
   };
   const sourceArtifact: SourceArtifact = {
     source_url: input.sourceUrl,
-    provider: provider.name,
+    resolved_source_url: fetched.resolvedSourceUrl,
+    provider: fetched.providerName,
     provider_url: fetched.providerUrl,
     fetched_at: fetched.fetchedAt,
     provider_response_status: fetched.responseStatus,
@@ -307,6 +159,6 @@ export async function fetchNormalizeSource(
     canonicalText: fetched.canonicalText,
     runManifest,
     sourceArtifact,
-    provider: provider.name
+    provider: fetched.providerName
   };
 }
