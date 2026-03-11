@@ -8,15 +8,26 @@ STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 SESSION_ROOT="$ROOT_DIR/.local/e2e/$STAMP"
 RUNS_DIR="$SESSION_ROOT/runs"
 LOGS_DIR="$SESSION_ROOT/logs"
+BIN_DIR="$SESSION_ROOT/bin"
 RUN_PROMPT="$SESSION_ROOT/review_prompt.md"
 FETCH_LOG="$LOGS_DIR/fetch-normalize.log"
+MISSLESS_WRAPPER="$BIN_DIR/missless"
 
 if [[ -z "$URL" ]]; then
   echo "Usage: scripts/e2e/run_missless_review.sh <public-url>" >&2
   exit 64
 fi
 
-mkdir -p "$RUNS_DIR" "$LOGS_DIR"
+mkdir -p "$RUNS_DIR" "$LOGS_DIR" "$BIN_DIR"
+
+cat > "$MISSLESS_WRAPPER" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+exec node "$ROOT_DIR/apps/cli/dist/index.js" "\$@"
+EOF
+
+chmod +x "$MISSLESS_WRAPPER"
+export PATH="$BIN_DIR:$PATH"
 
 run_backend_prompt() {
   local prompt_file="$1"
@@ -115,7 +126,7 @@ pnpm -r build
 
 set +e
 FETCH_OUTPUT="$(
-  node apps/cli/dist/index.js fetch-normalize "$URL" --runs-dir "$RUNS_DIR" 2>&1 | tee "$FETCH_LOG"
+  missless fetch-normalize "$URL" --runs-dir "$RUNS_DIR" 2>&1 | tee "$FETCH_LOG"
 )"
 FETCH_EXIT=$?
 set -e
@@ -147,6 +158,9 @@ A run directory has already been created for this URL:
 
 Requirements:
 - Use the runtime-owned contract surface first:
+  - 'missless --help'
+  - 'missless print-draft-contract'
+  - repo checkout equivalent:
   - 'node apps/cli/dist/index.js --help'
   - 'node apps/cli/dist/index.js print-draft-contract'
 - Follow 'skills/missless/SKILL.md' and

@@ -5,7 +5,7 @@ const DRAFT_CONTRACT = {
   run_handle: "run_dir",
   draft_file: RUN_ARTIFACT_FILES.extractionDraft,
   canonical_text_file: RUN_ARTIFACT_FILES.canonicalText,
-  schema_path: "packages/contracts/extraction-draft.schema.json",
+  schema_path: "extraction-draft.schema.json",
   required_fields: [
     "tldr",
     "decision",

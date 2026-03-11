@@ -19,9 +19,29 @@ Drop a link. Get a decision.
 
 The current product entrypoint is the repository skill at `skills/missless/`.
 
+That skill now depends on one stable installable runtime command: `missless`.
+
 The runtime CLI exists to support deterministic fetch, validation, evidence
 anchoring, and review rendering. It is an implementation detail in this slice,
 not the main user story.
+
+Until npm publishing exists, install the runtime from a built repository
+checkout:
+
+```bash
+pnpm install
+pnpm -r build
+npm pack ./apps/cli
+npm install -g ./missless-cli-0.0.0.tgz
+missless --help
+```
+
+For a project-local install instead of a global one:
+
+```bash
+npm install ./missless-cli-0.0.0.tgz
+npx missless --help
+```
 
 ## Current Boundary
 

@@ -6,5 +6,6 @@
 .local/
 coverage/
 dist/
+apps/cli/extraction-draft.schema.json
 node_modules/
 *.tsbuildinfo

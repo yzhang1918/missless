@@ -19,7 +19,7 @@ importers:
         version: 5.9.3
 
   apps/cli:
-    dependencies:
+    devDependencies:
       '@missless/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -29,6 +29,9 @@ importers:
       '@missless/rendering':
         specifier: workspace:*
         version: link:../../packages/rendering
+      esbuild:
+        specifier: ^0.27.0
+        version: 0.27.3
 
   packages/contracts:
     dependencies:
