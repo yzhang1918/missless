@@ -1,6 +1,10 @@
 name: harness-checks
 
 on:
+  push:
+    branches:
+      - codex/**
+      - main
   pull_request:
     branches:
       - main
