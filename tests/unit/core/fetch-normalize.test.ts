@@ -167,6 +167,67 @@ test("fetchNormalizeSource rejects redirect hops to blocked destinations before 
   );
 });
 
+test("fetchNormalizeSource preflights redirects but still passes the original URL into provider fetch", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-sec-"));
+  const providerCalls: string[] = [];
+  const result = await fetchNormalizeSource({
+    sourceUrl: "https://example.com/original",
+    runsDir,
+    runId: "run-redirect-preflight",
+    now: new Date("2026-03-11T00:00:00.000Z"),
+    hostResolver: publicHostResolver,
+    fetchImpl: async (input) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+
+      if (url === "https://example.com/original") {
+        return new Response(null, {
+          status: 302,
+          headers: {
+            location: "https://www.example.com/final"
+          }
+        });
+      }
+
+      if (url === "https://www.example.com/final") {
+        return new Response(null, {
+          status: 200
+        });
+      }
+
+      throw new Error(`Unexpected URL during redirect preflight: ${url}`);
+    },
+    provider: {
+      name: "fixture",
+      async fetch(sourceUrl) {
+        providerCalls.push(sourceUrl);
+
+        return {
+          providerName: "fixture",
+          canonicalText: "Canonical text\n",
+          fetchedAt: "2026-03-11T00:00:00.000Z",
+          providerUrl: "https://reader.example/https://example.com/original",
+          resolvedSourceUrl: sourceUrl,
+          responseStatus: 200,
+          responseHeaders: {
+            "content-type": "text/markdown"
+          }
+        };
+      }
+    }
+  });
+
+  assert.deepEqual(providerCalls, ["https://example.com/original"]);
+  assert.equal(
+    result.sourceArtifact.resolved_source_url,
+    "https://www.example.com/final"
+  );
+});
+
 test("fetchNormalizeSource creates missing parent directories for runsDir", async () => {
   const tempRoot = await mkdtemp(join(tmpdir(), "missless-fetch-runs-"));
   const runsDir = join(tempRoot, "nested", "runs");

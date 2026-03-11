@@ -110,10 +110,14 @@ export async function fetchNormalizeSource(
 
   await mkdir(runsDir, { recursive: true });
 
-  const fetched = await provider.fetch(redirectResolution.finalUrl, {
+  const fetched = await provider.fetch(input.sourceUrl, {
     fetchImpl,
     assertSafeUrl: async (url) => assertSafeHttpUrl(url, hostResolver)
   });
+  const resolvedSourceUrl =
+    fetched.resolvedSourceUrl === input.sourceUrl
+      ? redirectResolution.finalUrl
+      : fetched.resolvedSourceUrl;
   const normalizedTextHash = sha256(fetched.canonicalText);
   const runManifest: RunManifest = {
     run_id: runId,
@@ -124,7 +128,7 @@ export async function fetchNormalizeSource(
   };
   const sourceArtifact: SourceArtifact = {
     source_url: input.sourceUrl,
-    resolved_source_url: fetched.resolvedSourceUrl,
+    resolved_source_url: resolvedSourceUrl,
     provider: fetched.providerName,
     provider_url: fetched.providerUrl,
     fetched_at: fetched.fetchedAt,
