@@ -174,4 +174,4 @@ Add a repository-local helper that turns a selected review dimension list into a
 - Linked issue updates:
   - Issue `#10` was updated with the completed plan path during execution and now has PR `#23` as the merge-time closing path.
 - Spawned follow-up issues:
-  - None.
+  - Issue `#24`: harden reviewer subagent ownership and side-effect isolation.
