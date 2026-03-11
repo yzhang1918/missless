@@ -69,6 +69,7 @@ For non-trivial work:
 - `loop-publish`, `loop-final-gate`, and `loop-land` must fail closed when they are given stale repository state, stale gate artifacts, or an incomplete plan record.
 - Publish/final-gate/land must operate on an archived completed plan path under `docs/exec-plans/completed/` or `docs/harness/completed/`; a completed plan that still lives only in `active/` is not gate-ready.
 - Publish/final-gate/land must also reject an archived plan when the same filename still exists under the matching `active/` folder, because that indicates archival drift rather than a true move.
+- Repositories that use `loop-final-gate` must configure at least one required GitHub status check on the protected base branch; a PR with zero required checks is not gate-ready.
 - Plans intended for those stateful gate checks must keep a stable minimal structure:
   - `## Acceptance Criteria` with markdown checkboxes
   - `## Work Breakdown` with `### Step N` sections

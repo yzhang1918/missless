@@ -1,0 +1,28 @@
+name: harness-checks
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  harness-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify diff formatting
+        run: git diff --check
+
+      - name: Run review regression suite
+        run: .agents/skills/loop-review-loop/scripts/review_regression.sh
+
+      - name: Run stateful gate regression suite
+        run: .agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh

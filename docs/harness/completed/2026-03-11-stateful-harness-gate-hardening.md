@@ -141,6 +141,7 @@ Harden the harness so stateful review/publish/final-gate/land decisions fail clo
 - Executed `git diff --check`; no whitespace or patch-format issues were reported.
 - After `origin/main` advanced to `b63054a` on 2026-03-11, moved the detached worktree state onto `codex/issue-9-12-19-stateful-gate-hardening`, rebased/recommitted the branch as `d704d4b`, then reran `git diff --check`, `.agents/skills/loop-review-loop/scripts/review_regression.sh`, and `.agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh` against the new base.
 - After addressing the final repo-sync prune-coverage gap on 2026-03-11, reran `git diff --check`, `bash -n .agents/skills/loop-review-loop/scripts/review_regression.sh`, `bash -n .agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh`, `.agents/skills/loop-review-loop/scripts/review_regression.sh`, `.agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh`, and `.agents/skills/loop-review-loop/scripts/review_finalize.sh 20260311-151838 .local/loop/review-20260311-151838-*.json`; all passed on the rebased branch.
+- After publishing PR `#26`, `export_ci_status.sh` blocked because the repository had no required GitHub checks configured for the branch. Added `.github/workflows/harness-checks.yml` plus the matching workflow/standards notes so final-gate now has a minimal required-check source once branch protection selects that workflow check.
 
 ## Review Summary
 
@@ -177,6 +178,7 @@ Harden the harness so stateful review/publish/final-gate/land decisions fail clo
   - A small GitHub-backed CI/status exporter directly consumable by `final_gate.sh`.
   - Fail-closed enforcement for dirty working trees, incomplete archived plans, stale active twins, stale CI metadata, pending required checks, and stale PR head/base state.
   - Repo-sync enforcement at the review-loop entry point via `review_init.sh`.
+  - A minimal GitHub Actions workflow (`.github/workflows/harness-checks.yml`) that produces required-check evidence for the published PR and keeps final-gate usable in this repository.
   - Workflow/standards/template updates that make the gateable plan contract explicit.
   - Regression coverage for both the review-loop/final-gate contract and the new stateful publish/export/land surface.
 - Not delivered:

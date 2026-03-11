@@ -25,6 +25,7 @@ Run this after `loop-publish` so gate evidence reflects the published branch sta
 4. Confirm docs/spec updates are complete for behavior changes.
 5. Confirm the CI/status artifact is machine-readable, small, and tied to the current `HEAD` and base SHA.
 6. Confirm required CI checks are green.
+   - If GitHub reports no required checks for the PR, stop and configure at least one required status check before retrying final gate.
 7. Confirm branch is in a merge-ready state:
    - local branch includes the latest target base after repo sync
 8. Run final gate evaluation:

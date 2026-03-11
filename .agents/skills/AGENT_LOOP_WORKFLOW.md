@@ -55,6 +55,7 @@ For medium/large tasks, discovery + plan are required (do not skip steps 1-2).
 11. `loop-final-gate`
    - Run repo-sync preflight before gate decisions.
    - Pass the archived completed plan path plus a machine-readable CI/status artifact tied to the current `HEAD` and base ref.
+   - Repositories using this gate must expose at least one required GitHub status check for the PR; zero-check repos are not final-gate ready.
 12. `loop-land`
    - Run repo-sync preflight before landing decisions.
    - Re-check that the archived completed plan and final-gate artifact still match current repository state before merge.
@@ -89,6 +90,7 @@ Run `loop-janitor` independently on a recurring cadence for entropy control and 
   - `## Work Breakdown` with `### Step N` subsections
   - exactly one `- Status: ...` line per step using `pending`, `in_progress`, `completed`, or `blocked`
 - Final-gate CI/status artifacts must stay small and directly consumable by `final_gate.sh`. At minimum they must identify the current `HEAD`, target base ref/SHA, required-check results, and docs/spec update status.
+- Repositories that rely on `loop-final-gate` must configure at least one required GitHub status check on the protected base branch so `export_ci_status.sh` can export a real required-check result set.
 
 ## Review Policy
 
