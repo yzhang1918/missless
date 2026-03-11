@@ -10,6 +10,8 @@ Store completed harness/workflow plans as durable execution history.
 
 Each completed plan should include:
 - intake source (`issue #...` or `direct request`)
+- checked acceptance criteria
+- completed step statuses
 - delivered scope
 - validation summary
 - linked issue updates (if any)
@@ -36,3 +38,4 @@ find docs/harness/completed -maxdepth 1 -name '*.md' ! -name 'README.md' -exec b
 | [`2026-03-09-post-first-slice-loop-remediation.md`](./2026-03-09-post-first-slice-loop-remediation.md) | 2026-03-09 | Captured the harness/process gaps exposed by the first product slice and separated delivered workflow clarifications from deferred harness follow-ups. |
 | [`2026-03-10-issue-first-intake-migration.md`](./2026-03-10-issue-first-intake-migration.md) | 2026-03-10 | Migrated backlog intake from repository trackers to GitHub Issues and removed the old tracker files. |
 | [`2026-03-11-reviewer-spawn-helper.md`](./2026-03-11-reviewer-spawn-helper.md) | 2026-03-11 | Added a runtime-agnostic reviewer launch manifest helper so review-loop dimension selection stays configurable while orchestration becomes less manual. |
+| [`2026-03-11-stateful-harness-gate-hardening.md`](./2026-03-11-stateful-harness-gate-hardening.md) | 2026-03-11 | Hardened publish/final-gate/land state checks against stale repo refs, stale plan state, and incomplete machine-readable gate inputs. |
