@@ -65,6 +65,7 @@ For non-trivial work:
 ## Stateful Gate Standards
 
 - Before stateful review, publish, final-gate, or land decisions, synchronize remote repository state first (`git fetch --prune origin` or stricter equivalent).
+- Before publish/final-gate/land, the working tree must be clean so the evidence and decision point match the published `HEAD`.
 - `loop-publish`, `loop-final-gate`, and `loop-land` must fail closed when they are given stale repository state, stale gate artifacts, or an incomplete plan record.
 - Publish/final-gate/land must operate on an archived completed plan path under `docs/exec-plans/completed/` or `docs/harness/completed/`; a completed plan that still lives only in `active/` is not gate-ready.
 - Publish/final-gate/land must also reject an archived plan when the same filename still exists under the matching `active/` folder, because that indicates archival drift rather than a true move.

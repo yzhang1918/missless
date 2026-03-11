@@ -26,7 +26,7 @@ Complete integration after final gate success.
 .agents/skills/loop-land/scripts/land_preflight.sh <final-gate-json> <plan-path> <base-branch> [--pr <number>]
 ```
 
-2. Verify PR is already published, PR head SHA matches local HEAD, and merge strategy matches repository policy.
+2. Verify the working tree is clean, the PR is already published, PR head SHA matches local HEAD, and merge strategy matches repository policy.
 3. Perform merge/land action according to repository workflow.
    - prefer `rebase` or `squash` if merge commits are disabled
 4. Record:

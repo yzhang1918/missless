@@ -21,12 +21,13 @@ Run this after `loop-publish` so gate evidence reflects the published branch sta
 
 1. Confirm no unresolved blocking review findings.
 2. Run repo-sync preflight before gate decisions.
-3. Confirm the supplied plan is an archived completed plan and docs/spec updates are complete for behavior changes.
-4. Confirm the CI/status artifact is machine-readable, small, and tied to the current `HEAD` and base SHA.
-5. Confirm required CI checks are green.
-6. Confirm branch is in a merge-ready state:
+3. Confirm the working tree is clean and the supplied plan is an archived completed plan.
+4. Confirm docs/spec updates are complete for behavior changes.
+5. Confirm the CI/status artifact is machine-readable, small, and tied to the current `HEAD` and base SHA.
+6. Confirm required CI checks are green.
+7. Confirm branch is in a merge-ready state:
    - local branch includes the latest target base after repo sync
-7. Run final gate evaluation:
+8. Run final gate evaluation:
 
 ```sh
 .agents/skills/loop-final-gate/scripts/final_gate.sh <review-json> <ci-json> <plan-path> <base-branch>
@@ -38,7 +39,7 @@ Optional GitHub-backed CI/status exporter:
 .agents/skills/loop-final-gate/scripts/export_ci_status.sh <base-branch> --docs-updated <true|false> [--pr <number>] [--output <path>]
 ```
 
-8. Record gate result in the archived plan with links/evidence.
+9. Record gate result in the archived plan with links/evidence.
 
 ## Output
 

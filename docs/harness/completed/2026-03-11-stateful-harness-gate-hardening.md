@@ -129,6 +129,7 @@ Harden the harness so stateful review/publish/final-gate/land decisions fail clo
 - Executed `.agents/skills/loop-review-loop/scripts/review_finalize.sh 20260311-014054 .local/loop/review-20260311-014054-*.json`; the refreshed full-pr review round passed with `BLOCKER=0` and `IMPORTANT=0`.
 - Executed `find docs/harness/completed -maxdepth 1 -name '*.md' ! -name 'README.md' -exec basename {} \\; | while read -r file; do rg -q "$file" docs/harness/completed/README.md || echo "missing:$file"; done`; the completed-plan catalog stayed in sync after archival.
 - Executed `git diff --check`; no whitespace or patch-format issues were reported.
+- After `origin/main` advanced to `b63054a` on 2026-03-11, moved the detached worktree state onto `codex/issue-9-12-19-stateful-gate-hardening`, rebased/recommitted the branch as `d704d4b`, then reran `git diff --check`, `.agents/skills/loop-review-loop/scripts/review_regression.sh`, and `.agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh` against the new base.
 
 ## Review Summary
 
@@ -138,6 +139,10 @@ Harden the harness so stateful review/publish/final-gate/land decisions fail clo
   - The targeted exporter regression did not yet cover the `gh pr checks` pending/exit-8 path.
 - Addressed those findings by updating `loop-review-loop/SKILL.md`, tightening `stateful_gate_validate_archived_plan()` to reject stale active twins, and extending `stateful_gate_regression.sh` to cover pending required checks.
 - Full-pr review round `20260311-014054` then passed with `BLOCKER=0`, `IMPORTANT=0`, `MINOR=0`, and `NIT=0`.
+- After rebasing onto newer `origin/main`, full-pr review round `20260311-144141` surfaced two follow-up `IMPORTANT` findings:
+  - `final_gate.sh` still allowed a dirty working tree, which meant local unpublished edits could contaminate gate/export/land evidence.
+  - This archived plan still reflected the pre-rebase validation and review state rather than the refreshed branch state on top of `b63054a`.
+- Addressed those follow-up findings by requiring a clean working tree in `export_ci_status.sh`, `final_gate.sh`, and `land_preflight.sh`, extending targeted regression coverage for that rule, and refreshing this archived plan with the post-rebase validation/review history.
 
 ## Risks and Mitigations
 
@@ -151,7 +156,7 @@ Harden the harness so stateful review/publish/final-gate/land decisions fail clo
 - Delivered:
   - Shared repo-sync and archived-plan validation helpers for stateful publish/final-gate/land decisions.
   - A small GitHub-backed CI/status exporter directly consumable by `final_gate.sh`.
-  - Fail-closed enforcement for incomplete archived plans, stale active twins, stale CI metadata, pending required checks, and stale PR head/base state.
+  - Fail-closed enforcement for dirty working trees, incomplete archived plans, stale active twins, stale CI metadata, pending required checks, and stale PR head/base state.
   - Workflow/standards/template updates that make the gateable plan contract explicit.
   - Regression coverage for both the review-loop/final-gate contract and the new stateful publish/export/land surface.
 - Not delivered:

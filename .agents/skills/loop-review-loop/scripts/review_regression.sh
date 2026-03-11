@@ -36,6 +36,7 @@ git clone "$origin_dir" "$work_dir" >/dev/null 2>&1
   cd "$work_dir" &&
   git config user.name "Codex" &&
   git config user.email "codex@example.com" &&
+  printf '.local/\n' >> .git/info/exclude &&
   git checkout -b main >/dev/null &&
   printf 'seed\n' > README.md &&
   git add README.md &&
@@ -152,15 +153,15 @@ security_prompt="$(jq -r '.reviewers[] | select(.dimension == "security") | .pro
 assert_exists "$work_dir/.local/loop/review-20260305-230000.json"
 
 # 8) aggregate rejects dash-prefixed reviewer filenames.
-cat > "$work_dir/-bad.json" <<'JSON'
+cat > "$work_dir/.local/loop/-bad.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
 JSON
-cat > "$work_dir/reviewer-empty.json" <<'JSON'
+cat > "$work_dir/.local/loop/reviewer-empty.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
 JSON
 if (
   cd "$work_dir" &&
-  "$review_aggregate" 20260305-230000 -bad.json >/dev/null 2>&1
+  "$review_aggregate" 20260305-230000 .local/loop/-bad.json >/dev/null 2>&1
 ); then
   fail "review_aggregate accepted dash-prefixed reviewer file"
 fi
@@ -168,32 +169,32 @@ fi
 # 9) aggregate rejects non-timestamp round ids.
 if (
   cd "$work_dir" &&
-  "$review_aggregate" bad-round-id reviewer-empty.json >/dev/null 2>&1
+  "$review_aggregate" bad-round-id .local/loop/reviewer-empty.json >/dev/null 2>&1
 ); then
   fail "review_aggregate accepted invalid round-id"
 fi
 
 # 10) aggregate rejects unknown severity values.
-cat > "$work_dir/reviewer-bad-severity.json" <<'JSON'
+cat > "$work_dir/.local/loop/reviewer-bad-severity.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[{"id":"Sx","severity":"WARN"}]}
 JSON
 if (
   cd "$work_dir" &&
-  "$review_aggregate" 20260305-230000 reviewer-bad-severity.json >/dev/null 2>&1
+  "$review_aggregate" 20260305-230000 .local/loop/reviewer-bad-severity.json >/dev/null 2>&1
 ); then
   fail "review_aggregate accepted unknown severity token"
 fi
 
 # 11) aggregate computes counts from findings payload.
-cat > "$work_dir/reviewer-a.json" <<'JSON'
+cat > "$work_dir/.local/loop/reviewer-a.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[{"id":"S1","severity":"IMPORTANT"}]}
 JSON
-cat > "$work_dir/reviewer-b.json" <<'JSON'
+cat > "$work_dir/.local/loop/reviewer-b.json" <<'JSON'
 {"scope":"full-pr","dimension":"correctness","status":"complete","findings":[]}
 JSON
 (
   cd "$work_dir" &&
-  "$review_aggregate" 20260305-230000 reviewer-a.json reviewer-b.json >/dev/null
+  "$review_aggregate" 20260305-230000 .local/loop/reviewer-a.json .local/loop/reviewer-b.json >/dev/null
 )
 agg_file="$work_dir/.local/loop/review-20260305-230000.json"
 assert_exists "$agg_file"
@@ -204,7 +205,7 @@ important_count="$(jq -r '.counts.important' "$agg_file")"
 set +e
 finalize_fail_output="$(
   cd "$work_dir" &&
-  "$review_finalize" 20260305-230000 reviewer-a.json reviewer-b.json 2>&1
+  "$review_finalize" 20260305-230000 .local/loop/reviewer-a.json .local/loop/reviewer-b.json 2>&1
 )"
 finalize_fail_status=$?
 set -e
@@ -215,15 +216,15 @@ fi
 [[ "$finalize_fail_output" == *".local/loop/review-20260305-230000.json"* ]] || fail "review_finalize did not print aggregate path on failure"
 
 # 11.2) review_finalize passes for clean reviewer artifacts.
-cat > "$work_dir/reviewer-clean-a.json" <<'JSON'
+cat > "$work_dir/.local/loop/reviewer-clean-a.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
 JSON
-cat > "$work_dir/reviewer-clean-b.json" <<'JSON'
+cat > "$work_dir/.local/loop/reviewer-clean-b.json" <<'JSON'
 {"scope":"full-pr","dimension":"correctness","status":"complete","findings":[]}
 JSON
 (
   cd "$work_dir" &&
-  "$review_finalize" 20260305-230002 reviewer-clean-a.json reviewer-clean-b.json >/dev/null
+  "$review_finalize" 20260305-230002 .local/loop/reviewer-clean-a.json .local/loop/reviewer-clean-b.json >/dev/null
 )
 assert_exists "$work_dir/.local/loop/review-20260305-230002.json"
 
@@ -243,7 +244,7 @@ if (
 fi
 
 # 13) final_gate also fails closed on counts mismatch.
-cat > "$work_dir/ci-good.json" <<'JSON'
+cat > "$work_dir/.local/loop/ci-good.json" <<'JSON'
 {
   "schema_version": 1,
   "source": "local-regression",
@@ -255,10 +256,10 @@ cat > "$work_dir/ci-good.json" <<'JSON'
   "docs_updated": true
 }
 JSON
-perl -0pi -e "s/__HEAD_SHA__/$head_sha/g; s/__BASE_SHA__/$base_sha/g" "$work_dir/ci-good.json"
+perl -0pi -e "s/__HEAD_SHA__/$head_sha/g; s/__BASE_SHA__/$base_sha/g" "$work_dir/.local/loop/ci-good.json"
 if (
   cd "$work_dir" &&
-  "$final_gate" .local/loop/review-mismatch.json ci-good.json "$plan_path" main .local/loop/final-gate.json >/dev/null 2>&1
+  "$final_gate" .local/loop/review-mismatch.json .local/loop/ci-good.json "$plan_path" main .local/loop/final-gate.json >/dev/null 2>&1
 ); then
   fail "final_gate accepted mismatched counts"
 fi
@@ -279,7 +280,7 @@ if (
 fi
 if (
   cd "$work_dir" &&
-  "$final_gate" .local/loop/review-unknown-severity.json ci-good.json "$plan_path" main .local/loop/final-gate-unknown-severity.json >/dev/null 2>&1
+  "$final_gate" .local/loop/review-unknown-severity.json .local/loop/ci-good.json "$plan_path" main .local/loop/final-gate-unknown-severity.json >/dev/null 2>&1
 ); then
   fail "final_gate accepted unknown severity token"
 fi
@@ -300,12 +301,12 @@ JSON
 # 16) final_gate accepts numerically equivalent count formats.
 (
   cd "$work_dir" &&
-  "$final_gate" .local/loop/review-decimal-zero.json ci-good.json "$plan_path" main .local/loop/final-gate-decimal.json >/dev/null
+  "$final_gate" .local/loop/review-decimal-zero.json .local/loop/ci-good.json "$plan_path" main .local/loop/final-gate-decimal.json >/dev/null
 )
 assert_exists "$work_dir/.local/loop/final-gate-decimal.json"
 
 # 17) final_gate rejects stale CI head/base metadata.
-cat > "$work_dir/ci-stale.json" <<'JSON'
+cat > "$work_dir/.local/loop/ci-stale.json" <<'JSON'
 {
   "schema_version": 1,
   "source": "local-regression",
@@ -319,7 +320,7 @@ cat > "$work_dir/ci-stale.json" <<'JSON'
 JSON
 if (
   cd "$work_dir" &&
-  "$final_gate" .local/loop/review-decimal-zero.json ci-stale.json "$plan_path" main .local/loop/final-gate-stale.json >/dev/null 2>&1
+  "$final_gate" .local/loop/review-decimal-zero.json .local/loop/ci-stale.json "$plan_path" main .local/loop/final-gate-stale.json >/dev/null 2>&1
 ); then
   fail "final_gate accepted stale CI head/base metadata"
 fi

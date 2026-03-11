@@ -109,6 +109,7 @@ git clone "$origin_dir" "$work_dir" >/dev/null 2>&1
   cd "$work_dir" &&
   git config user.name "Codex" &&
   git config user.email "codex@example.com" &&
+  printf '.local/\n' >> .git/info/exclude &&
   git checkout -b main >/dev/null &&
   printf 'seed\n' > README.md &&
   git add README.md &&
@@ -294,6 +295,29 @@ assert_exists "$work_dir/$ci_path"
 ci_head_sha="$(jq -r '.head_sha' "$work_dir/$ci_path")"
 [[ "$ci_head_sha" == "$head_sha" ]] || fail "export_ci_status wrote the wrong head SHA"
 
+(
+  cd "$work_dir" &&
+  printf 'dirty\n' >> README.md
+)
+if (
+  cd "$work_dir" &&
+  PATH="$fake_bin:$PATH" \
+  FAKE_GH_PR_NUMBER="101" \
+  FAKE_GH_PR_URL="https://example.test/pr/101" \
+  FAKE_GH_PR_STATE="OPEN" \
+  FAKE_GH_PR_HEAD_SHA="$head_sha" \
+  FAKE_GH_PR_BASE_REF="main" \
+  FAKE_GH_CHECKS_JSON='[{"name":"required-ci","bucket":"pass"}]' \
+  FAKE_GH_CHECKS_EXIT_CODE="0" \
+  "$export_ci_script" main --docs-updated true >/dev/null 2>&1
+); then
+  fail "export_ci_status accepted a dirty working tree"
+fi
+(
+  cd "$work_dir" &&
+  git checkout -- README.md
+)
+
 pending_ci_path="$tmp_root/ci-pending.json"
 pending_ci_output="$(
   cd "$work_dir" &&
@@ -311,7 +335,7 @@ pending_ci_output="$(
 assert_exists "$pending_ci_path"
 [[ "$(jq -r '.required_checks[0].status' "$pending_ci_path")" == "pending" ]] || fail "export_ci_status did not preserve pending check status"
 
-cat > "$work_dir/review-clean.json" <<'JSON'
+cat > "$work_dir/.local/loop/review-clean.json" <<'JSON'
 {
   "status": "complete",
   "findings": [],
@@ -321,22 +345,37 @@ JSON
 
 (
   cd "$work_dir" &&
-  "$final_gate_script" review-clean.json "$ci_path" "$complete_plan" main .local/loop/final-gate.json >/dev/null
+  "$final_gate_script" .local/loop/review-clean.json "$ci_path" "$complete_plan" main .local/loop/final-gate.json >/dev/null
 )
 assert_exists "$work_dir/.local/loop/final-gate.json"
 [[ "$(jq -r '.result' "$work_dir/.local/loop/final-gate.json")" == "pass" ]] || fail "final_gate did not pass with fresh inputs"
 
-jq '.head_sha = "deadbeef"' "$work_dir/$ci_path" > "$work_dir/ci-stale.json"
+(
+  cd "$work_dir" &&
+  printf 'dirty\n' >> README.md
+)
 if (
   cd "$work_dir" &&
-  "$final_gate_script" review-clean.json ci-stale.json "$complete_plan" main .local/loop/final-gate-stale.json >/dev/null 2>&1
+  "$final_gate_script" .local/loop/review-clean.json "$ci_path" "$complete_plan" main .local/loop/final-gate-dirty.json >/dev/null 2>&1
+); then
+  fail "final_gate accepted a dirty working tree"
+fi
+(
+  cd "$work_dir" &&
+  git checkout -- README.md
+)
+
+jq '.head_sha = "deadbeef"' "$work_dir/$ci_path" > "$work_dir/.local/loop/ci-stale.json"
+if (
+  cd "$work_dir" &&
+  "$final_gate_script" .local/loop/review-clean.json .local/loop/ci-stale.json "$complete_plan" main .local/loop/final-gate-stale.json >/dev/null 2>&1
 ); then
   fail "final_gate accepted stale CI head metadata"
 fi
 
 if (
   cd "$work_dir" &&
-  "$final_gate_script" review-clean.json "$pending_ci_path" "$complete_plan" main .local/loop/final-gate-pending.json >/dev/null 2>&1
+  "$final_gate_script" .local/loop/review-clean.json "$pending_ci_path" "$complete_plan" main .local/loop/final-gate-pending.json >/dev/null 2>&1
 ); then
   fail "final_gate accepted pending required checks"
 fi
@@ -350,6 +389,27 @@ fi
   FAKE_GH_PR_HEAD_SHA="$head_sha" \
   FAKE_GH_PR_BASE_REF="main" \
   "$land_preflight_script" .local/loop/final-gate.json "$complete_plan" main >/dev/null
+)
+
+(
+  cd "$work_dir" &&
+  printf 'dirty\n' >> README.md
+)
+if (
+  cd "$work_dir" &&
+  PATH="$fake_bin:$PATH" \
+  FAKE_GH_PR_NUMBER="101" \
+  FAKE_GH_PR_URL="https://example.test/pr/101" \
+  FAKE_GH_PR_STATE="OPEN" \
+  FAKE_GH_PR_HEAD_SHA="$head_sha" \
+  FAKE_GH_PR_BASE_REF="main" \
+  "$land_preflight_script" .local/loop/final-gate.json "$complete_plan" main >/dev/null 2>&1
+); then
+  fail "land_preflight accepted a dirty working tree"
+fi
+(
+  cd "$work_dir" &&
+  git checkout -- README.md
 )
 
 if (

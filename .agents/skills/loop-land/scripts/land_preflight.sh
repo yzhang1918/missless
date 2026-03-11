@@ -55,6 +55,7 @@ if ! gh auth status >/dev/null 2>&1; then
 fi
 
 stateful_gate_require_codex_branch
+stateful_gate_require_clean_worktree
 stateful_gate_sync_origin "$base_branch"
 normalized_plan="$(stateful_gate_validate_archived_plan "$plan_file")"
 

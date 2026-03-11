@@ -81,6 +81,7 @@ Run `loop-janitor` independently on a recurring cadence for entropy control and 
 ## Stateful Gate Contract
 
 - Before stateful review, publish, final-gate, or land decisions, synchronize remote state first (`git fetch --prune origin` or stricter equivalent).
+- Before `loop-publish`, `loop-final-gate`, or `loop-land`, the working tree must also be clean so gate evidence always matches the published `HEAD`.
 - `loop-publish`, `loop-final-gate`, and `loop-land` must operate on an archived completed plan path under `docs/exec-plans/completed/` or `docs/harness/completed/`.
 - A stateful gate must reject an archived plan if the same plan filename still exists under the matching `active/` folder.
 - Plans used by those stateful gates must keep these stable machine-checked fields:
