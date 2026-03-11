@@ -229,7 +229,9 @@ global tarball installation the supported way to invoke the runtime.
     support
 - Linked issue updates:
   - source issue: #14
-  - no PR yet; issue comment will be updated again after final gate
+  - published PR: #28
   - issue comment updated after final gate with the latest review/gate status
+  - issue comment updated again after publish with the PR link and follow-up
+    issue #27
 - Spawned follow-up issues:
   - #27 `Publish missless CLI to npm and support public install flows`
