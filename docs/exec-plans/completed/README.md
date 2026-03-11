@@ -10,6 +10,8 @@ Store completed plans as durable execution history.
 
 Each completed plan should include:
 - intake source (`issue #...` or `direct request`)
+- checked acceptance criteria
+- completed step statuses
 - delivered scope
 - validation summary
 - linked issue updates (if any)

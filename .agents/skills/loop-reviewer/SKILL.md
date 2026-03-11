@@ -13,7 +13,8 @@ Run one focused review dimension and write a JSON artifact consumed by `loop-rev
 
 - Review scope (`delta` or `full-pr`).
 - Dimension name (for example `architecture`, `docs-spec-consistency`).
-- Output file path (for example `.local/loop/review-<round-id>-<dimension>.json`).
+- Output file path (for example `.local/loop/review-<round-id>-<dimension-slug>.json`).
+- Optional focus text if the caller generated the prompt from `review_prepare_reviewers.sh`.
 - Current branch diff/context.
 
 ## Execution Contract
@@ -41,4 +42,5 @@ Run one focused review dimension and write a JSON artifact consumed by `loop-rev
 
 - Do not emit markdown as the artifact file content.
 - Do not leave placeholder fields.
+- If the caller provides extra focus guidance, keep the review scoped to that lens without changing the artifact schema.
 - If no issues are found, write `findings: []` with `status: "complete"`.

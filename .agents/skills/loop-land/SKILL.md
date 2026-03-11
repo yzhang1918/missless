@@ -12,13 +12,21 @@ Complete integration after final gate success.
 ## Inputs
 
 - Final gate outcome marked as pass.
+- Final-gate artifact path.
+- Archived completed plan path.
+- Base branch name.
 - Target merge method and repository policy.
 - Linked issue numbers and which ones should close on merge.
 
 ## Execution Contract
 
-1. Verify final gate is pass and current evidence is fresh.
-2. Verify PR is already published, PR head SHA matches local HEAD, and merge strategy matches repository policy.
+1. Verify final gate is pass and current evidence is fresh by running:
+
+```sh
+.agents/skills/loop-land/scripts/land_preflight.sh <final-gate-json> <plan-path> <base-branch> [--pr <number>]
+```
+
+2. Verify the working tree is clean, the PR is already published, PR head SHA matches local HEAD, and merge strategy matches repository policy.
 3. Perform merge/land action according to repository workflow.
    - prefer `rebase` or `squash` if merge commits are disabled
 4. Record:
@@ -37,5 +45,6 @@ Tracked landing summary in plan/PR records.
 ## Guardrails
 
 - Do not land when final gate is fail or unknown.
+- Do not land when the final-gate artifact, repo state, or plan state is stale.
 - Do not rewrite shared history.
 - Do not close implementation issues before the merge result is known.
