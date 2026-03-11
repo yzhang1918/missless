@@ -98,10 +98,11 @@ Add a repository-local helper that turns a selected review dimension list into a
   - The harness plan is archived under `completed/`, cataloged, and the linked GitHub issue records the plan/execution result.
 - Validation evidence:
   - Archived the plan to `docs/harness/completed/2026-03-11-reviewer-spawn-helper.md` and added the catalog entry in `docs/harness/completed/README.md`.
+  - Published PR `#23`: `https://github.com/yzhang1918/missless/pull/23`.
   - Ran `git diff --check`.
   - Ran `.agents/skills/loop-review-loop/scripts/review_regression.sh` after archival and it passed.
   - Ran the completed-plan catalog sync check from `docs/harness/completed/README.md`; it produced no missing entries.
-  - Added an execution update comment to issue `#10`: `https://github.com/yzhang1918/missless/issues/10#issuecomment-4035597587`.
+  - Synced execution status back to issue `#10` with branch, plan, validation, PR, and final-gate updates.
 
 ## Review Cadence
 
@@ -141,14 +142,22 @@ Add a repository-local helper that turns a selected review dimension list into a
 - Ran `.agents/skills/loop-review-loop/scripts/review_regression.sh`; it passed.
 - Ran `git diff --check`; no whitespace or patch-format issues were reported.
 - Ran the completed-plan catalog sync check from `docs/harness/completed/README.md`; it reported no missing catalog entries.
+- Published PR `#23`: `https://github.com/yzhang1918/missless/pull/23`.
 
 ## Review Summary
 
 - Delta review round `20260311-014043` passed with `BLOCKER=0`, `IMPORTANT=0`.
-- Full-PR review round `20260311-014303` passed with `BLOCKER=0`, `IMPORTANT=0`.
-- After the completed-plan record changed, reran full-PR review round `20260311-014409`; it passed with `BLOCKER=0`, `IMPORTANT=0`.
-- Reviewer subagent spawning was unstable in this session, so the review rounds used explicit manual fallback reviewer artifacts after `spawn_agent` attempts aborted; the fallback reviews found and fixed one docs-path inconsistency (`<dimension>` vs `<dimension-slug>`) before the final full-PR rerun.
-- Retained review artifact: `.local/loop/review-20260311-014409.json`.
+- Reviewer subagent spawning/output persistence was unstable in this session, so the review rounds used explicit manual fallback reviewer artifacts after `spawn_agent` attempts aborted.
+- The fallback reviews found and fixed one docs-path inconsistency (`<dimension>` vs `<dimension-slug>`) before the final authoritative full-PR review.
+- Full-PR review round `20260311-014701` passed with `BLOCKER=0`, `IMPORTANT=0`.
+- Retained review artifact: `.local/loop/review-20260311-014701.json`.
+
+## Final Gate Summary
+
+- Published branch `codex/issue-10-reviewer-spawn-helper` to PR `#23`: `https://github.com/yzhang1918/missless/pull/23`.
+- Executed `.agents/skills/loop-final-gate/scripts/final_gate.sh .local/loop/review-20260311-014701.json .local/loop/ci-local-20260311-014701.json .local/loop/final-gate-20260311-014701.json`.
+- Final gate passed with `review_ok=true`, `ci_ok=true`, `branch_ok=true`, and `docs_ok=true`.
+- Retained final-gate artifact: `.local/loop/final-gate-20260311-014701.json`.
 
 ## Completion Summary
 
@@ -157,11 +166,11 @@ Add a repository-local helper that turns a selected review dimension list into a
   - Added `.agents/skills/loop-review-loop/references/reviewer-launch-manifest.md` to document the manifest contract and usage.
   - Updated `loop-review-loop`, `loop-reviewer`, and their `agents/openai.yaml` prompts so the new helper path is explicit while reviewer schema and gate semantics stay unchanged.
   - Expanded `review_regression.sh` and `review_cleanup.sh` to validate and clean up helper-generated launch manifests.
-  - Archived the completed harness plan and synced the result back to issue `#10`.
+  - Archived the completed harness plan, published PR `#23`, and synced the result back to issue `#10`.
 - Not delivered:
   - No runtime-specific subagent launcher was added inside repository scripts; actual spawning remains caller/runtime-owned by design.
   - No changes were made to fail-closed reviewer fallback semantics, reviewer taxonomy, deferred-risk tracking, or publish/final-gate enforcement.
 - Linked issue updates:
-  - Commented on issue `#10` with the completed plan path, validation summary, and review disposition: `https://github.com/yzhang1918/missless/issues/10#issuecomment-4035597587`.
+  - Issue `#10` was updated with the completed plan path during execution and now has PR `#23` as the merge-time closing path.
 - Spawned follow-up issues:
   - None.
