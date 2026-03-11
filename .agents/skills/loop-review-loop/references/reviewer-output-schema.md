@@ -1,6 +1,6 @@
 # Reviewer Output Schema
 
-Each subagent reviewer writes one JSON file to `.local/loop/review-<round-id>-<dimension>.json`.
+Each subagent reviewer writes one JSON file to `.local/loop/review-<round-id>-<dimension-slug>.json`.
 
 ## Minimum shape
 
