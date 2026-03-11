@@ -182,7 +182,7 @@ Harden the harness so stateful review/publish/final-gate/land decisions fail clo
 - Not delivered:
   - No merge/land action was executed on this branch in this loop.
 - Linked issue updates:
-  - Published as PR `#26` (`https://github.com/yzhang1918/missless/pull/26`) from head SHA `cf7aab6bf924d76905d2648b3e0475408108cdec`.
+  - Published as PR `#26` (`https://github.com/yzhang1918/missless/pull/26`); the current published head SHA is tracked in GitHub PR metadata.
   - The PR body uses merge-time closing keywords for `#9`, `#12`, and `#19`.
   - Keep those issues open until land verifies the merge outcome and auto-close behavior.
 - Spawned follow-up issues: None.
