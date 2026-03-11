@@ -3,6 +3,7 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 review_init="$script_dir/review_init.sh"
+review_prepare="$script_dir/review_prepare_reviewers.sh"
 review_aggregate="$script_dir/review_aggregate.sh"
 review_gate="$script_dir/review_gate.sh"
 review_finalize="$script_dir/review_finalize.sh"
@@ -37,14 +38,67 @@ if (
   fail "review_init accepted invalid round-id"
 fi
 
-# 2) initialize a valid review round.
+# 2) review_prepare rejects non-timestamp round ids.
+if (
+  cd "$work_dir" &&
+  "$review_prepare" bad-round-id full-pr security >/dev/null 2>&1
+); then
+  fail "review_prepare accepted invalid round-id"
+fi
+
+# 3) review_prepare rejects invalid scopes.
+if (
+  cd "$work_dir" &&
+  "$review_prepare" 20260305-230000 review-all security >/dev/null 2>&1
+); then
+  fail "review_prepare accepted invalid scope"
+fi
+
+# 4) review_prepare rejects focus for a dimension that was not selected.
+if (
+  cd "$work_dir" &&
+  "$review_prepare" 20260305-230000 full-pr --focus "security=Check secrets handling" correctness >/dev/null 2>&1
+); then
+  fail "review_prepare accepted focus for an unselected dimension"
+fi
+
+# 5) review_prepare rejects dimensions that normalize to the same artifact slug.
+if (
+  cd "$work_dir" &&
+  "$review_prepare" 20260305-230000 full-pr "docs/spec consistency" "docs-spec-consistency" >/dev/null 2>&1
+); then
+  fail "review_prepare accepted dimensions with duplicate normalized slugs"
+fi
+
+# 6) review_prepare emits a launch manifest with stable prompt/output fields.
+prepare_manifest_rel="$(
+  cd "$work_dir" &&
+  "$review_prepare" 20260305-230000 full-pr --focus "security=Check secrets handling" security "docs/spec consistency"
+)"
+prepare_manifest="$work_dir/$prepare_manifest_rel"
+assert_exists "$prepare_manifest"
+prepare_count="$(jq -r '.reviewers | length' "$prepare_manifest")"
+[[ "$prepare_count" == "2" ]] || fail "expected reviewer count=2, got $prepare_count"
+security_output="$(jq -r '.reviewers[] | select(.dimension == "security") | .output_path' "$prepare_manifest")"
+[[ "$security_output" == ".local/loop/review-20260305-230000-security.json" ]] || fail "unexpected security output path: $security_output"
+docs_output="$(jq -r '.reviewers[] | select(.dimension == "docs/spec consistency") | .output_path' "$prepare_manifest")"
+[[ "$docs_output" == ".local/loop/review-20260305-230000-docs-spec-consistency.json" ]] || fail "unexpected docs output path: $docs_output"
+security_focus="$(jq -r '.reviewers[] | select(.dimension == "security") | .focus' "$prepare_manifest")"
+[[ "$security_focus" == "Check secrets handling" ]] || fail "unexpected security focus: $security_focus"
+docs_has_focus="$(jq -r '.reviewers[] | select(.dimension == "docs/spec consistency") | has("focus")' "$prepare_manifest")"
+[[ "$docs_has_focus" == "false" ]] || fail "expected docs/spec consistency reviewer to omit focus"
+security_prompt="$(jq -r '.reviewers[] | select(.dimension == "security") | .prompt' "$prepare_manifest")"
+[[ "$security_prompt" == *"\$loop-reviewer"* ]] || fail "review_prepare prompt did not reference loop-reviewer"
+[[ "$security_prompt" == *".local/loop/review-20260305-230000-security.json"* ]] || fail "review_prepare prompt did not include reviewer output path"
+
+# 7) initialize a valid review round.
 (
   cd "$work_dir" &&
   "$review_init" 20260305-230000 full-pr >/dev/null
 )
 assert_exists "$work_dir/.local/loop/review-20260305-230000.json"
 
-# 3) aggregate rejects dash-prefixed reviewer filenames.
+# 8) aggregate rejects dash-prefixed reviewer filenames.
 cat > "$work_dir/-bad.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
 JSON
@@ -58,7 +112,7 @@ if (
   fail "review_aggregate accepted dash-prefixed reviewer file"
 fi
 
-# 4) aggregate rejects non-timestamp round ids.
+# 9) aggregate rejects non-timestamp round ids.
 if (
   cd "$work_dir" &&
   "$review_aggregate" bad-round-id reviewer-empty.json >/dev/null 2>&1
@@ -66,7 +120,7 @@ if (
   fail "review_aggregate accepted invalid round-id"
 fi
 
-# 5) aggregate rejects unknown severity values.
+# 10) aggregate rejects unknown severity values.
 cat > "$work_dir/reviewer-bad-severity.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[{"id":"Sx","severity":"WARN"}]}
 JSON
@@ -77,7 +131,7 @@ if (
   fail "review_aggregate accepted unknown severity token"
 fi
 
-# 6) aggregate computes counts from findings payload.
+# 11) aggregate computes counts from findings payload.
 cat > "$work_dir/reviewer-a.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[{"id":"S1","severity":"IMPORTANT"}]}
 JSON
@@ -93,7 +147,7 @@ assert_exists "$agg_file"
 important_count="$(jq -r '.counts.important' "$agg_file")"
 [[ "$important_count" == "1" ]] || fail "expected important count=1, got $important_count"
 
-# 6.1) review_finalize fails when important findings remain and still prints aggregate path.
+# 11.1) review_finalize fails when important findings remain and still prints aggregate path.
 set +e
 finalize_fail_output="$(
   cd "$work_dir" &&
@@ -107,7 +161,7 @@ fi
 [[ "$finalize_fail_status" -eq 2 ]] || fail "review_finalize expected exit status 2, got $finalize_fail_status"
 [[ "$finalize_fail_output" == *".local/loop/review-20260305-230000.json"* ]] || fail "review_finalize did not print aggregate path on failure"
 
-# 6.2) review_finalize passes for clean reviewer artifacts.
+# 11.2) review_finalize passes for clean reviewer artifacts.
 cat > "$work_dir/reviewer-clean-a.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
 JSON
@@ -120,7 +174,7 @@ JSON
 )
 assert_exists "$work_dir/.local/loop/review-20260305-230002.json"
 
-# 7) review_gate fails when counts do not match findings payload.
+# 12) review_gate fails when counts do not match findings payload.
 cat > "$work_dir/.local/loop/review-mismatch.json" <<'JSON'
 {
   "status": "complete",
@@ -135,7 +189,7 @@ if (
   fail "review_gate accepted mismatched counts"
 fi
 
-# 8) final_gate also fails closed on counts mismatch.
+# 13) final_gate also fails closed on counts mismatch.
 cat > "$work_dir/ci-good.json" <<'JSON'
 {
   "required_checks": [{"name":"local-smoke","status":"pass"}],
@@ -150,7 +204,7 @@ if (
   fail "final_gate accepted mismatched counts"
 fi
 
-# 9) gate scripts reject unknown severity values in findings.
+# 14) gate scripts reject unknown severity values in findings.
 cat > "$work_dir/.local/loop/review-unknown-severity.json" <<'JSON'
 {
   "status": "complete",
@@ -171,7 +225,7 @@ if (
   fail "final_gate accepted unknown severity token"
 fi
 
-# 10) review_gate accepts numerically equivalent count formats.
+# 15) review_gate accepts numerically equivalent count formats.
 cat > "$work_dir/.local/loop/review-decimal-zero.json" <<'JSON'
 {
   "status": "complete",
@@ -184,14 +238,14 @@ JSON
   "$review_gate" .local/loop/review-decimal-zero.json >/dev/null
 )
 
-# 11) final_gate accepts numerically equivalent count formats.
+# 16) final_gate accepts numerically equivalent count formats.
 (
   cd "$work_dir" &&
   "$final_gate" .local/loop/review-decimal-zero.json ci-good.json .local/loop/final-gate-decimal.json >/dev/null
 )
 assert_exists "$work_dir/.local/loop/final-gate-decimal.json"
 
-# 12) cleanup rejects invalid keep-round arguments.
+# 17) cleanup rejects invalid keep-round arguments.
 if (
   cd "$work_dir" &&
   "$review_cleanup" --keep-round-id --dry-run >/dev/null 2>&1
@@ -211,7 +265,7 @@ if (
   fail "review_cleanup accepted non-numeric keep-rounds"
 fi
 
-# 13) explicit keep-round-id preserves orphan aggregate rounds.
+# 18) explicit keep-round-id preserves orphan aggregate rounds.
 cat > "$work_dir/.local/loop/review-20260305-230099.json" <<'JSON'
 {"round_id":"20260305-230099"}
 JSON
@@ -221,7 +275,13 @@ JSON
 )
 assert_exists "$work_dir/.local/loop/review-20260305-230099.json"
 
-# 14) cleanup dry-run does not delete; real cleanup keeps only latest round.
+# 19) cleanup dry-run does not delete; real cleanup keeps only latest round and removes launch manifests.
+prepare_cleanup_manifest_rel="$(
+  cd "$work_dir" &&
+  "$review_prepare" 20260305-230003 delta security
+)"
+prepare_cleanup_manifest="$work_dir/$prepare_cleanup_manifest_rel"
+assert_exists "$prepare_cleanup_manifest"
 cat > "$work_dir/.local/loop/review-20260305-230001.json" <<'JSON'
 {"round_id":"20260305-230001"}
 JSON
@@ -240,6 +300,7 @@ JSON
 )
 assert_exists "$work_dir/.local/loop/review-20260305-230001.json"
 assert_exists "$work_dir/.local/loop/review-20260305-230002.json"
+assert_exists "$prepare_cleanup_manifest"
 (
   cd "$work_dir" &&
   "$review_cleanup" --keep-rounds 1 >/dev/null
@@ -248,5 +309,6 @@ assert_not_exists "$work_dir/.local/loop/review-20260305-230001.json"
 assert_not_exists "$work_dir/.local/loop/review-20260305-230001-correctness.json"
 assert_exists "$work_dir/.local/loop/review-20260305-230002.json"
 assert_exists "$work_dir/.local/loop/review-20260305-230002-security.json"
+assert_not_exists "$prepare_cleanup_manifest"
 
 echo "PASS: review loop regression checks"

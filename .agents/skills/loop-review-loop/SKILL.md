@@ -38,11 +38,21 @@ Scope selection rule:
    - security
    - performance/reliability
 
-3. Spawn subagent reviewers for selected dimensions using `loop-reviewer`.
-4. Each subagent gathers its own context via local git commands (`git diff`, `git show`, `git log`) instead of requiring raw diff injection.
-5. Each reviewer writes JSON directly to `.local/loop/review-<round-id>-<dimension>.json`.
+3. Prepare a reviewer launch manifest for the selected dimensions:
+
+```sh
+.agents/skills/loop-review-loop/scripts/review_prepare_reviewers.sh <round-id YYYYMMDD-HHMMSS> <scope delta|full-pr> [--focus "<dimension>=<focus>"]... <dimension> [<dimension> ...]
+```
+
+This writes `.local/loop/review-launch-<round-id>.json`.
+Use the manifest shape in `references/reviewer-launch-manifest.md`.
+
+4. Spawn subagent reviewers from the manifest entries using `loop-reviewer`.
+   The caller/runtime owns the actual spawn mechanism; the repository helper only emits launch data and prompt text.
+5. Each subagent gathers its own context via local git commands (`git diff`, `git show`, `git log`) instead of requiring raw diff injection.
+6. Each reviewer writes JSON directly to `.local/loop/review-<round-id>-<dimension-slug>.json`.
    Use the schema in `references/reviewer-output-schema.md`.
-6. Finalize the round (aggregate + gate) with one command:
+7. Finalize the round (aggregate + gate) with one command:
 
 ```sh
 .agents/skills/loop-review-loop/scripts/review_finalize.sh <round-id YYYYMMDD-HHMMSS> .local/loop/review-<round-id>-*.json
@@ -50,14 +60,14 @@ Scope selection rule:
 
 `review_finalize.sh` always prints the aggregated artifact path. If the gate is blocked, it exits non-zero (currently `2`) after printing the path.
 
-7. If blocked, fix findings and run another review round.
-8. Summarize accepted review outcome in the tracked plan or PR description.
-9. Cleanup ephemeral artifacts after the loop:
+8. If blocked, fix findings and run another review round.
+9. Summarize accepted review outcome in the tracked plan or PR description.
+10. Cleanup ephemeral artifacts after the loop:
 
 ```sh
 .agents/skills/loop-review-loop/scripts/review_cleanup.sh --keep-rounds 1
 ```
-10. When review-loop or final-gate scripts change, run regression checks:
+11. When review-loop or final-gate scripts change, run regression checks:
 
 ```sh
 .agents/skills/loop-review-loop/scripts/review_regression.sh
@@ -65,7 +75,7 @@ Scope selection rule:
 
 ## Output
 
-- Ephemeral process artifacts in `.local/loop/`.
+- Ephemeral process artifacts in `.local/loop/`, including reviewer launch manifests.
 - Human-readable summary in tracked repository records.
 
 ## Guardrails
@@ -73,5 +83,6 @@ Scope selection rule:
 - Treat `.local` artifacts as temporary process state.
 - Keep final decisions in git-tracked docs or PR records.
 - Do not require a fixed reviewer set for all tasks.
+- Do not bind the helper to a specific subagent runtime inside repository scripts.
 - Do not hand-author reviewer JSON when reviewer subagent output is available.
 - If fallback manual reviewer artifacts are required, record the reason in the plan/PR review summary.
