@@ -180,8 +180,9 @@ Harden the harness so stateful review/publish/final-gate/land decisions fail clo
   - Workflow/standards/template updates that make the gateable plan contract explicit.
   - Regression coverage for both the review-loop/final-gate contract and the new stateful publish/export/land surface.
 - Not delivered:
-  - No merge/publish action was executed on this branch in this loop.
+  - No merge/land action was executed on this branch in this loop.
 - Linked issue updates:
-  - This archived plan implements the intended branch-side changes for `#9`, `#12`, and `#19`.
-  - Keep those issues open until the branch is published and landed; use PR linkage/closing keywords at publish time according to the issue disposition.
+  - Published as PR `#26` (`https://github.com/yzhang1918/missless/pull/26`) from head SHA `cf7aab6bf924d76905d2648b3e0475408108cdec`.
+  - The PR body uses merge-time closing keywords for `#9`, `#12`, and `#19`.
+  - Keep those issues open until land verifies the merge outcome and auto-close behavior.
 - Spawned follow-up issues: None.
