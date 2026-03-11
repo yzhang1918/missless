@@ -21,7 +21,8 @@ Scope selection rule:
 
 ## Execution Contract
 
-1. Start a new review round:
+1. Run repo-sync preflight before stateful review decisions so local refs and base-branch state are current.
+2. Start a new review round:
 
 ```sh
 .agents/skills/loop-review-loop/scripts/review_init.sh <round-id YYYYMMDD-HHMMSS> <scope>
@@ -29,7 +30,7 @@ Scope selection rule:
 
 `round-id` uses UTC timestamp format (`YYYYMMDD-HHMMSS`) so cleanup and retention logic can safely classify rounds.
 
-2. Select reviewer dimensions dynamically based on risk and scope.
+3. Select reviewer dimensions dynamically based on risk and scope.
    Recommended pool:
    - correctness
    - architecture
@@ -38,7 +39,7 @@ Scope selection rule:
    - security
    - performance/reliability
 
-3. Prepare a reviewer launch manifest for the selected dimensions:
+4. Prepare a reviewer launch manifest for the selected dimensions:
 
 ```sh
 .agents/skills/loop-review-loop/scripts/review_prepare_reviewers.sh <round-id YYYYMMDD-HHMMSS> <scope delta|full-pr> [--focus "<dimension>=<focus>"]... <dimension> [<dimension> ...]
@@ -47,12 +48,12 @@ Scope selection rule:
 This writes `.local/loop/review-launch-<round-id>.json`.
 Use the manifest shape in `references/reviewer-launch-manifest.md`.
 
-4. Spawn subagent reviewers from the manifest entries using `loop-reviewer`.
+5. Spawn subagent reviewers from the manifest entries using `loop-reviewer`.
    The caller/runtime owns the actual spawn mechanism; the repository helper only emits launch data and prompt text.
-5. Each subagent gathers its own context via local git commands (`git diff`, `git show`, `git log`) instead of requiring raw diff injection.
-6. Each reviewer writes JSON directly to `.local/loop/review-<round-id>-<dimension-slug>.json`.
+6. Each subagent gathers its own context via local git commands (`git diff`, `git show`, `git log`) instead of requiring raw diff injection.
+7. Each reviewer writes JSON directly to `.local/loop/review-<round-id>-<dimension-slug>.json`.
    Use the schema in `references/reviewer-output-schema.md`.
-7. Finalize the round (aggregate + gate) with one command:
+8. Finalize the round (aggregate + gate) with one command:
 
 ```sh
 .agents/skills/loop-review-loop/scripts/review_finalize.sh <round-id YYYYMMDD-HHMMSS> .local/loop/review-<round-id>-*.json
@@ -60,14 +61,14 @@ Use the manifest shape in `references/reviewer-launch-manifest.md`.
 
 `review_finalize.sh` always prints the aggregated artifact path. If the gate is blocked, it exits non-zero (currently `2`) after printing the path.
 
-8. If blocked, fix findings and run another review round.
-9. Summarize accepted review outcome in the tracked plan or PR description.
-10. Cleanup ephemeral artifacts after the loop:
+9. If blocked, fix findings and run another review round.
+10. Summarize accepted review outcome in the tracked plan or PR description.
+11. Cleanup ephemeral artifacts after the loop:
 
 ```sh
 .agents/skills/loop-review-loop/scripts/review_cleanup.sh --keep-rounds 1
 ```
-11. When review-loop or final-gate scripts change, run regression checks:
+12. When review-loop or final-gate scripts change, run regression checks:
 
 ```sh
 .agents/skills/loop-review-loop/scripts/review_regression.sh

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ $# -lt 3 ]]; then
-  echo "Usage: $0 <base-branch> <title> <body-file> [--draft] [--direct-request] [--link-issue <issue-ref>]... [--close-issue <issue-ref>]..." >&2
+  echo "Usage: $0 <base-branch> <title> <body-file> --plan <archived-plan-path> [--draft] [--direct-request] [--link-issue <issue-ref>]... [--close-issue <issue-ref>]..." >&2
   exit 1
 fi
 
@@ -11,6 +11,10 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 1
 fi
 
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# shellcheck source=../../loop-final-gate/scripts/stateful_gate_lib.sh
+source "$script_dir/../../loop-final-gate/scripts/stateful_gate_lib.sh"
+
 base_branch="$1"
 title="$2"
 body_file="$3"
@@ -18,6 +22,7 @@ shift 3
 
 draft_flag=""
 direct_request=false
+plan_file=""
 declare -a linked_issues=()
 declare -a closing_issues=()
 
@@ -41,6 +46,14 @@ while [[ $# -gt 0 ]]; do
     --direct-request)
       direct_request=true
       shift
+      ;;
+    --plan)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for --plan" >&2
+        exit 1
+      fi
+      plan_file="$2"
+      shift 2
       ;;
     --link-issue)
       if [[ $# -lt 2 ]]; then
@@ -69,6 +82,11 @@ done
 
 if [[ ! -f "$body_file" ]]; then
   echo "Missing body file: $body_file" >&2
+  exit 1
+fi
+
+if [[ -z "$plan_file" ]]; then
+  echo "Provide --plan <archived-plan-path> before publish" >&2
   exit 1
 fi
 
@@ -125,36 +143,22 @@ if (( ${#linked_issues[@]} > 0 )); then
   done
 fi
 
-head_branch="$(git branch --show-current)"
-if [[ -z "$head_branch" ]]; then
-  echo "Unable to determine current branch" >&2
-  exit 1
-fi
-
-if [[ "$head_branch" == "main" ]]; then
-  echo "Refusing to publish from main; use a codex/* branch" >&2
-  exit 1
-fi
-
-if [[ "$head_branch" != codex/* ]]; then
-  echo "Refusing to publish from non-codex branch: $head_branch" >&2
-  exit 1
-fi
-
-if [[ -n "$(git status --porcelain)" ]]; then
-  echo "Working tree is not clean; commit or stash changes before publish" >&2
-  exit 1
-fi
+stateful_gate_require_codex_branch
+stateful_gate_require_clean_worktree
+stateful_gate_sync_origin "$base_branch"
+normalized_plan="$(stateful_gate_validate_archived_plan "$plan_file")"
 
 if ! gh auth status >/dev/null 2>&1; then
   echo "gh is not authenticated" >&2
   exit 1
 fi
 
+head_branch="$(stateful_gate_current_branch)"
+
 if git rev-parse --abbrev-ref --symbolic-full-name "@{u}" >/dev/null 2>&1; then
-  git push
+  git push >/dev/null
 else
-  git push -u origin "$head_branch"
+  git push -u origin "$head_branch" >/dev/null
 fi
 
 existing_number="$(gh pr list --head "$head_branch" --state open --json number --jq '.[0].number')"

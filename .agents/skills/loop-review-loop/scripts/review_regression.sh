@@ -27,8 +27,61 @@ assert_not_exists() {
 
 tmp_root="$(mktemp -d)"
 trap 'rm -rf "$tmp_root"' EXIT
+origin_dir="$tmp_root/origin.git"
+git init --bare "$origin_dir" >/dev/null 2>&1
 work_dir="$tmp_root/work"
+
+git clone "$origin_dir" "$work_dir" >/dev/null 2>&1
+(
+  cd "$work_dir" &&
+  git config user.name "Codex" &&
+  git config user.email "codex@example.com" &&
+  git checkout -b main >/dev/null &&
+  printf 'seed\n' > README.md &&
+  git add README.md &&
+  git commit -m "seed" >/dev/null &&
+  git push -u origin main >/dev/null &&
+  git checkout -b codex/review-regression >/dev/null &&
+  mkdir -p docs/harness/completed &&
+  cat > docs/harness/completed/2026-03-11-review-regression-plan.md <<'PLAN'
+# Review Regression Plan
+
+## Acceptance Criteria
+
+- [x] Regression fixture is archived and complete.
+
+## Work Breakdown
+
+### Step 1
+
+- Status: completed
+- Objective: Seed a gateable archived plan fixture.
+- Expected files:
+  - `docs/harness/completed/2026-03-11-review-regression-plan.md`
+- Validation commands:
+  - `true`
+- Documentation impact:
+  - Provides a stable archived plan path for regression checks.
+
+## Validation Summary
+
+- Fixture prepared for regression checks.
+
+## Completion Summary
+
+- Delivered: Archived completed-plan fixture.
+- Not delivered: None.
+- Linked issue updates: None.
+- Spawned follow-up issues: None.
+PLAN
+  git add docs/harness/completed/2026-03-11-review-regression-plan.md &&
+  git commit -m "add regression plan fixture" >/dev/null
+)
+
 mkdir -p "$work_dir/.local/loop"
+plan_path="docs/harness/completed/2026-03-11-review-regression-plan.md"
+head_sha="$(cd "$work_dir" && git rev-parse HEAD)"
+base_sha="$(cd "$work_dir" && git rev-parse origin/main)"
 
 # 1) review_init rejects non-timestamp round ids.
 if (
@@ -192,14 +245,20 @@ fi
 # 13) final_gate also fails closed on counts mismatch.
 cat > "$work_dir/ci-good.json" <<'JSON'
 {
+  "schema_version": 1,
+  "source": "local-regression",
+  "generated_at": "2026-03-11T00:00:00Z",
+  "head_sha": "__HEAD_SHA__",
+  "base_ref": "main",
+  "base_sha": "__BASE_SHA__",
   "required_checks": [{"name":"local-smoke","status":"pass"}],
-  "branch_up_to_date": true,
   "docs_updated": true
 }
 JSON
+perl -0pi -e "s/__HEAD_SHA__/$head_sha/g; s/__BASE_SHA__/$base_sha/g" "$work_dir/ci-good.json"
 if (
   cd "$work_dir" &&
-  "$final_gate" .local/loop/review-mismatch.json ci-good.json .local/loop/final-gate.json >/dev/null 2>&1
+  "$final_gate" .local/loop/review-mismatch.json ci-good.json "$plan_path" main .local/loop/final-gate.json >/dev/null 2>&1
 ); then
   fail "final_gate accepted mismatched counts"
 fi
@@ -220,7 +279,7 @@ if (
 fi
 if (
   cd "$work_dir" &&
-  "$final_gate" .local/loop/review-unknown-severity.json ci-good.json .local/loop/final-gate-unknown-severity.json >/dev/null 2>&1
+  "$final_gate" .local/loop/review-unknown-severity.json ci-good.json "$plan_path" main .local/loop/final-gate-unknown-severity.json >/dev/null 2>&1
 ); then
   fail "final_gate accepted unknown severity token"
 fi
@@ -241,11 +300,31 @@ JSON
 # 16) final_gate accepts numerically equivalent count formats.
 (
   cd "$work_dir" &&
-  "$final_gate" .local/loop/review-decimal-zero.json ci-good.json .local/loop/final-gate-decimal.json >/dev/null
+  "$final_gate" .local/loop/review-decimal-zero.json ci-good.json "$plan_path" main .local/loop/final-gate-decimal.json >/dev/null
 )
 assert_exists "$work_dir/.local/loop/final-gate-decimal.json"
 
-# 17) cleanup rejects invalid keep-round arguments.
+# 17) final_gate rejects stale CI head/base metadata.
+cat > "$work_dir/ci-stale.json" <<'JSON'
+{
+  "schema_version": 1,
+  "source": "local-regression",
+  "generated_at": "2026-03-11T00:00:00Z",
+  "head_sha": "deadbeef",
+  "base_ref": "main",
+  "base_sha": "feedface",
+  "required_checks": [{"name":"local-smoke","status":"pass"}],
+  "docs_updated": true
+}
+JSON
+if (
+  cd "$work_dir" &&
+  "$final_gate" .local/loop/review-decimal-zero.json ci-stale.json "$plan_path" main .local/loop/final-gate-stale.json >/dev/null 2>&1
+); then
+  fail "final_gate accepted stale CI head/base metadata"
+fi
+
+# 18) cleanup rejects invalid keep-round arguments.
 if (
   cd "$work_dir" &&
   "$review_cleanup" --keep-round-id --dry-run >/dev/null 2>&1
@@ -265,7 +344,7 @@ if (
   fail "review_cleanup accepted non-numeric keep-rounds"
 fi
 
-# 18) explicit keep-round-id preserves orphan aggregate rounds.
+# 19) explicit keep-round-id preserves orphan aggregate rounds.
 cat > "$work_dir/.local/loop/review-20260305-230099.json" <<'JSON'
 {"round_id":"20260305-230099"}
 JSON
@@ -275,7 +354,7 @@ JSON
 )
 assert_exists "$work_dir/.local/loop/review-20260305-230099.json"
 
-# 19) cleanup dry-run does not delete; real cleanup keeps only latest round and removes launch manifests.
+# 20) cleanup dry-run does not delete; real cleanup keeps only latest round and removes launch manifests.
 prepare_cleanup_manifest_rel="$(
   cd "$work_dir" &&
   "$review_prepare" 20260305-230003 delta security

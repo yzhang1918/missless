@@ -62,6 +62,18 @@ For non-trivial work:
 - convert unresolved follow-ups or debt into GitHub issues before closing the current plan
 - keep completed-plan docs linked to any spawned or source issues
 
+## Stateful Gate Standards
+
+- Before stateful review, publish, final-gate, or land decisions, synchronize remote repository state first (`git fetch --prune origin` or stricter equivalent).
+- `loop-publish`, `loop-final-gate`, and `loop-land` must fail closed when they are given stale repository state, stale gate artifacts, or an incomplete plan record.
+- Publish/final-gate/land must operate on an archived completed plan path under `docs/exec-plans/completed/` or `docs/harness/completed/`; a completed plan that still lives only in `active/` is not gate-ready.
+- Publish/final-gate/land must also reject an archived plan when the same filename still exists under the matching `active/` folder, because that indicates archival drift rather than a true move.
+- Plans intended for those stateful gate checks must keep a stable minimal structure:
+  - `## Acceptance Criteria` with markdown checkboxes
+  - `## Work Breakdown` with `### Step N` sections
+  - one `- Status: pending|in_progress|completed|blocked` line per step
+- Final-gate CI/status artifacts must be small machine-readable JSON directly consumable by `final_gate.sh`, and they must include the evaluated `head_sha`, `base_ref`, `base_sha`, required-check results, and docs/spec update status.
+
 ## Skills Alignment Standards
 
 - Skills under `.agents/skills/` are operational playbooks.

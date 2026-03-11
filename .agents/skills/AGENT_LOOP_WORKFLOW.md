@@ -47,11 +47,17 @@ For medium/large tasks, discovery + plan are required (do not skip steps 1-2).
    - If execution discovers future work, create or update the linked GitHub issues with explicit origin links before treating the task as closed.
    - `loop-publish`, `loop-final-gate`, and `loop-land` must not treat a task as closed while its completed plan still lives only in `active/`.
 10. `loop-publish` (push branch and open/update PR)
+   - Run repo-sync preflight before publish decisions so local refs and PR state are current.
+   - Pass the archived completed plan path; publish must fail closed if the plan is still under `active/` or if the archived plan is not actually complete.
    - Call the publish script with explicit issue metadata: `--direct-request` when no intake issue exists, `--link-issue` for referenced-but-open issues, and `--close-issue` for issues that should close on merge.
    - PR bodies must list the linked issue(s), or explicitly say `direct request (no issue)` when no intake issue exists.
    - Use GitHub closing keywords such as `Closes #123` only for issues that should close on merge; otherwise use a plain reference.
 11. `loop-final-gate`
+   - Run repo-sync preflight before gate decisions.
+   - Pass the archived completed plan path plus a machine-readable CI/status artifact tied to the current `HEAD` and base ref.
 12. `loop-land`
+   - Run repo-sync preflight before landing decisions.
+   - Re-check that the archived completed plan and final-gate artifact still match current repository state before merge.
    - After merge, verify that each issue intended to close actually closed on GitHub. If auto-close did not happen, close it manually with the merge reference.
    - Do not close implementation issues before the landing outcome is known.
 
@@ -71,6 +77,17 @@ Run `loop-janitor` independently on a recurring cadence for entropy control and 
   - `.agents/skills/loop-review-loop/scripts/review_cleanup.sh --keep-rounds 1`
 - If loop/gate scripts changed, run:
   - `.agents/skills/loop-review-loop/scripts/review_regression.sh`
+
+## Stateful Gate Contract
+
+- Before stateful review, publish, final-gate, or land decisions, synchronize remote state first (`git fetch --prune origin` or stricter equivalent).
+- `loop-publish`, `loop-final-gate`, and `loop-land` must operate on an archived completed plan path under `docs/exec-plans/completed/` or `docs/harness/completed/`.
+- A stateful gate must reject an archived plan if the same plan filename still exists under the matching `active/` folder.
+- Plans used by those stateful gates must keep these stable machine-checked fields:
+  - `## Acceptance Criteria` with markdown checkboxes (`- [ ]` / `- [x]`)
+  - `## Work Breakdown` with `### Step N` subsections
+  - exactly one `- Status: ...` line per step using `pending`, `in_progress`, `completed`, or `blocked`
+- Final-gate CI/status artifacts must stay small and directly consumable by `final_gate.sh`. At minimum they must identify the current `HEAD`, target base ref/SHA, required-check results, and docs/spec update status.
 
 ## Review Policy
 
