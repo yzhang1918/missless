@@ -11,9 +11,15 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v jq >/dev/null 2>&1; then
+  echo "jq is required" >&2
+  exit 1
+fi
+
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=../../loop-final-gate/scripts/stateful_gate_lib.sh
 source "$script_dir/../../loop-final-gate/scripts/stateful_gate_lib.sh"
+workflow_path=".github/workflows/harness-checks.yml"
 
 base_branch="$1"
 title="$2"
@@ -143,15 +149,8 @@ if (( ${#linked_issues[@]} > 0 )); then
   done
 fi
 
-stateful_gate_require_codex_branch
-stateful_gate_require_clean_worktree
-stateful_gate_sync_origin "$base_branch"
+stateful_gate_require_repository_readiness "$base_branch" "$workflow_path"
 normalized_plan="$(stateful_gate_validate_archived_plan "$plan_file")"
-
-if ! gh auth status >/dev/null 2>&1; then
-  echo "gh is not authenticated" >&2
-  exit 1
-fi
 
 head_branch="$(stateful_gate_current_branch)"
 

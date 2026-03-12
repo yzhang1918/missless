@@ -11,9 +11,15 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v gh >/dev/null 2>&1; then
+  echo "gh is required" >&2
+  exit 1
+fi
+
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=stateful_gate_lib.sh
 source "$script_dir/stateful_gate_lib.sh"
+workflow_path=".github/workflows/harness-checks.yml"
 
 review_file="$1"
 ci_file="$2"
@@ -31,9 +37,7 @@ if [[ ! -f "$ci_file" ]]; then
   exit 1
 fi
 
-stateful_gate_require_codex_branch
-stateful_gate_require_clean_worktree
-stateful_gate_sync_origin "$base_branch"
+stateful_gate_require_repository_readiness "$base_branch" "$workflow_path"
 normalized_plan="$(stateful_gate_validate_archived_plan "$plan_file")"
 
 mkdir -p "$(dirname "$out_file")"
@@ -197,6 +201,13 @@ jq -n \
   }' > "$out_file"
 
 if [[ "$result" == "pass" ]]; then
+  promote_script="$script_dir/promote_final_evidence.sh"
+  retained_dir="$("$promote_script" "$normalized_plan" "$review_file" "$ci_file" "$out_file")"
+  tmp_out_file="$(mktemp)"
+  jq --arg retained_dir "$retained_dir" '. + {retained_evidence_dir: $retained_dir}' "$out_file" > "$tmp_out_file"
+  mv "$tmp_out_file" "$out_file"
+  repo_root="$(stateful_gate_repo_root)"
+  cp "$out_file" "$repo_root/$retained_dir/final-gate.json"
   echo "PASS: final gate clear"
   echo "$out_file"
   exit 0

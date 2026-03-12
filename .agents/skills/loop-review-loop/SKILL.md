@@ -62,12 +62,17 @@ Use the manifest shape in `references/reviewer-launch-manifest.md`.
 `review_finalize.sh` always prints the aggregated artifact path. If the gate is blocked, it exits non-zero (currently `2`) after printing the path.
 
 9. If blocked, fix findings and run another review round.
-10. Summarize accepted review outcome in the tracked plan or PR description.
+10. Summarize accepted review outcome in the tracked plan or PR description using summary-first evidence.
+   - record the final clean result, key commands, and final conclusion
+   - only record resolved findings when they materially changed the shipped outcome
+   - do not rely on `.local/loop/*.json` paths as durable evidence references
 11. Cleanup ephemeral artifacts after the loop:
 
 ```sh
 .agents/skills/loop-review-loop/scripts/review_cleanup.sh --keep-rounds 1
 ```
+
+Promoted bundles under `.local/final-evidence/` must remain untouched by this cleanup step.
 12. When review-loop or final-gate scripts change, run regression checks:
 
 ```sh
@@ -82,6 +87,7 @@ Use the manifest shape in `references/reviewer-launch-manifest.md`.
 ## Guardrails
 
 - Treat `.local` artifacts as temporary process state.
+- Treat `.local/final-evidence/<plan-slug>/` as the one retained local evidence bundle for the latest passing gate state, not as a general archive of every review round.
 - Keep final decisions in git-tracked docs or PR records.
 - Do not require a fixed reviewer set for all tasks.
 - Do not bind the helper to a specific subagent runtime inside repository scripts.
