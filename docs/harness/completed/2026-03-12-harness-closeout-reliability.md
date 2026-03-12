@@ -34,14 +34,14 @@ Make the closeout path easier to trust and inspect by keeping git-tracked plan a
 
 ## Acceptance Criteria
 
-- [ ] Workflow and skill docs define future tracked plan and PR records as summary-first evidence, with git-tracked summaries instead of durable `.local/loop/*.json` references and optional notable resolved findings only when they materially shaped the final outcome.
-- [ ] After a passing final gate, the latest `review aggregate`, `ci-status`, and `final-gate` JSON artifacts are promoted into `.local/final-evidence/<plan-slug>/`, where `<plan-slug>` is derived from the plan filename without `.md`.
-- [ ] The promoted final-evidence bundle uses stable filenames and overwrite semantics so each plan keeps only one latest passing bundle.
-- [ ] Cleanup scripts continue removing ephemeral `.local/loop` artifacts but never delete promoted `.local/final-evidence/` bundles.
-- [ ] A reusable repository-readiness preflight command exists, and `loop-publish` plus `loop-final-gate` both reuse the same readiness checks rather than maintaining divergent gate logic.
-- [ ] Readiness preflight fails closed for gate-critical problems, including detached or non-`codex/*` branch state, stale base sync, missing required checks, and incompatible GitHub Actions policy.
-- [ ] `loop-land` treats remote merge success as landing success in multi-worktree repositories and records any local cleanup or branch-switch limitations as warnings rather than merge failures.
-- [ ] Targeted regression coverage and review evidence exercise final-evidence promotion, readiness blocking, and worktree-aware landing semantics without intentionally spawning new follow-up issues.
+- [x] Workflow and skill docs define future tracked plan and PR records as summary-first evidence, with git-tracked summaries instead of durable `.local/loop/*.json` references and optional notable resolved findings only when they materially shaped the final outcome.
+- [x] After a passing final gate, the latest `review aggregate`, `ci-status`, and `final-gate` JSON artifacts are promoted into `.local/final-evidence/<plan-slug>/`, where `<plan-slug>` is derived from the plan filename without `.md`.
+- [x] The promoted final-evidence bundle uses stable filenames and overwrite semantics so each plan keeps only one latest passing bundle.
+- [x] Cleanup scripts continue removing ephemeral `.local/loop` artifacts but never delete promoted `.local/final-evidence/` bundles.
+- [x] A reusable repository-readiness preflight command exists, and `loop-publish` plus `loop-final-gate` both reuse the same readiness checks rather than maintaining divergent gate logic.
+- [x] Readiness preflight fails closed for gate-critical problems, including detached or non-`codex/*` branch state, stale base sync, missing required checks, and incompatible GitHub Actions policy.
+- [x] `loop-land` treats remote merge success as landing success in multi-worktree repositories and records any local cleanup or branch-switch limitations as warnings rather than merge failures.
+- [x] Targeted regression coverage and review evidence exercise final-evidence promotion, readiness blocking, and worktree-aware landing semantics without intentionally spawning new follow-up issues.
 
 ## Work Breakdown
 
