@@ -229,7 +229,13 @@ boundary plus redirect-preflight fail-closed behavior.
 - Both issues remain open until the branch is published and merged; no new
   follow-up issue was created during execution.
 
+## Publish Summary
+
+- Branch: `codex/30-35-hermetic-packaged-cli-regressions`
+- Head SHA at publish: `b6b834b1d2eaffc1c8ce05a0aa91076893c02c36`
+- PR: [#36](https://github.com/yzhang1918/missless/pull/36)
+
 ## Final Gate Summary
 
-- Not run in this session because the branch has not been published to a PR and
-  no GitHub-backed CI status artifact exists yet for the current `HEAD`.
+- Pending in this session until PR `#36` produces a GitHub-backed CI status
+  artifact for the published `HEAD`.
