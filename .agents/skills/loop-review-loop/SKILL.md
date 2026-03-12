@@ -47,21 +47,31 @@ Scope selection rule:
 
 This writes `.local/loop/review-launch-<round-id>.json`.
 Use the manifest shape in `references/reviewer-launch-manifest.md`.
+The manifest is the authoritative machine-readable contract for that round's
+expected reviewer outputs and repo-observable ownership boundary.
 
 5. Spawn subagent reviewers from the manifest entries using `loop-reviewer`.
    The caller/runtime owns the actual spawn mechanism; the repository helper only emits launch data and prompt text.
 6. Each subagent gathers its own context via local git commands (`git diff`, `git show`, `git log`) instead of requiring raw diff injection.
 7. Each reviewer writes JSON directly to `.local/loop/review-<round-id>-<dimension-slug>.json`.
    Use the schema in `references/reviewer-output-schema.md`.
+   Reviewers are instructed to use only that designated artifact path, and the
+   harness fails closed on declared reviewer-output drift plus repo-observable
+   tracked-worktree or `HEAD` changes.
 8. Finalize the round (aggregate + gate) with one command:
 
 ```sh
-.agents/skills/loop-review-loop/scripts/review_finalize.sh <round-id YYYYMMDD-HHMMSS> .local/loop/review-<round-id>-*.json
+.agents/skills/loop-review-loop/scripts/review_finalize.sh <round-id YYYYMMDD-HHMMSS> [ .local/loop/review-<round-id>-*.json ]
 ```
 
-`review_finalize.sh` always prints the aggregated artifact path. If the gate is blocked, it exits non-zero (currently `2`) after printing the path.
+`review_finalize.sh` always prints the aggregated artifact path. If expected
+reviewer artifacts are missing or the gate is otherwise blocked, it exits
+non-zero (currently `2`) after printing the path.
 
 9. If blocked, fix findings and run another review round.
+   - If a reviewer did not return, either rerun the reviewer or write an
+     explicit manual-fallback artifact to the designated output path with a
+     recorded `producer.reason` before re-finalizing the round.
 10. Summarize accepted review outcome in the tracked plan or PR description using summary-first evidence.
    - record the final clean result, key commands, and final conclusion
    - only record resolved findings when they materially changed the shipped outcome
@@ -91,5 +101,8 @@ Promoted bundles under `.local/final-evidence/` must remain untouched by this cl
 - Keep final decisions in git-tracked docs or PR records.
 - Do not require a fixed reviewer set for all tasks.
 - Do not bind the helper to a specific subagent runtime inside repository scripts.
+- Treat reviewer ownership enforcement as a repo-observable contract check over
+  declared reviewer outputs, tracked-worktree drift, and `HEAD` movement, not
+  as full runtime sandboxing or arbitrary untracked-file isolation.
 - Do not hand-author reviewer JSON when reviewer subagent output is available.
 - If fallback manual reviewer artifacts are required, record the reason in the plan/PR review summary.

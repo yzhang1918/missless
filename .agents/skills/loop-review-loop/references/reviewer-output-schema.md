@@ -18,7 +18,11 @@ Each subagent reviewer writes one JSON file to `.local/loop/review-<round-id>-<d
       "area": "src/module/file.ts",
       "fix": "Validate boundary input with explicit schema checks"
     }
-  ]
+  ],
+  "producer": {
+    "type": "manual-fallback",
+    "reason": "reviewer subagent did not return before finalize"
+  }
 }
 ```
 
@@ -34,3 +38,7 @@ Each subagent reviewer writes one JSON file to `.local/loop/review-<round-id>-<d
 - Keep findings actionable.
 - Avoid duplicate findings across reviewer dimensions when possible.
 - The main agent owns de-duplication and final severity normalization.
+- `producer` is optional for normal subagent output.
+- When a manual fallback artifact is used to recover from missing reviewer output,
+  keep the designated `output_path`, set `producer.type` to
+  `manual-fallback`, and record a non-empty `producer.reason`.

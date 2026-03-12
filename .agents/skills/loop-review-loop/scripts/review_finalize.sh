@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -lt 2 ]]; then
-  echo "Usage: $0 <round-id YYYYMMDD-HHMMSS> <reviewer-json> [<reviewer-json> ...]" >&2
+if [[ $# -lt 1 ]]; then
+  echo "Usage: $0 <round-id YYYYMMDD-HHMMSS> [<reviewer-json> ...]" >&2
   exit 1
 fi
 

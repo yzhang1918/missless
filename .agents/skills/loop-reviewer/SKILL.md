@@ -44,3 +44,4 @@ Run one focused review dimension and write a JSON artifact consumed by `loop-rev
 - Do not leave placeholder fields.
 - If the caller provides extra focus guidance, keep the review scoped to that lens without changing the artifact schema.
 - If no issues are found, write `findings: []` with `status: "complete"`.
+- Do not modify tracked repository files, move `HEAD`, or write reviewer output anywhere except the designated output path.

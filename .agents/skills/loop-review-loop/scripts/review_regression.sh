@@ -287,6 +287,12 @@ prepare_manifest="$work_dir/$prepare_manifest_rel"
 assert_exists "$prepare_manifest"
 prepare_count="$(jq -r '.reviewers | length' "$prepare_manifest")"
 [[ "$prepare_count" == "2" ]] || fail "expected reviewer count=2, got $prepare_count"
+manifest_head_sha="$(jq -r '.baseline_repo_state.head_sha' "$prepare_manifest")"
+[[ "$manifest_head_sha" == "$head_sha" ]] || fail "unexpected manifest head sha: $manifest_head_sha"
+manifest_worktree_count="$(jq -r '.baseline_repo_state.tracked_worktree | length' "$prepare_manifest")"
+[[ "$manifest_worktree_count" == "0" ]] || fail "expected empty tracked worktree snapshot, got $manifest_worktree_count"
+allowed_output_count="$(jq -r '.allowed_output_paths | length' "$prepare_manifest")"
+[[ "$allowed_output_count" == "2" ]] || fail "expected allowed output count=2, got $allowed_output_count"
 security_output="$(jq -r '.reviewers[] | select(.dimension == "security") | .output_path' "$prepare_manifest")"
 [[ "$security_output" == ".local/loop/review-20260305-230000-security.json" ]] || fail "unexpected security output path: $security_output"
 docs_output="$(jq -r '.reviewers[] | select(.dimension == "docs/spec consistency") | .output_path' "$prepare_manifest")"
@@ -298,6 +304,7 @@ docs_has_focus="$(jq -r '.reviewers[] | select(.dimension == "docs/spec consiste
 security_prompt="$(jq -r '.reviewers[] | select(.dimension == "security") | .prompt' "$prepare_manifest")"
 [[ "$security_prompt" == *"\$loop-reviewer"* ]] || fail "review_prepare prompt did not reference loop-reviewer"
 [[ "$security_prompt" == *".local/loop/review-20260305-230000-security.json"* ]] || fail "review_prepare prompt did not include reviewer output path"
+[[ "$security_prompt" == *"Only write"* ]] || fail "review_prepare prompt did not include write-scope guidance"
 
 # 8) initialize a valid review round.
 (
@@ -305,6 +312,22 @@ security_prompt="$(jq -r '.reviewers[] | select(.dimension == "security") | .pro
   "$review_init" 20260305-230000 full-pr >/dev/null
 )
 assert_exists "$work_dir/.local/loop/review-20260305-230000.json"
+
+# 8.1) review_finalize fails closed when the expected reviewer artifacts are missing.
+set +e
+missing_finalize_output="$(
+  cd "$work_dir" &&
+  "$review_finalize" 20260305-230000 2>&1
+)"
+missing_finalize_status=$?
+set -e
+if [[ "$missing_finalize_status" -eq 0 ]]; then
+  fail "review_finalize unexpectedly passed with missing reviewer artifacts"
+fi
+[[ "$missing_finalize_status" -eq 2 ]] || fail "review_finalize expected exit status 2 for missing reviewer artifacts, got $missing_finalize_status"
+[[ "$missing_finalize_output" == *".local/loop/review-20260305-230000.json"* ]] || fail "review_finalize did not print aggregate path when reviewer artifacts were missing"
+missing_count="$(jq -r '.contract.missing_reviewers | length' "$work_dir/.local/loop/review-20260305-230000.json")"
+[[ "$missing_count" == "2" ]] || fail "expected two missing reviewers, got $missing_count"
 
 # 9) aggregate rejects dash-prefixed reviewer filenames.
 cat > "$work_dir/.local/loop/-bad.json" <<'JSON'
@@ -329,26 +352,26 @@ if (
 fi
 
 # 11) aggregate rejects unknown severity values.
-cat > "$work_dir/.local/loop/reviewer-bad-severity.json" <<'JSON'
+cat > "$work_dir/.local/loop/review-20260305-230000-security.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[{"id":"Sx","severity":"WARN"}]}
 JSON
 if (
   cd "$work_dir" &&
-  "$review_aggregate" 20260305-230000 .local/loop/reviewer-bad-severity.json >/dev/null 2>&1
+  "$review_aggregate" 20260305-230000 .local/loop/review-20260305-230000-security.json >/dev/null 2>&1
 ); then
   fail "review_aggregate accepted unknown severity token"
 fi
 
 # 12) aggregate computes counts from findings payload.
-cat > "$work_dir/.local/loop/reviewer-a.json" <<'JSON'
+cat > "$work_dir/.local/loop/review-20260305-230000-security.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[{"id":"S1","severity":"IMPORTANT"}]}
 JSON
-cat > "$work_dir/.local/loop/reviewer-b.json" <<'JSON'
-{"scope":"full-pr","dimension":"correctness","status":"complete","findings":[]}
+cat > "$work_dir/.local/loop/review-20260305-230000-docs-spec-consistency.json" <<'JSON'
+{"scope":"full-pr","dimension":"docs/spec consistency","status":"complete","findings":[]}
 JSON
 (
   cd "$work_dir" &&
-  "$review_aggregate" 20260305-230000 .local/loop/reviewer-a.json .local/loop/reviewer-b.json >/dev/null
+  "$review_aggregate" 20260305-230000 .local/loop/review-20260305-230000-security.json .local/loop/review-20260305-230000-docs-spec-consistency.json >/dev/null
 )
 agg_file="$work_dir/.local/loop/review-20260305-230000.json"
 assert_exists "$agg_file"
@@ -359,7 +382,7 @@ important_count="$(jq -r '.counts.important' "$agg_file")"
 set +e
 finalize_fail_output="$(
   cd "$work_dir" &&
-  "$review_finalize" 20260305-230000 .local/loop/reviewer-a.json .local/loop/reviewer-b.json 2>&1
+  "$review_finalize" 20260305-230000 .local/loop/review-20260305-230000-security.json .local/loop/review-20260305-230000-docs-spec-consistency.json 2>&1
 )"
 finalize_fail_status=$?
 set -e
@@ -369,20 +392,121 @@ fi
 [[ "$finalize_fail_status" -eq 2 ]] || fail "review_finalize expected exit status 2, got $finalize_fail_status"
 [[ "$finalize_fail_output" == *".local/loop/review-20260305-230000.json"* ]] || fail "review_finalize did not print aggregate path on failure"
 
-# 12.2) review_finalize passes for clean reviewer artifacts.
-cat > "$work_dir/.local/loop/reviewer-clean-a.json" <<'JSON'
+# 12.2) review_finalize accepts an explicit manual-fallback artifact when the reason is recorded.
+(
+  cd "$work_dir" &&
+  "$review_init" 20260305-230100 full-pr >/dev/null
+)
+(
+  cd "$work_dir" &&
+  "$review_prepare" 20260305-230100 full-pr security "docs/spec consistency" >/dev/null
+)
+cat > "$work_dir/.local/loop/review-20260305-230100-security.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
 JSON
-cat > "$work_dir/.local/loop/reviewer-clean-b.json" <<'JSON'
-{"scope":"full-pr","dimension":"correctness","status":"complete","findings":[]}
+cat > "$work_dir/.local/loop/review-20260305-230100-docs-spec-consistency.json" <<'JSON'
+{
+  "scope": "full-pr",
+  "dimension": "docs/spec consistency",
+  "status": "complete",
+  "summary": "Manual fallback reviewer found no material issues.",
+  "findings": [],
+  "producer": {
+    "type": "manual-fallback",
+    "reason": "reviewer subagent did not return before review finalize"
+  }
+}
 JSON
 (
   cd "$work_dir" &&
-  "$review_finalize" 20260305-230002 .local/loop/reviewer-clean-a.json .local/loop/reviewer-clean-b.json >/dev/null
+  "$review_finalize" 20260305-230100 .local/loop/review-20260305-230100-security.json .local/loop/review-20260305-230100-docs-spec-consistency.json >/dev/null
 )
-assert_exists "$work_dir/.local/loop/review-20260305-230002.json"
+assert_exists "$work_dir/.local/loop/review-20260305-230100.json"
+fallback_reason="$(jq -r '.contract.recovery[] | select(.dimension == "docs/spec consistency") | .reason' "$work_dir/.local/loop/review-20260305-230100.json")"
+[[ "$fallback_reason" == "reviewer subagent did not return before review finalize" ]] || fail "manual fallback reason was not preserved in the aggregate review artifact"
 
-# 13) review_gate fails when counts do not match findings payload.
+# 13) review_finalize fails when an undeclared reviewer output is present on disk.
+(
+  cd "$work_dir" &&
+  "$review_init" 20260305-230101 full-pr >/dev/null &&
+  "$review_prepare" 20260305-230101 full-pr security >/dev/null
+)
+cat > "$work_dir/.local/loop/review-20260305-230101-security.json" <<'JSON'
+{"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
+JSON
+cat > "$work_dir/.local/loop/review-20260305-230101-rogue.json" <<'JSON'
+{"scope":"full-pr","dimension":"rogue","status":"complete","findings":[]}
+JSON
+set +e
+unexpected_output_finalize="$(
+  cd "$work_dir" &&
+  "$review_finalize" 20260305-230101 .local/loop/review-20260305-230101-security.json 2>&1
+)"
+unexpected_output_status=$?
+set -e
+if [[ "$unexpected_output_status" -eq 0 ]]; then
+  fail "review_finalize unexpectedly passed with an undeclared reviewer output"
+fi
+[[ "$unexpected_output_status" -eq 2 ]] || fail "review_finalize expected exit status 2 for an undeclared reviewer output, got $unexpected_output_status"
+unexpected_output_count="$(jq -r '.contract.unexpected_outputs | length' "$work_dir/.local/loop/review-20260305-230101.json")"
+[[ "$unexpected_output_count" == "1" ]] || fail "expected one undeclared reviewer output, got $unexpected_output_count"
+
+# 14) review_finalize fails when tracked worktree state changes after manifest preparation.
+(
+  cd "$work_dir" &&
+  "$review_init" 20260305-230102 full-pr >/dev/null &&
+  "$review_prepare" 20260305-230102 full-pr security >/dev/null
+)
+printf 'tracked-drift\n' >> "$work_dir/README.md"
+cat > "$work_dir/.local/loop/review-20260305-230102-security.json" <<'JSON'
+{"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
+JSON
+set +e
+worktree_drift_finalize="$(
+  cd "$work_dir" &&
+  "$review_finalize" 20260305-230102 .local/loop/review-20260305-230102-security.json 2>&1
+)"
+worktree_drift_status=$?
+set -e
+if [[ "$worktree_drift_status" -eq 0 ]]; then
+  fail "review_finalize unexpectedly passed after tracked worktree drift"
+fi
+[[ "$worktree_drift_status" -eq 2 ]] || fail "review_finalize expected exit status 2 for tracked worktree drift, got $worktree_drift_status"
+worktree_drift_detected="$(jq -r '.contract.tracked_worktree_changed' "$work_dir/.local/loop/review-20260305-230102.json")"
+[[ "$worktree_drift_detected" == "true" ]] || fail "tracked worktree drift was not recorded in the aggregate review artifact"
+(
+  cd "$work_dir" &&
+  git checkout -- README.md >/dev/null 2>&1
+)
+
+# 15) review_finalize fails when HEAD moves after manifest preparation.
+(
+  cd "$work_dir" &&
+  "$review_init" 20260305-230103 full-pr >/dev/null &&
+  "$review_prepare" 20260305-230103 full-pr security >/dev/null &&
+  printf 'head moved\n' > post-prepare.txt &&
+  git add post-prepare.txt &&
+  git commit -m "post prepare head move" >/dev/null
+)
+cat > "$work_dir/.local/loop/review-20260305-230103-security.json" <<'JSON'
+{"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
+JSON
+set +e
+head_move_finalize="$(
+  cd "$work_dir" &&
+  "$review_finalize" 20260305-230103 .local/loop/review-20260305-230103-security.json 2>&1
+)"
+head_move_status=$?
+set -e
+if [[ "$head_move_status" -eq 0 ]]; then
+  fail "review_finalize unexpectedly passed after HEAD moved"
+fi
+[[ "$head_move_status" -eq 2 ]] || fail "review_finalize expected exit status 2 after HEAD moved, got $head_move_status"
+head_move_detected="$(jq -r '.contract.head_moved' "$work_dir/.local/loop/review-20260305-230103.json")"
+[[ "$head_move_detected" == "true" ]] || fail "HEAD movement was not recorded in the aggregate review artifact"
+head_sha="$(cd "$work_dir" && git rev-parse HEAD)"
+
+# 16) review_gate fails when counts do not match findings payload.
 cat > "$work_dir/.local/loop/review-mismatch.json" <<'JSON'
 {
   "status": "complete",
@@ -397,7 +521,7 @@ if (
   fail "review_gate accepted mismatched counts"
 fi
 
-# 14) final_gate also fails closed on counts mismatch.
+# 17) final_gate also fails closed on counts mismatch.
 cat > "$work_dir/.local/loop/ci-good.json" <<'JSON'
 {
   "schema_version": 1,
@@ -419,7 +543,7 @@ if (
   fail "final_gate accepted mismatched counts"
 fi
 
-# 15) gate scripts reject unknown severity values in findings.
+# 18) gate scripts reject unknown severity values in findings.
 cat > "$work_dir/.local/loop/review-unknown-severity.json" <<'JSON'
 {
   "status": "complete",
@@ -441,7 +565,7 @@ if (
   fail "final_gate accepted unknown severity token"
 fi
 
-# 16) review_gate accepts numerically equivalent count formats.
+# 19) review_gate accepts numerically equivalent count formats.
 cat > "$work_dir/.local/loop/review-decimal-zero.json" <<'JSON'
 {
   "status": "complete",
@@ -454,7 +578,7 @@ JSON
   "$review_gate" .local/loop/review-decimal-zero.json >/dev/null
 )
 
-# 17) final_gate accepts numerically equivalent count formats.
+# 20) final_gate accepts numerically equivalent count formats.
 (
   cd "$work_dir" &&
   PATH="$fake_bin:$PATH" \
@@ -465,7 +589,7 @@ assert_exists "$work_dir/.local/final-evidence/2026-03-11-review-regression-plan
 assert_exists "$work_dir/.local/final-evidence/2026-03-11-review-regression-plan/ci-status.json"
 assert_exists "$work_dir/.local/final-evidence/2026-03-11-review-regression-plan/final-gate.json"
 
-# 18) final_gate rejects stale CI head/base metadata.
+# 21) final_gate rejects stale CI head/base metadata.
 cat > "$work_dir/.local/loop/ci-stale.json" <<'JSON'
 {
   "schema_version": 1,
@@ -486,7 +610,7 @@ if (
   fail "final_gate accepted stale CI head/base metadata"
 fi
 
-# 19) cleanup rejects invalid keep-round arguments.
+# 22) cleanup rejects invalid keep-round arguments.
 if (
   cd "$work_dir" &&
   "$review_cleanup" --keep-round-id --dry-run >/dev/null 2>&1
@@ -506,7 +630,7 @@ if (
   fail "review_cleanup accepted non-numeric keep-rounds"
 fi
 
-# 20) explicit keep-round-id preserves orphan aggregate rounds.
+# 23) explicit keep-round-id preserves orphan aggregate rounds.
 cat > "$work_dir/.local/loop/review-20260305-230099.json" <<'JSON'
 {"round_id":"20260305-230099"}
 JSON
@@ -516,7 +640,7 @@ JSON
 )
 assert_exists "$work_dir/.local/loop/review-20260305-230099.json"
 
-# 21) cleanup dry-run does not delete; real cleanup keeps only latest round and removes launch manifests.
+# 24) cleanup dry-run does not delete; real cleanup keeps only latest round and removes launch manifests.
 prepare_cleanup_manifest_rel="$(
   cd "$work_dir" &&
   "$review_prepare" 20260305-230003 delta security
