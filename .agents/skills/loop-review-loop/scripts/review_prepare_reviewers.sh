@@ -19,6 +19,11 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v git >/dev/null 2>&1; then
+  echo "git is required" >&2
+  exit 1
+fi
+
 trim_value() {
   printf '%s' "$1" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//'
 }
@@ -53,11 +58,21 @@ build_prompt() {
   printf 'Use $loop-reviewer to run the `%s` review dimension for scope `%s`.\n' "$dimension" "$scope"
   printf 'Inspect repository context with local git commands (`git diff`, `git show`, `git log`).\n'
   printf 'Write one schema-valid JSON artifact to `%s` using `%s`.\n' "$output_path" "$schema_path"
+  printf 'Only write that JSON artifact; do not modify tracked files, move HEAD, or write review artifacts anywhere else.\n'
   printf 'Focus on risks relevant to `%s`.\n' "$dimension"
   if [[ -n "$focus" ]]; then
     printf 'Additional focus: %s.\n' "$focus"
   fi
   printf 'Return a short confirmation with the output path and finding counts.\n'
+}
+
+tracked_worktree_json() {
+  git status --porcelain --untracked-files=no \
+    | LC_ALL=C sort \
+    | jq -R -s '
+        split("\n")
+        | map(select(length > 0))
+      '
 }
 
 if [[ $# -lt 3 ]]; then
@@ -231,16 +246,36 @@ for ((idx = 0; idx < ${#dimensions[@]}; idx += 1)); do
 done
 
 timestamp="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+baseline_head_sha="$(git rev-parse HEAD)"
+baseline_tracked_worktree="$(tracked_worktree_json)"
 
 jq -s \
   --arg round_id "$round_id" \
   --arg scope "$scope" \
   --arg generated_at "$timestamp" \
+  --arg baseline_head_sha "$baseline_head_sha" \
+  --argjson baseline_tracked_worktree "$baseline_tracked_worktree" \
   '
     {
       round_id: $round_id,
       scope: $scope,
       generated_at: $generated_at,
+      baseline_repo_state: {
+        head_sha: $baseline_head_sha,
+        tracked_worktree: $baseline_tracked_worktree
+      },
+      ownership_boundary: {
+        mode: "repo-observable",
+        declared_reviewer_output_paths_only: true,
+        observable_side_effect_checks: [
+          "unexpected reviewer output paths",
+          "tracked worktree changes",
+          "HEAD movement"
+        ],
+        detects_arbitrary_untracked_files: false,
+        detects_remote_side_effects: false
+      },
+      allowed_output_paths: [ .[] | .output_path ],
       reviewers: .
     }
   ' -- "${reviewer_entries[@]}" > "$out_file"

@@ -23,6 +23,8 @@ subagent runtime.
 - `dimension` remains free-form.
 - Each reviewer entry carries a standard `loop-reviewer` prompt plus the target
   output artifact path.
+- The manifest is the authoritative machine-readable contract for the round's
+  expected reviewer outputs and repo-observable ownership baseline.
 
 ## Manifest Shape
 
@@ -31,6 +33,24 @@ subagent runtime.
   "round_id": "20260311-101500",
   "scope": "full-pr",
   "generated_at": "2026-03-11T10:15:00Z",
+  "baseline_repo_state": {
+    "head_sha": "abc123def456",
+    "tracked_worktree": []
+  },
+  "ownership_boundary": {
+    "mode": "repo-observable",
+    "declared_reviewer_output_paths_only": true,
+    "observable_side_effect_checks": [
+      "unexpected reviewer output paths",
+      "tracked worktree changes",
+      "HEAD movement"
+    ],
+    "detects_arbitrary_untracked_files": false,
+    "detects_remote_side_effects": false
+  },
+  "allowed_output_paths": [
+    ".local/loop/review-20260311-101500-security.json"
+  ],
   "reviewers": [
     {
       "skill": "loop-reviewer",
@@ -49,6 +69,15 @@ subagent runtime.
 
 - `dimension_slug` is derived from the free-form dimension text and is only used
   for stable artifact naming.
+- `baseline_repo_state` captures the repo-observable baseline immediately before
+  reviewer launch so finalize can detect later `HEAD` movement or tracked
+  worktree drift.
+- `ownership_boundary` makes the shipped enforcement boundary explicit: the
+  harness checks declared reviewer output paths plus repo-observable tracked
+  worktree and `HEAD` drift, but it does not claim arbitrary untracked-file,
+  full runtime, or remote-side-effect isolation.
+- `allowed_output_paths` lists the only local reviewer artifact paths allowed
+  for that round.
 - The helper rejects two dimensions that normalize to the same slug.
 - `focus` is optional and is omitted when not provided.
 - Launch manifests are ephemeral `.local/loop` artifacts and should be cleaned

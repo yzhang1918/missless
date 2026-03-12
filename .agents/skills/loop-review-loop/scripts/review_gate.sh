@@ -21,7 +21,10 @@ fi
 # Fail closed if required gate fields are missing or invalid.
 if ! jq -e '
   (.status | type == "string")
-  and (.status == "complete")
+  and (
+    .status == "complete"
+    or .status == "incomplete"
+  )
   and
   (.findings | type == "array")
   and
@@ -58,11 +61,12 @@ fi
 
 blocker="$derived_blocker"
 important="$derived_important"
+status="$(jq -r '.status' "$review_file")"
 
-if [[ "$blocker" == "0" && "$important" == "0" ]]; then
+if [[ "$status" == "complete" && "$blocker" == "0" && "$important" == "0" ]]; then
   echo "PASS: review gate clear (BLOCKER=0, IMPORTANT=0)"
   exit 0
 fi
 
-echo "FAIL: review gate blocked (BLOCKER=${blocker}, IMPORTANT=${important})"
+echo "FAIL: review gate blocked (status=${status}, BLOCKER=${blocker}, IMPORTANT=${important})"
 exit 2
