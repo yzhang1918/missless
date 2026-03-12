@@ -344,7 +344,9 @@ fi
 exec "__REAL_GIT_PATH__" "$@"
 EOF
 escaped_real_git_path="$(printf '%s\n' "$REAL_GIT_PATH" | sed 's/[\/&]/\\&/g')"
-sed -i '' "s/__REAL_GIT_PATH__/$escaped_real_git_path/g" "$fake_bin/git"
+tmp_fake_git="$tmp_root/fake-git.tmp"
+sed "s/__REAL_GIT_PATH__/$escaped_real_git_path/g" "$fake_bin/git" > "$tmp_fake_git"
+mv "$tmp_fake_git" "$fake_bin/git"
 chmod +x "$fake_bin/git"
 
 git init --bare "$origin_dir" >/dev/null 2>&1
