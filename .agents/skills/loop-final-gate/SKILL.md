@@ -20,7 +20,8 @@ Run this after `loop-publish` so gate evidence reflects the published branch sta
 ## Execution Contract
 
 1. Confirm no unresolved blocking review findings.
-2. Run repo-sync preflight before gate decisions.
+2. Run explicit repository-readiness preflight before gate decisions.
+   - Final gate must reuse the same readiness contract enforced by publish.
 3. Confirm the working tree is clean and the supplied plan is an archived completed plan.
 4. Confirm docs/spec updates are complete for behavior changes.
 5. Confirm the CI/status artifact is machine-readable, small, and tied to the current `HEAD` and base SHA.
@@ -41,11 +42,13 @@ Optional GitHub-backed CI/status exporter:
 ```
 
 9. Record gate result in the archived plan with links/evidence.
+   - Keep tracked plan and PR records summary-first: gate result, key commands, final conclusion, and only notable resolved findings when they materially changed the shipped outcome.
+   - After a passing gate, promote the final `review aggregate`, `ci-status`, and `final-gate` files into `.local/final-evidence/<plan-slug>/` with stable filenames so one latest local evidence bundle remains easy to inspect.
 
 ## Output
 
 - Go/no-go gate decision.
-- Evidence summary in tracked plan.
+- Evidence summary in tracked plan plus one latest local evidence bundle under `.local/final-evidence/<plan-slug>/` after a passing gate.
 - Final-gate artifact path.
 
 ## Guardrails

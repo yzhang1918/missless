@@ -20,11 +20,13 @@ Publish current branch changes into an open PR before landing.
 
 ## Execution Contract
 
-1. Run repo-sync preflight before publish decisions so local refs and PR state are current.
+1. Run explicit repository-readiness preflight before publish decisions so local refs, branch state, required checks, and repository prerequisites are current.
+   - Publish must reuse the same readiness contract enforced by final gate rather than maintaining a weaker fork.
 2. Confirm current branch matches `codex/*`, has intended commits, has no uncommitted changes, and the supplied plan is an archived completed plan.
 3. Push branch to `origin` (set upstream when needed).
 4. Create PR if none exists for the branch, or update existing PR title/body.
    - PR body must list the linked issue(s).
+   - PR body and plan updates stay summary-first; do not treat `.local/loop/*.json` paths as durable evidence references.
    - Use GitHub closing keywords only for issues that should close when the PR merges.
    - If the work came from a direct request with no issue, say so explicitly in the PR body.
    - Treat declared issue metadata and the direct-request no-issue flag as mutually exclusive sources of truth.

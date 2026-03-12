@@ -31,6 +31,83 @@ origin_dir="$tmp_root/origin.git"
 git init --bare "$origin_dir" >/dev/null 2>&1
 work_dir="$tmp_root/work"
 updater_dir="$tmp_root/updater"
+fake_bin="$tmp_root/bin"
+mkdir -p "$fake_bin"
+
+cat > "$fake_bin/gh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+emit() {
+  local payload="$1"
+  shift
+  local jq_query=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --jq|-q)
+        jq_query="$2"
+        shift 2
+        ;;
+      *)
+        shift
+        ;;
+    esac
+  done
+  if [[ -n "$jq_query" ]]; then
+    jq -r "$jq_query" <<<"$payload"
+  else
+    printf '%s\n' "$payload"
+  fi
+}
+
+cmd1="${1:-}"
+if [[ -z "$cmd1" ]]; then
+  echo "missing gh command" >&2
+  exit 1
+fi
+shift
+
+case "$cmd1" in
+  auth)
+    if [[ "${1:-}" == "status" ]]; then
+      exit 0
+    fi
+    ;;
+  repo)
+    if [[ "${1:-}" == "view" ]]; then
+      shift || true
+      emit "{\"nameWithOwner\":\"${FAKE_GH_REPO_NAME_WITH_OWNER:-example/missless}\"}" "$@"
+      exit 0
+    fi
+    ;;
+  api)
+    api_path="${1:-}"
+    shift || true
+    case "$api_path" in
+      repos/*/branches/*/protection)
+        payload="${FAKE_GH_BRANCH_PROTECTION_JSON:-}"
+        if [[ -z "$payload" ]]; then
+          payload='{"required_status_checks":{"strict":true,"contexts":["local-smoke"],"checks":[{"context":"local-smoke"}]}}'
+        fi
+        emit "$payload" "$@"
+        exit 0
+        ;;
+      repos/*/actions/permissions)
+        payload="${FAKE_GH_ACTIONS_PERMISSIONS_JSON:-}"
+        if [[ -z "$payload" ]]; then
+          payload='{"enabled":true,"allowed_actions":"local_only","sha_pinning_required":true}'
+        fi
+        emit "$payload" "$@"
+        exit 0
+        ;;
+    esac
+    ;;
+esac
+
+echo "unsupported fake gh invocation: $cmd1 ${1:-}" >&2
+exit 1
+EOF
+chmod +x "$fake_bin/gh"
 
 git clone "$origin_dir" "$work_dir" >/dev/null 2>&1
 (
@@ -44,7 +121,20 @@ git clone "$origin_dir" "$work_dir" >/dev/null 2>&1
   git commit -m "seed" >/dev/null &&
   git push -u origin main >/dev/null &&
   git checkout -b codex/review-regression >/dev/null &&
-  mkdir -p docs/harness/completed &&
+  mkdir -p .github/workflows docs/harness/completed &&
+  cat > .github/workflows/harness-checks.yml <<'YAML'
+name: harness-checks
+on:
+  push:
+    branches:
+      - main
+jobs:
+  harness-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify diff formatting
+        run: git diff --check
+YAML
   cat > docs/harness/completed/2026-03-11-review-regression-plan.md <<'PLAN'
 # Review Regression Plan
 
@@ -76,9 +166,13 @@ git clone "$origin_dir" "$work_dir" >/dev/null 2>&1
 - Linked issue updates: None.
 - Spawned follow-up issues: None.
 PLAN
-  git add docs/harness/completed/2026-03-11-review-regression-plan.md &&
+  git add .github/workflows/harness-checks.yml docs/harness/completed/2026-03-11-review-regression-plan.md &&
   git commit -m "add regression plan fixture" >/dev/null
 )
+
+export FAKE_GH_REPO_NAME_WITH_OWNER="example/missless"
+export FAKE_GH_BRANCH_PROTECTION_JSON='{"required_status_checks":{"strict":true,"contexts":["local-smoke"],"checks":[{"context":"local-smoke"}]}}'
+export FAKE_GH_ACTIONS_PERMISSIONS_JSON='{"enabled":true,"allowed_actions":"local_only","sha_pinning_required":true}'
 
 mkdir -p "$work_dir/.local/loop"
 plan_path="docs/harness/completed/2026-03-11-review-regression-plan.md"
@@ -319,6 +413,7 @@ JSON
 perl -0pi -e "s/__HEAD_SHA__/$head_sha/g; s/__BASE_SHA__/$base_sha/g" "$work_dir/.local/loop/ci-good.json"
 if (
   cd "$work_dir" &&
+  PATH="$fake_bin:$PATH" \
   "$final_gate" .local/loop/review-mismatch.json .local/loop/ci-good.json "$plan_path" main .local/loop/final-gate.json >/dev/null 2>&1
 ); then
   fail "final_gate accepted mismatched counts"
@@ -340,6 +435,7 @@ if (
 fi
 if (
   cd "$work_dir" &&
+  PATH="$fake_bin:$PATH" \
   "$final_gate" .local/loop/review-unknown-severity.json .local/loop/ci-good.json "$plan_path" main .local/loop/final-gate-unknown-severity.json >/dev/null 2>&1
 ); then
   fail "final_gate accepted unknown severity token"
@@ -361,9 +457,13 @@ JSON
 # 17) final_gate accepts numerically equivalent count formats.
 (
   cd "$work_dir" &&
+  PATH="$fake_bin:$PATH" \
   "$final_gate" .local/loop/review-decimal-zero.json .local/loop/ci-good.json "$plan_path" main .local/loop/final-gate-decimal.json >/dev/null
 )
 assert_exists "$work_dir/.local/loop/final-gate-decimal.json"
+assert_exists "$work_dir/.local/final-evidence/2026-03-11-review-regression-plan/review.json"
+assert_exists "$work_dir/.local/final-evidence/2026-03-11-review-regression-plan/ci-status.json"
+assert_exists "$work_dir/.local/final-evidence/2026-03-11-review-regression-plan/final-gate.json"
 
 # 18) final_gate rejects stale CI head/base metadata.
 cat > "$work_dir/.local/loop/ci-stale.json" <<'JSON'
@@ -380,6 +480,7 @@ cat > "$work_dir/.local/loop/ci-stale.json" <<'JSON'
 JSON
 if (
   cd "$work_dir" &&
+  PATH="$fake_bin:$PATH" \
   "$final_gate" .local/loop/review-decimal-zero.json .local/loop/ci-stale.json "$plan_path" main .local/loop/final-gate-stale.json >/dev/null 2>&1
 ); then
   fail "final_gate accepted stale CI head/base metadata"
@@ -450,5 +551,8 @@ assert_not_exists "$work_dir/.local/loop/review-20260305-230001-correctness.json
 assert_exists "$work_dir/.local/loop/review-20260305-230002.json"
 assert_exists "$work_dir/.local/loop/review-20260305-230002-security.json"
 assert_not_exists "$prepare_cleanup_manifest"
+assert_exists "$work_dir/.local/final-evidence/2026-03-11-review-regression-plan/review.json"
+assert_exists "$work_dir/.local/final-evidence/2026-03-11-review-regression-plan/ci-status.json"
+assert_exists "$work_dir/.local/final-evidence/2026-03-11-review-regression-plan/final-gate.json"
 
 echo "PASS: review loop regression checks"
