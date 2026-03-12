@@ -5,7 +5,7 @@
 - Plan name: Installable Skill and Stable CLI Entrypoint
 - Owner: Human+Codex
 - Date opened: 2026-03-11
-- Date completed: 2026-03-11
+- Date completed: 2026-03-12
 - Intake source: GitHub issue #14
 - Work type: Product
 - Related issue(s): #14
@@ -142,6 +142,26 @@ global tarball installation the supported way to invoke the runtime.
   issue comment so the task no longer claimed completion before final gate.
 - `20260311-142211` docs/process delta review: passed with 0 blocker/important
   findings after the plan/issue workflow records were corrected.
+- `20260312-013555` full-pr review on the refreshed post-merge-catchup branch:
+  blocked with 1 `IMPORTANT` and 3 `MINOR` findings covering stale
+  repo-native review-flow contract assertions, a misleading README
+  project-local install example, packaged-schema path ambiguity, and missing
+  installed-bin coverage for a refreshed runtime path.
+- Follow-up fixes on the latest branch head:
+  - rewrote the README project-local install example to use the validated
+    prefix-local tarball flow
+  - removed repo-relative `node apps/cli/dist/index.js ...` checks from the
+    repo-native review wrapper prompt
+  - tightened `tests/integration/cli/e2e-driver.test.ts` so the suite requires
+    the stable-command-first `missless --help` /
+    `missless print-draft-contract` block and rejects repo-relative node
+    checks in the prompt
+  - expanded `tests/integration/cli/installable-cli.test.ts` so local and
+    prefix-global installed bins execute `fetch-normalize` through a fixture
+    server instead of stopping at `--help` and `print-draft-contract`
+- `20260312-015741` delta review: passed with 0 blocker/important findings
+  after the latest docs and regression-test fixes. Remaining install-smoke
+  hermeticity debt is deferred to follow-up issue #35.
 
 ## Final Gate Conditions
 
@@ -155,16 +175,16 @@ global tarball installation the supported way to invoke the runtime.
 
 ## Final Gate Summary
 
-- Final gate artifact: `.local/loop/final-gate-20260311-142211.json`
-- Review artifact used for the gate:
+- Superseded earlier-head gate artifact:
+  `.local/loop/final-gate-20260311-142211.json`
+- Superseded earlier-head review artifact:
   `.local/loop/review-20260311-142211.json`
-- Local CI-equivalent artifact used for the gate:
+- Superseded earlier-head CI artifact:
   `.local/loop/ci-20260311-142211.json`
-- Result: pass
-- Basis:
-  - required local checks passed
-  - docs/spec updates were present
-  - local branch matched fetched `origin/main` at gate time
+- Status: superseded by later branch refreshes and follow-up fixes on
+  2026-03-12.
+- Landing rule for the current merge candidate: export fresh PR check status
+  and re-run final gate on the published latest `HEAD` before merge.
 
 ## Risks and Mitigations
 
@@ -207,8 +227,20 @@ global tarball installation the supported way to invoke the runtime.
   - `.agents/skills/loop-review-loop/scripts/review_finalize.sh 20260311-141640 .local/loop/review-20260311-141640-*.json`
   - `.agents/skills/loop-review-loop/scripts/review_finalize.sh 20260311-141945 .local/loop/review-20260311-141945-*.json`
   - `.agents/skills/loop-review-loop/scripts/review_finalize.sh 20260311-142211 .local/loop/review-20260311-142211-docs-spec-consistency.json`
-- Final-gate evidence on the latest branch state:
-  - `.agents/skills/loop-final-gate/scripts/final_gate.sh .local/loop/review-20260311-142211.json .local/loop/ci-20260311-142211.json .local/loop/final-gate-20260311-142211.json`
+- Additional latest-head validation after the 2026-03-12 review follow-up
+  fixes:
+  - `pnpm exec tsx --test tests/integration/cli/e2e-driver.test.ts`
+  - `pnpm exec tsx --test tests/integration/cli/installable-cli.test.ts`
+  - `pnpm -r build`
+  - `pnpm -r typecheck`
+  - `pnpm -r test`
+  - `git diff --check`
+  - `.agents/skills/loop-review-loop/scripts/review_finalize.sh 20260312-015741 .local/loop/review-20260312-015741-*.json`
+  - `.agents/skills/loop-review-loop/scripts/review_regression.sh`
+  - `.agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh`
+- Final-gate evidence for the latest branch state is produced only after the
+  refreshed branch head is published so the CI artifact can match the merged
+  candidate SHA.
 
 ## Completion Summary
 
@@ -224,6 +256,11 @@ global tarball installation the supported way to invoke the runtime.
     command during repository-native validation
   - added automated coverage for local and prefix-global tarball installs in
     `tests/integration/cli/installable-cli.test.ts`
+  - tightened repo-native review prompt coverage so the stable-command-first
+    `missless` contract is asserted and legacy repo-relative node checks are
+    rejected in `tests/integration/cli/e2e-driver.test.ts`
+  - expanded the packaged-install smoke test so installed local and
+    prefix-global bins execute `fetch-normalize` against a fixture server
 - Not delivered:
   - npm registry publishing, release automation, or public `npx missless`
     support
@@ -233,5 +270,8 @@ global tarball installation the supported way to invoke the runtime.
   - issue comment updated after final gate with the latest review/gate status
   - issue comment updated again after publish with the PR link and follow-up
     issue #27
+  - follow-up issue #35 captured the remaining non-hermetic packaged-install
+    regression debt discovered during late review
 - Spawned follow-up issues:
   - #27 `Publish missless CLI to npm and support public install flows`
+  - #35 `Make installable CLI tarball regression hermetic`

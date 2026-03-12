@@ -39,8 +39,9 @@ missless --help
 For a project-local install instead of a global one:
 
 ```bash
-npm install ./missless-cli-0.0.0.tgz
-npx missless --help
+mkdir -p /tmp/missless-local
+npm install --prefix /tmp/missless-local ./missless-cli-0.0.0.tgz
+npx --prefix /tmp/missless-local missless --help
 ```
 
 ## Current Boundary

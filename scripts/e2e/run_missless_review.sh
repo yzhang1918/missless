@@ -160,9 +160,6 @@ Requirements:
 - Use the runtime-owned contract surface first:
   - 'missless --help'
   - 'missless print-draft-contract'
-  - repo checkout equivalent:
-  - 'node apps/cli/dist/index.js --help'
-  - 'node apps/cli/dist/index.js print-draft-contract'
 - Follow 'skills/missless/SKILL.md' and
   'skills/missless/references/review-guidance.md'.
 - Resume from the existing run_dir; do not create a second run.
