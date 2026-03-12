@@ -141,6 +141,7 @@ Harden the reviewer loop so each review round has one authoritative contract for
 - Ran `.agents/skills/loop-review-loop/scripts/review_regression.sh`; it passed after adding manifest contract coverage, missing-reviewer fail-closed coverage, manual-fallback recovery coverage, undeclared reviewer output detection, tracked worktree drift detection, and `HEAD` movement detection.
 - Ran `git diff --check`; no whitespace or patch-format issues were reported.
 - Ran the completed-plan catalog sync check from `docs/harness/completed/README.md`; no missing completed-plan entries remained after restoring the previously omitted `2026-03-12-harness-closeout-reliability.md` entry and adding this plan.
+- Published PR `#39`: `https://github.com/yzhang1918/missless/pull/39`.
 
 ## Review Summary
 
@@ -165,9 +166,13 @@ Harden the reviewer loop so each review round has one authoritative contract for
   - Review aggregation/finalization now fail closed when expected reviewer artifacts are missing and preserve explicit manual-fallback recovery reasons in the aggregate artifact.
   - Review ownership enforcement now detects undeclared reviewer output paths, tracked worktree drift after manifest preparation, and `HEAD` movement after manifest preparation.
   - Review docs, manifest/output references, and regression coverage now match the shipped reviewer-contract behavior.
+  - Archived the completed harness plan, published PR `#39`, and synced the result back to issues `#11` and `#24`.
 - Not delivered:
   - No runtime-level sandboxing or comprehensive remote-side-effect detection was added in this plan.
 - Linked issue updates:
-  - Not yet synced back to GitHub issues `#11` and `#24`; update them during publish and closeout.
+  - Published as PR `#39` (`https://github.com/yzhang1918/missless/pull/39`); the current published head SHA is tracked in GitHub PR metadata.
+  - Issue `#11` was updated with the archived plan path and PR link via comment `https://github.com/yzhang1918/missless/issues/11#issuecomment-4048299872`.
+  - Issue `#24` was updated with the archived plan path and PR link via comment `https://github.com/yzhang1918/missless/issues/24#issuecomment-4048299849`.
+  - The PR body uses merge-time closing keywords for `#11` and `#24`, so both issues should remain open until the PR lands.
 - Spawned follow-up issues:
   - None yet.
