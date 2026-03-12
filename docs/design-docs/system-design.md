@@ -74,8 +74,12 @@ Current baseline for the first delivery slice is:
 - The runtime also writes a signed run-local cleanup token so restored local
   runs can still prove cleanup ownership without trusting a caller-editable
   plaintext marker.
-- Fetch/normalize uses a provider abstraction. Jina Reader is the default
-  implementation for the first slice.
+- Fetch/normalize uses a provider abstraction with explicit recoverable versus
+  terminal failure outcomes.
+- The default provider sequence is `Jina Reader -> direct origin fetch`.
+- Runtime resolves the source redirect chain under the same SSRF policy before
+  provider access so redirect hops and final destinations cannot bypass the
+  initial source-url safety gate.
 - Local and mocked runs may override the reader endpoint with
   `MISSLESS_JINA_BASE_URL`; authenticated environments may also provide
   `JINA_API_KEY`.
@@ -84,9 +88,13 @@ Current baseline for the first delivery slice is:
   credentialed URLs through the third-party reader.
 - `fetch-normalize` now also rejects hostnames whose resolved addresses point
   at loopback, private, or link-local targets before provider fetch begins.
+- The same fail-closed policy also applies across redirect hops and final
+  fetch destinations; blocked redirect targets never trigger fallback.
 - `JINA_API_KEY` is only forwarded to the official `r.jina.ai` origin unless
   `MISSLESS_JINA_FORWARD_API_KEY_TO_OVERRIDE` explicitly opts into credential
   forwarding for a custom override host.
+- Direct-origin fallback only runs after recoverable Jina failures and performs
+  local HTML-to-markdown normalization after a safe public fetch.
 - `validate-draft` reads the run artifacts and fails closed on schema or
   contract issues before any later evidence/materialization steps run.
 - Run-level preconditions are enforced there as well, so `anchor-evidence`

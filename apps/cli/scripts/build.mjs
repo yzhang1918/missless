@@ -25,6 +25,11 @@ await build({
   format: "esm",
   target: "node22",
   sourcemap: true,
+  external: [
+    "@mozilla/readability",
+    "jsdom",
+    "node-html-markdown"
+  ],
   alias: {
     "@missless/contracts": resolve(repoRoot, "packages/contracts/src/index.ts"),
     "@missless/core": resolve(repoRoot, "packages/core/src/index.ts"),

@@ -16,6 +16,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "pnpm -r build && tsx --test ../../tests/integration/cli/*.test.ts"
   },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "jsdom": "^28.1.0",
+    "node-html-markdown": "^2.0.0"
+  },
   "devDependencies": {
     "@missless/contracts": "workspace:*",
     "@missless/core": "workspace:*",

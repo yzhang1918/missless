@@ -17,6 +17,9 @@
     "test": "tsx --test ../../tests/unit/core/*.test.ts"
   },
   "dependencies": {
-    "@missless/contracts": "workspace:*"
+    "@missless/contracts": "workspace:*",
+    "@mozilla/readability": "^0.6.0",
+    "jsdom": "^28.1.0",
+    "node-html-markdown": "^2.0.0"
   }
 }

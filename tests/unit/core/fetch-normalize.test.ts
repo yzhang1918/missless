@@ -19,6 +19,8 @@ const publicHostResolver = async () =>
     }
   ] satisfies readonly { address: string; family: 4 | 6 }[];
 
+const noRedirectFetch = async () => new Response(null, { status: 200 });
+
 async function readRegistryRunDirs(runDir: string): Promise<readonly string[]> {
   try {
     const text = await readFile(getRunRegistryPath(runDir), "utf8");
@@ -138,6 +140,94 @@ test("fetchNormalizeSource rejects hostnames that resolve to loopback or private
   );
 });
 
+test("fetchNormalizeSource rejects redirect hops to blocked destinations before provider fetch", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-sec-"));
+
+  await assert.rejects(
+    () =>
+      fetchNormalizeSource({
+        sourceUrl: "https://example.com/article",
+        runsDir,
+        hostResolver: publicHostResolver,
+        fetchImpl: async () =>
+          new Response(null, {
+            status: 302,
+            headers: {
+              location: "http://127.0.0.1/private"
+            }
+          }),
+        provider: {
+          name: "fixture",
+          async fetch() {
+            throw new Error("provider should not be called");
+          }
+        }
+      }),
+    /redirect hops and final destinations/
+  );
+});
+
+test("fetchNormalizeSource preflights redirects but still passes the original URL into provider fetch", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-sec-"));
+  const providerCalls: string[] = [];
+  const result = await fetchNormalizeSource({
+    sourceUrl: "https://example.com/original",
+    runsDir,
+    runId: "run-redirect-preflight",
+    now: new Date("2026-03-11T00:00:00.000Z"),
+    hostResolver: publicHostResolver,
+    fetchImpl: async (input) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+
+      if (url === "https://example.com/original") {
+        return new Response(null, {
+          status: 302,
+          headers: {
+            location: "https://www.example.com/final"
+          }
+        });
+      }
+
+      if (url === "https://www.example.com/final") {
+        return new Response(null, {
+          status: 200
+        });
+      }
+
+      throw new Error(`Unexpected URL during redirect preflight: ${url}`);
+    },
+    provider: {
+      name: "fixture",
+      async fetch(sourceUrl) {
+        providerCalls.push(sourceUrl);
+
+        return {
+          providerName: "fixture",
+          canonicalText: "Canonical text\n",
+          fetchedAt: "2026-03-11T00:00:00.000Z",
+          providerUrl: "https://reader.example/https://example.com/original",
+          resolvedSourceUrl: sourceUrl,
+          responseStatus: 200,
+          responseHeaders: {
+            "content-type": "text/markdown"
+          }
+        };
+      }
+    }
+  });
+
+  assert.deepEqual(providerCalls, ["https://example.com/original"]);
+  assert.equal(
+    result.sourceArtifact.resolved_source_url,
+    "https://www.example.com/final"
+  );
+});
+
 test("fetchNormalizeSource creates missing parent directories for runsDir", async () => {
   const tempRoot = await mkdtemp(join(tmpdir(), "missless-fetch-runs-"));
   const runsDir = join(tempRoot, "nested", "runs");
@@ -147,13 +237,16 @@ test("fetchNormalizeSource creates missing parent directories for runsDir", asyn
     runId: "run-test",
     now: new Date("2026-03-09T00:00:00.000Z"),
     hostResolver: publicHostResolver,
+    fetchImpl: noRedirectFetch,
     provider: {
       name: "fixture",
       async fetch() {
         return {
+          providerName: "fixture",
           canonicalText: "Canonical text\n",
           fetchedAt: "2026-03-09T00:00:00.000Z",
           providerUrl: "https://reader.example/article",
+          resolvedSourceUrl: "https://example.com/article",
           responseStatus: 200,
           responseHeaders: {
             "content-type": "text/markdown"
@@ -172,6 +265,188 @@ test("fetchNormalizeSource creates missing parent directories for runsDir", asyn
   await stat(getCleanupTokenPath(result.runDir));
 });
 
+test("fetchNormalizeSource falls back from Jina Reader to direct origin on recoverable failures", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-fallback-"));
+  const requests: string[] = [];
+  const result = await fetchNormalizeSource({
+    sourceUrl: "https://example.com/article",
+    runsDir,
+    runId: "run-fallback",
+    now: new Date("2026-03-11T00:00:00.000Z"),
+    hostResolver: publicHostResolver,
+    fetchImpl: async (input) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+
+      requests.push(url);
+
+      if (url === "https://example.com/article" && requests.length === 1) {
+        return new Response(null, { status: 200 });
+      }
+
+      if (url === "https://r.jina.ai/https://example.com/article") {
+        return new Response("upstream unavailable", { status: 502 });
+      }
+
+      if (url === "https://example.com/article") {
+        return new Response(
+          [
+            "<!doctype html>",
+            "<html>",
+            "<head><title>Fallback Article</title></head>",
+            "<body><article><h1>Fallback Article</h1><p>Recovered from origin.</p></article></body>",
+            "</html>"
+          ].join(""),
+          {
+            status: 200,
+            headers: {
+              "content-type": "text/html; charset=utf-8"
+            }
+          }
+        );
+      }
+
+      throw new Error(`Unexpected URL: ${url}`);
+    }
+  });
+
+  assert.deepEqual(requests, [
+    "https://example.com/article",
+    "https://r.jina.ai/https://example.com/article",
+    "https://example.com/article"
+  ]);
+  assert.equal(result.provider, "direct_origin");
+  assert.equal(result.sourceArtifact.provider, "direct_origin");
+  assert.equal(
+    result.sourceArtifact.resolved_source_url,
+    "https://example.com/article"
+  );
+  assert.match(result.canonicalText, /Fallback Article/);
+  assert.match(result.canonicalText, /Recovered from origin/);
+});
+
+test("fetchNormalizeSource falls back when Jina Reader returns an interstitial warning page", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-fallback-"));
+  const requests: string[] = [];
+  const result = await fetchNormalizeSource({
+    sourceUrl: "https://example.com/article",
+    runsDir,
+    runId: "run-fallback-warning",
+    now: new Date("2026-03-11T00:00:00.000Z"),
+    hostResolver: publicHostResolver,
+    fetchImpl: async (input) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+
+      requests.push(url);
+
+      if (url === "https://example.com/article" && requests.length === 1) {
+        return new Response(null, { status: 200 });
+      }
+
+      if (url === "https://r.jina.ai/https://example.com/article") {
+        return new Response(
+          [
+            "Title: Just a moment...",
+            "",
+            "URL Source: https://example.com/article",
+            "",
+            "Markdown Content:",
+            "Verification successful. Waiting for example.com to respond"
+          ].join("\n"),
+          {
+            status: 200,
+            headers: {
+              "content-type": "text/plain; charset=utf-8"
+            }
+          }
+        );
+      }
+
+      if (url === "https://example.com/article") {
+        return new Response("Recovered canonical text\n", {
+          status: 200,
+          headers: {
+            "content-type": "text/plain; charset=utf-8"
+          }
+        });
+      }
+
+      throw new Error(`Unexpected URL: ${url}`);
+    }
+  });
+
+  assert.deepEqual(requests, [
+    "https://example.com/article",
+    "https://r.jina.ai/https://example.com/article",
+    "https://example.com/article"
+  ]);
+  assert.equal(result.provider, "direct_origin");
+  assert.equal(result.canonicalText, "Recovered canonical text\n");
+});
+
+test("fetchNormalizeSource falls back when Jina Reader returns empty canonical text", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-fallback-"));
+  const requests: string[] = [];
+  const result = await fetchNormalizeSource({
+    sourceUrl: "https://example.com/article",
+    runsDir,
+    runId: "run-fallback-empty",
+    now: new Date("2026-03-11T00:00:00.000Z"),
+    hostResolver: publicHostResolver,
+    fetchImpl: async (input) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+
+      requests.push(url);
+
+      if (url === "https://example.com/article" && requests.length === 1) {
+        return new Response(null, { status: 200 });
+      }
+
+      if (url === "https://r.jina.ai/https://example.com/article") {
+        return new Response("\n\n", {
+          status: 200,
+          headers: {
+            "content-type": "text/plain; charset=utf-8"
+          }
+        });
+      }
+
+      if (url === "https://example.com/article") {
+        return new Response("Recovered after empty reader response\n", {
+          status: 200,
+          headers: {
+            "content-type": "text/plain; charset=utf-8"
+          }
+        });
+      }
+
+      throw new Error(`Unexpected URL: ${url}`);
+    }
+  });
+
+  assert.deepEqual(requests, [
+    "https://example.com/article",
+    "https://r.jina.ai/https://example.com/article",
+    "https://example.com/article"
+  ]);
+  assert.equal(result.provider, "direct_origin");
+  assert.equal(result.canonicalText, "Recovered after empty reader response\n");
+});
+
 test("fetchNormalizeSource rejects unsafe run IDs that escape runsDir", async () => {
   const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-runid-"));
 
@@ -181,7 +456,8 @@ test("fetchNormalizeSource rejects unsafe run IDs that escape runsDir", async ()
         sourceUrl: "https://example.com/article",
         runsDir,
         runId: "../../outside",
-        hostResolver: publicHostResolver
+        hostResolver: publicHostResolver,
+        fetchImpl: noRedirectFetch
       }),
     /run IDs with path separators or unsafe segments/
   );
@@ -198,6 +474,7 @@ test("fetchNormalizeSource does not leave a run directory behind when provider f
         runsDir,
         runId,
         hostResolver: publicHostResolver,
+        fetchImpl: noRedirectFetch,
         provider: {
           name: "fixture",
           async fetch() {
@@ -243,13 +520,16 @@ test("fetchNormalizeSource removes the run directory when artifact writes fail a
         runsDir,
         runId,
         hostResolver: publicHostResolver,
+        fetchImpl: noRedirectFetch,
         provider: {
           name: "fixture",
           async fetch() {
             return {
+              providerName: "fixture",
               canonicalText: "Canonical text\n",
               fetchedAt: "2026-03-09T00:00:00.000Z",
               providerUrl: "https://reader.example/article",
+              resolvedSourceUrl: "https://example.com/article",
               responseStatus: 200,
               responseHeaders: {
                 "x-bad-header": 1n as unknown as string
@@ -297,13 +577,16 @@ test("fetchNormalizeSource removes runtime cleanup state when cleanup-token crea
         runsDir,
         runId,
         hostResolver: publicHostResolver,
+        fetchImpl: noRedirectFetch,
         provider: {
           name: "fixture",
           async fetch() {
             return {
+              providerName: "fixture",
               canonicalText: "Canonical text\n",
               fetchedAt: "2026-03-09T00:00:00.000Z",
               providerUrl: "https://reader.example/article",
+              resolvedSourceUrl: "https://example.com/article",
               responseStatus: 200,
               responseHeaders: {
                 "content-type": "text/markdown"

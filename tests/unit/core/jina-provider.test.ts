@@ -7,6 +7,11 @@ import {
   normalizeReaderOutput
 } from "../../../packages/core/src/index.ts";
 
+const providerContext = {
+  assertSafeUrl: async () => undefined,
+  fetchImpl: globalThis.fetch
+};
+
 test("normalizeReaderOutput preserves content while normalizing reader output", () => {
   const normalized = normalizeReaderOutput(
     "\uFEFF# Harness Engineering\r\n\r\nLine with trailing space   \r\n\r\n"
@@ -38,7 +43,7 @@ test("createJinaReaderProvider forwards auth to the official reader host", async
     }
   });
 
-  await provider.fetch("https://example.com/agent-harness");
+  await provider.fetch("https://example.com/agent-harness", providerContext);
 
   assert.equal(seenAuthorization, "Bearer secret-token");
 });
@@ -57,7 +62,7 @@ test("createJinaReaderProvider does not forward auth to override hosts by defaul
     }
   });
 
-  await provider.fetch("https://example.com/agent-harness");
+  await provider.fetch("https://example.com/agent-harness", providerContext);
 
   assert.equal(seenAuthorization, null);
 });
@@ -70,7 +75,7 @@ test("createJinaReaderProvider wraps transport failures with provider context", 
   });
 
   await assert.rejects(
-    () => provider.fetch("https://example.com/agent-harness"),
+    () => provider.fetch("https://example.com/agent-harness", providerContext),
     /Jina Reader fetch failed for https:\/\/r\.jina\.ai\/https:\/\/example\.com\/agent-harness: fetch failed/
   );
 });
@@ -97,7 +102,7 @@ test("createJinaReaderProvider rejects upstream warning pages", async () => {
   });
 
   await assert.rejects(
-    () => provider.fetch("https://example.com/agent-harness"),
+    () => provider.fetch("https://example.com/agent-harness", providerContext),
     /Jina Reader returned an upstream warning page: 403: Forbidden/
   );
 });
