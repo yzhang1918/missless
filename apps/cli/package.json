@@ -21,6 +21,11 @@
     "jsdom": "^28.1.0",
     "node-html-markdown": "^2.0.0"
   },
+  "bundleDependencies": [
+    "@mozilla/readability",
+    "jsdom",
+    "node-html-markdown"
+  ],
   "devDependencies": {
     "@missless/contracts": "workspace:*",
     "@missless/core": "workspace:*",

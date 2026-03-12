@@ -6,11 +6,26 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtemp } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 const repoRoot = new URL("../../../", import.meta.url);
 const cliEntrypoint = new URL("../../../apps/cli/dist/index.js", import.meta.url);
 const fixturePath = new URL("../../fixtures/jina/harness-engineering.md", import.meta.url);
+const fetchMockModulePath = fileURLToPath(
+  new URL("../../helpers/fetch-mock.mjs", import.meta.url)
+);
+const happyPathSourceUrl = "https://example.com/agent-harness";
+
+function createFetchMockEnv(sourceUrl: string, scenario: string): Record<string, string> {
+  return {
+    MISSLESS_TEST_SOURCE_URL: sourceUrl,
+    MISSLESS_TEST_FETCH_SCENARIO: scenario,
+    NODE_OPTIONS: [process.env.NODE_OPTIONS, `--import=${fetchMockModulePath}`]
+      .filter(Boolean)
+      .join(" ")
+  };
+}
 
 test("fetch-normalize creates a stable run directory from a URL", async () => {
   const fixtureBody = await readFile(fixturePath, "utf8");
@@ -47,7 +62,7 @@ test("fetch-normalize creates a stable run directory from a URL", async () => {
         [
           cliEntrypoint.pathname,
           "fetch-normalize",
-          "https://example.com/agent-harness",
+          happyPathSourceUrl,
           "--runs-dir",
           runsDir
         ],
@@ -55,7 +70,8 @@ test("fetch-normalize creates a stable run directory from a URL", async () => {
           cwd: repoRoot,
           env: {
             ...process.env,
-            MISSLESS_JINA_BASE_URL: `http://127.0.0.1:${address.port}/`
+            MISSLESS_JINA_BASE_URL: `http://127.0.0.1:${address.port}/`,
+            ...createFetchMockEnv(happyPathSourceUrl, "happy-path")
           },
           stdio: ["ignore", "pipe", "pipe"]
         }
@@ -89,7 +105,7 @@ test("fetch-normalize creates a stable run directory from a URL", async () => {
     ) as Record<string, string>;
     const canonicalText = await readFile(join(runDir, "canonical_text.md"), "utf8");
 
-    assert.equal(source.source_url, "https://example.com/agent-harness");
+    assert.equal(source.source_url, happyPathSourceUrl);
     assert.equal(source.provider, "jina_reader");
     assert.equal(
       canonicalText,

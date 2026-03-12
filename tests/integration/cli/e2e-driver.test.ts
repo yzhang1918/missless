@@ -11,10 +11,25 @@ import {
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 const repoRoot = new URL("../../../", import.meta.url);
 const fixturePath = new URL("../../fixtures/jina/harness-engineering.md", import.meta.url);
+const fetchMockModulePath = fileURLToPath(
+  new URL("../../helpers/fetch-mock.mjs", import.meta.url)
+);
+const reviewSourceUrl = "https://example.com/agent-harness";
+
+function createFetchMockEnv(sourceUrl: string, scenario: string): Record<string, string> {
+  return {
+    MISSLESS_TEST_SOURCE_URL: sourceUrl,
+    MISSLESS_TEST_FETCH_SCENARIO: scenario,
+    NODE_OPTIONS: [process.env.NODE_OPTIONS, `--import=${fetchMockModulePath}`]
+      .filter(Boolean)
+      .join(" ")
+  };
+}
 
 const fakeCodexSource = String.raw`#!/usr/bin/env node
 const fs = require("node:fs");
@@ -259,14 +274,15 @@ test("run_missless_review.sh exercises fallback AI review and records status art
     }>((resolve, reject) => {
       const child = spawn(
         "bash",
-        ["scripts/e2e/run_missless_review.sh", "https://example.com/agent-harness"],
+        ["scripts/e2e/run_missless_review.sh", reviewSourceUrl],
         {
           cwd: repoRoot,
           env: {
             ...process.env,
             PATH: `${fakeBinDir}:${process.env.PATH ?? ""}`,
             MISSLESS_FAKE_CODEX_MODE: "fallback-success",
-            MISSLESS_JINA_BASE_URL: `http://127.0.0.1:${address.port}/`
+            MISSLESS_JINA_BASE_URL: `http://127.0.0.1:${address.port}/`,
+            ...createFetchMockEnv(reviewSourceUrl, "happy-path")
           },
           stdio: ["ignore", "pipe", "pipe"]
         }
@@ -371,14 +387,15 @@ test("run_missless_review.sh fails closed when the primary AI review returns a v
     }>((resolve, reject) => {
       const child = spawn(
         "bash",
-        ["scripts/e2e/run_missless_review.sh", "https://example.com/agent-harness"],
+        ["scripts/e2e/run_missless_review.sh", reviewSourceUrl],
         {
           cwd: repoRoot,
           env: {
             ...process.env,
             PATH: `${fakeBinDir}:${process.env.PATH ?? ""}`,
             MISSLESS_FAKE_CODEX_MODE: "primary-negative",
-            MISSLESS_JINA_BASE_URL: `http://127.0.0.1:${address.port}/`
+            MISSLESS_JINA_BASE_URL: `http://127.0.0.1:${address.port}/`,
+            ...createFetchMockEnv(reviewSourceUrl, "happy-path")
           },
           stdio: ["ignore", "pipe", "pipe"]
         }
@@ -474,14 +491,15 @@ test("run_missless_review.sh fails closed when both AI review attempts miss the 
     }>((resolve, reject) => {
       const child = spawn(
         "bash",
-        ["scripts/e2e/run_missless_review.sh", "https://example.com/agent-harness"],
+        ["scripts/e2e/run_missless_review.sh", reviewSourceUrl],
         {
           cwd: repoRoot,
           env: {
             ...process.env,
             PATH: `${fakeBinDir}:${process.env.PATH ?? ""}`,
             MISSLESS_FAKE_CODEX_MODE: "all-invalid",
-            MISSLESS_JINA_BASE_URL: `http://127.0.0.1:${address.port}/`
+            MISSLESS_JINA_BASE_URL: `http://127.0.0.1:${address.port}/`,
+            ...createFetchMockEnv(reviewSourceUrl, "happy-path")
           },
           stdio: ["ignore", "pipe", "pipe"]
         }
@@ -573,14 +591,15 @@ test("run_missless_review.sh ignores stale ai_review.json artifacts from earlier
     }>((resolve, reject) => {
       const child = spawn(
         "bash",
-        ["scripts/e2e/run_missless_review.sh", "https://example.com/agent-harness"],
+        ["scripts/e2e/run_missless_review.sh", reviewSourceUrl],
         {
           cwd: repoRoot,
           env: {
             ...process.env,
             PATH: `${fakeBinDir}:${process.env.PATH ?? ""}`,
             MISSLESS_FAKE_CODEX_MODE: "stale-ai-review",
-            MISSLESS_JINA_BASE_URL: `http://127.0.0.1:${address.port}/`
+            MISSLESS_JINA_BASE_URL: `http://127.0.0.1:${address.port}/`,
+            ...createFetchMockEnv(reviewSourceUrl, "happy-path")
           },
           stdio: ["ignore", "pipe", "pipe"]
         }
