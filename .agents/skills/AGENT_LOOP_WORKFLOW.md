@@ -107,6 +107,12 @@ Run `loop-janitor` independently on a recurring cadence for entropy control and 
 
 - Use dynamic reviewer dimensions based on change risk and scope.
 - Candidate dimensions: correctness, architecture, tests, docs/spec consistency, security, performance/reliability.
+- Review artifacts must distinguish:
+  - `current_slice_findings`
+  - `accepted_deferred_risks`
+  - `strategic_observations`
+- Only current-slice `BLOCKER` or `IMPORTANT` findings may block review or final gate; accepted deferred risks and strategic observations remain visible but non-blocking.
+- Plans that intentionally defer known out-of-slice risks should include a `## Accepted Deferred Risks` section with linked accepted issue(s) or a recorded defer reason.
 - Do not hardcode a fixed reviewer set for every change.
 
 ## TDD Policy

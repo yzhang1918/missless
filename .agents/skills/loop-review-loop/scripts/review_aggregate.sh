@@ -200,23 +200,75 @@ done
 
 if ((${#wrapper_files[@]} > 0)); then
   if ! jq -s -e '
+    def valid_severity:
+      . == "BLOCKER"
+      or . == "IMPORTANT"
+      or . == "MINOR"
+      or . == "NIT";
+    def has_layered_fields:
+      ((.current_slice_findings // null) != null)
+      and ((.accepted_deferred_risks // null) != null)
+      and ((.strategic_observations // null) != null)
+      and (.current_slice_findings | type == "array")
+      and (.accepted_deferred_risks | type == "array")
+      and (.strategic_observations | type == "array");
+    def has_legacy_findings:
+      ((.findings // null) != null)
+      and (.findings | type == "array");
+    def current_slice_findings:
+      if has_layered_fields then
+        (.current_slice_findings // [])
+      else
+        (.findings // [])
+      end;
+    def accepted_deferred_risks:
+      if has_layered_fields then
+        (.accepted_deferred_risks // [])
+      else
+        []
+      end;
+    def strategic_observations:
+      if has_layered_fields then
+        (.strategic_observations // [])
+      else
+        []
+      end;
+    def valid_current_slice_item:
+      (.severity | type == "string")
+      and (.severity | valid_severity);
+    def valid_deferred_item:
+      (.severity | type == "string")
+      and (.severity | valid_severity)
+      and ((.title // "") | type == "string")
+      and ((.title // "") | length > 0)
+      and ((.area // "") | type == "string")
+      and ((.tracking_issue // "") | type == "string")
+      and ((.accepted_reason // "") | type == "string")
+      and (
+        ((.tracking_issue // "") | length > 0)
+        or ((.accepted_reason // "") | length > 0)
+      );
+    def valid_strategic_item:
+      (.title | type == "string")
+      and (.title | length > 0)
+      and ((.area // "") | type == "string")
+      and (.recommendation | type == "string")
+      and (.recommendation | length > 0);
     all(.[]; (.payload | type == "object"))
     and
     all(.[]; (.payload.dimension | type == "string"))
     and
     all(.[]; (.payload.status | type == "string"))
     and
-    all(.[]; ((.payload.findings // []) | type == "array"))
+    all(.[]; ((.payload.summary // "") | type == "string"))
     and
-    all(.[]; all((.payload.findings // [])[]?;
-      (.severity | type == "string")
-      and (
-        .severity == "BLOCKER"
-        or .severity == "IMPORTANT"
-        or .severity == "MINOR"
-        or .severity == "NIT"
-      )
-    ))
+    all(.[]; (.payload | has_layered_fields or has_legacy_findings))
+    and
+    all(.[]; all((.payload | current_slice_findings)[]?; valid_current_slice_item))
+    and
+    all(.[]; all((.payload | accepted_deferred_risks)[]?; valid_deferred_item))
+    and
+    all(.[]; all((.payload | strategic_observations)[]?; valid_strategic_item))
     and
     all(.[];
       if (.payload.producer // null) == null then
@@ -236,7 +288,7 @@ if ((${#wrapper_files[@]} > 0)); then
       end
     )
   ' -- "${wrapper_files[@]}" >/dev/null; then
-    echo "Invalid reviewer artifact: findings[].severity must be BLOCKER/IMPORTANT/MINOR/NIT and manual-fallback artifacts must record a reason" >&2
+    echo "Invalid reviewer artifact: layered review fields or severities are malformed, accepted deferred risks must record title plus tracking_issue/accepted_reason, strategic observations must include recommendation, and manual-fallback artifacts must record a reason" >&2
     exit 1
   fi
 fi
@@ -261,12 +313,42 @@ jq -n \
   --argjson current_tracked_worktree "$current_tracked_worktree" \
   --argjson duplicate_input_paths "$duplicate_input_paths_json" \
   '
+    def valid_severity:
+      . == "BLOCKER"
+      or . == "IMPORTANT"
+      or . == "MINOR"
+      or . == "NIT";
+    def has_layered_fields($payload):
+      (($payload.current_slice_findings // null) != null)
+      and (($payload.accepted_deferred_risks // null) != null)
+      and (($payload.strategic_observations // null) != null)
+      and ($payload.current_slice_findings | type == "array")
+      and ($payload.accepted_deferred_risks | type == "array")
+      and ($payload.strategic_observations | type == "array");
     def expected_reviewers($manifest):
       ($manifest.reviewers // []);
     def expected_paths($manifest):
       [ expected_reviewers($manifest)[] | .output_path ];
     def artifact_for_path($actual; $path):
       ([ $actual[] | select(.artifact_path == $path) ] | first);
+    def current_slice_findings($payload):
+      if has_layered_fields($payload) then
+        ($payload.current_slice_findings // [])
+      else
+        ($payload.findings // [])
+      end;
+    def accepted_deferred_risks($payload):
+      if has_layered_fields($payload) then
+        ($payload.accepted_deferred_risks // [])
+      else
+        []
+      end;
+    def strategic_observations($payload):
+      if has_layered_fields($payload) then
+        ($payload.strategic_observations // [])
+      else
+        []
+      end;
     def reviewer_records($manifest; $actual):
       [
         expected_reviewers($manifest)[] as $expected
@@ -277,7 +359,10 @@ jq -n \
             output_path: $expected.output_path,
             status: (if $artifact == null then "missing" else ($artifact.payload.status // "unknown") end),
             summary: (if $artifact == null then "" else ($artifact.payload.summary // "") end),
-            artifact_path: (if $artifact == null then null else $artifact.artifact_path end)
+            artifact_path: (if $artifact == null then null else $artifact.artifact_path end),
+            current_slice_count: (if $artifact == null then 0 else ([ current_slice_findings($artifact.payload)[] ] | length) end),
+            accepted_deferred_risk_count: (if $artifact == null then 0 else ([ accepted_deferred_risks($artifact.payload)[] ] | length) end),
+            strategic_observation_count: (if $artifact == null then 0 else ([ strategic_observations($artifact.payload)[] ] | length) end)
           }
           + (
             if $artifact != null and (($artifact.payload.producer // null) != null) then
@@ -396,8 +481,8 @@ jq -n \
       );
     def incomplete_reviewers($manifest; $actual):
       ([ reviewer_records($manifest; $actual)[] | .status | select(. != "complete") ] | length);
-    def important_or_blocker_findings($actual):
-      ([ $actual[] | (.payload.findings // [])[] | select((.severity // "") == "BLOCKER" or (.severity // "") == "IMPORTANT") ] | length);
+    def blocking_current_slice_findings($actual):
+      ([ $actual[] | current_slice_findings(.payload)[] | select((.severity // "") == "BLOCKER" or (.severity // "") == "IMPORTANT") ] | length);
 
     $manifest[0] as $manifest
     | $actual_bundle[0] as $actual
@@ -412,12 +497,17 @@ jq -n \
         ),
         reviewers: reviewer_records($manifest; $actual),
         unexpected_reviewers: unexpected_outputs($manifest; $actual),
-        findings: [ $actual[] | (.payload.findings // [])[] ],
+        current_slice_findings: [ $actual[] | current_slice_findings(.payload)[] ],
+        findings: [ $actual[] | current_slice_findings(.payload)[] ],
+        accepted_deferred_risks: [ $actual[] | accepted_deferred_risks(.payload)[] ],
+        strategic_observations: [ $actual[] | strategic_observations(.payload)[] ],
         counts: {
-          blocker: ([ $actual[] | (.payload.findings // [])[] | select((.severity // "") == "BLOCKER") ] | length),
-          important: ([ $actual[] | (.payload.findings // [])[] | select((.severity // "") == "IMPORTANT") ] | length),
-          minor: ([ $actual[] | (.payload.findings // [])[] | select((.severity // "") == "MINOR") ] | length),
-          nit: ([ $actual[] | (.payload.findings // [])[] | select((.severity // "") == "NIT") ] | length)
+          blocker: ([ $actual[] | current_slice_findings(.payload)[] | select((.severity // "") == "BLOCKER") ] | length),
+          important: ([ $actual[] | current_slice_findings(.payload)[] | select((.severity // "") == "IMPORTANT") ] | length),
+          minor: ([ $actual[] | current_slice_findings(.payload)[] | select((.severity // "") == "MINOR") ] | length),
+          nit: ([ $actual[] | current_slice_findings(.payload)[] | select((.severity // "") == "NIT") ] | length),
+          accepted_deferred_risks: ([ $actual[] | accepted_deferred_risks(.payload)[] ] | length),
+          strategic_observations: ([ $actual[] | strategic_observations(.payload)[] ] | length)
         },
         contract: {
           manifest_path: $manifest_path,
@@ -446,7 +536,7 @@ jq -n \
           tracked_worktree_changed: ($manifest.baseline_repo_state.tracked_worktree != $current_tracked_worktree)
         },
         recommendation: (
-          if (incomplete_reviewers($manifest; $actual) > 0 or important_or_blocker_findings($actual) > 0 or (contract_violations($manifest; $actual) | length) > 0)
+          if (incomplete_reviewers($manifest; $actual) > 0 or blocking_current_slice_findings($actual) > 0 or (contract_violations($manifest; $actual) | length) > 0)
           then "needs-fixes"
           else "ready"
           end

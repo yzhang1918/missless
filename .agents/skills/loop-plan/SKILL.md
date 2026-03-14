@@ -24,21 +24,25 @@ For medium/large tasks, this skill is required after discovery and before execut
    - Product work -> `docs/exec-plans/active/YYYY-MM-DD-<topic>.md`
    - Harness/process work -> `docs/harness/active/YYYY-MM-DD-<topic>.md`
 3. Break work into small, reviewable steps.
-4. For each step, define:
+4. Record accepted deferment explicitly when needed:
+   - add a `## Accepted Deferred Risks` section when known out-of-slice concerns are intentionally accepted
+   - link an accepted follow-up issue when available, or record the defer reason directly
+5. For each step, define:
    - objective
    - expected files
    - validation commands
    - documentation impact
-5. Define review cadence:
+6. Define review cadence:
    - delta review after each step
    - full-pr review before final gate
-6. Define final gate conditions explicitly.
+7. Define final gate conditions explicitly.
 
 ## Output
 
 A plan with:
 - clear scope boundaries
 - step-level acceptance criteria
+- accepted deferred risks when applicable
 - validation strategy
 - risk and mitigation notes
 

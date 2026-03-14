@@ -58,6 +58,10 @@ expected reviewer outputs and repo-observable ownership boundary.
    Reviewers are instructed to use only that designated artifact path, and the
    harness fails closed on declared reviewer-output drift plus repo-observable
    tracked-worktree or `HEAD` changes.
+   Reviewer output must separate:
+   - `current_slice_findings[]` for gate-driving current-slice issues
+   - `accepted_deferred_risks[]` for accepted out-of-slice concerns with issue links or defer reasons
+   - `strategic_observations[]` for non-blocking longer-horizon guidance
 8. Finalize the round (aggregate + gate) with one command:
 
 ```sh
@@ -72,8 +76,10 @@ non-zero (currently `2`) after printing the path.
    - If a reviewer did not return, either rerun the reviewer or write an
      explicit manual-fallback artifact to the designated output path with a
      recorded `producer.reason` before re-finalizing the round.
+   - Only `current_slice_findings[]` with blocking severities should hold the review gate; accepted deferred risks and strategic observations stay visible but non-blocking.
 10. Summarize accepted review outcome in the tracked plan or PR description using summary-first evidence.
    - record the final clean result, key commands, and final conclusion
+   - summarize accepted deferred risks separately from current-slice blockers when they materially shape the shipped scope
    - only record resolved findings when they materially changed the shipped outcome
    - do not rely on `.local/loop/*.json` paths as durable evidence references
 11. Cleanup ephemeral artifacts after the loop:

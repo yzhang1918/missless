@@ -305,6 +305,9 @@ security_prompt="$(jq -r '.reviewers[] | select(.dimension == "security") | .pro
 [[ "$security_prompt" == *"\$loop-reviewer"* ]] || fail "review_prepare prompt did not reference loop-reviewer"
 [[ "$security_prompt" == *".local/loop/review-20260305-230000-security.json"* ]] || fail "review_prepare prompt did not include reviewer output path"
 [[ "$security_prompt" == *"Only write"* ]] || fail "review_prepare prompt did not include write-scope guidance"
+[[ "$security_prompt" == *"current_slice_findings"* ]] || fail "review_prepare prompt did not describe current_slice_findings"
+[[ "$security_prompt" == *"accepted_deferred_risks"* ]] || fail "review_prepare prompt did not describe accepted_deferred_risks"
+[[ "$security_prompt" == *"strategic_observations"* ]] || fail "review_prepare prompt did not describe strategic_observations"
 
 # 8) initialize a valid review round.
 (
@@ -362,12 +365,60 @@ if (
   fail "review_aggregate accepted unknown severity token"
 fi
 
-# 12) aggregate computes counts from findings payload.
+# 11.1) aggregate rejects accepted deferred risks without issue linkage or a defer reason.
 cat > "$work_dir/.local/loop/review-20260305-230000-security.json" <<'JSON'
-{"scope":"full-pr","dimension":"security","status":"complete","findings":[{"id":"S1","severity":"IMPORTANT"}]}
+{
+  "scope": "full-pr",
+  "dimension": "security",
+  "status": "complete",
+  "summary": "Deferred risk is malformed.",
+  "current_slice_findings": [],
+  "accepted_deferred_risks": [
+    {
+      "id": "D1",
+      "severity": "IMPORTANT",
+      "title": "Known deferred risk",
+      "area": "README.md"
+    }
+  ],
+  "strategic_observations": []
+}
+JSON
+if (
+  cd "$work_dir" &&
+  "$review_aggregate" 20260305-230000 .local/loop/review-20260305-230000-security.json >/dev/null 2>&1
+); then
+  fail "review_aggregate accepted an accepted_deferred_risks entry without tracking or defer reason"
+fi
+
+# 12) aggregate computes counts from layered review payloads while keeping non-blocking layers visible.
+cat > "$work_dir/.local/loop/review-20260305-230000-security.json" <<'JSON'
+{
+  "scope": "full-pr",
+  "dimension": "security",
+  "status": "complete",
+  "summary": "One current-slice finding, one accepted deferred risk, and one strategic observation.",
+  "current_slice_findings": [
+    {"id":"S1","severity":"IMPORTANT","title":"Current slice gap"}
+  ],
+  "accepted_deferred_risks": [
+    {"id":"D1","severity":"IMPORTANT","title":"Known deferred risk","area":"README.md","tracking_issue":"#20"}
+  ],
+  "strategic_observations": [
+    {"id":"SO1","title":"Long-term cleanup","recommendation":"Document reviewer examples"}
+  ]
+}
 JSON
 cat > "$work_dir/.local/loop/review-20260305-230000-docs-spec-consistency.json" <<'JSON'
-{"scope":"full-pr","dimension":"docs/spec consistency","status":"complete","findings":[]}
+{
+  "scope": "full-pr",
+  "dimension": "docs/spec consistency",
+  "status": "complete",
+  "summary": "No current-slice docs blockers.",
+  "current_slice_findings": [],
+  "accepted_deferred_risks": [],
+  "strategic_observations": []
+}
 JSON
 (
   cd "$work_dir" &&
@@ -377,6 +428,11 @@ agg_file="$work_dir/.local/loop/review-20260305-230000.json"
 assert_exists "$agg_file"
 important_count="$(jq -r '.counts.important' "$agg_file")"
 [[ "$important_count" == "1" ]] || fail "expected important count=1, got $important_count"
+deferred_count="$(jq -r '.counts.accepted_deferred_risks' "$agg_file")"
+[[ "$deferred_count" == "1" ]] || fail "expected accepted_deferred_risks count=1, got $deferred_count"
+strategic_count="$(jq -r '.counts.strategic_observations' "$agg_file")"
+[[ "$strategic_count" == "1" ]] || fail "expected strategic_observations count=1, got $strategic_count"
+[[ "$(jq -r '.accepted_deferred_risks[0].tracking_issue' "$agg_file")" == "#20" ]] || fail "aggregate did not preserve accepted deferred risk tracking_issue"
 
 # 12.1) review_finalize fails when important findings remain and still prints aggregate path.
 set +e
@@ -402,7 +458,15 @@ fi
   "$review_prepare" 20260305-230100 full-pr security "docs/spec consistency" >/dev/null
 )
 cat > "$work_dir/.local/loop/review-20260305-230100-security.json" <<'JSON'
-{"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
+{
+  "scope": "full-pr",
+  "dimension": "security",
+  "status": "complete",
+  "summary": "No current-slice issues.",
+  "current_slice_findings": [],
+  "accepted_deferred_risks": [],
+  "strategic_observations": []
+}
 JSON
 cat > "$work_dir/.local/loop/review-20260305-230100-docs-spec-consistency.json" <<'JSON'
 {
@@ -410,7 +474,9 @@ cat > "$work_dir/.local/loop/review-20260305-230100-docs-spec-consistency.json" 
   "dimension": "docs/spec consistency",
   "status": "complete",
   "summary": "Manual fallback reviewer found no material issues.",
-  "findings": [],
+  "current_slice_findings": [],
+  "accepted_deferred_risks": [],
+  "strategic_observations": [],
   "producer": {
     "type": "manual-fallback",
     "reason": "reviewer subagent did not return before review finalize"
@@ -424,6 +490,47 @@ JSON
 assert_exists "$work_dir/.local/loop/review-20260305-230100.json"
 fallback_reason="$(jq -r '.contract.recovery[] | select(.dimension == "docs/spec consistency") | .reason' "$work_dir/.local/loop/review-20260305-230100.json")"
 [[ "$fallback_reason" == "reviewer subagent did not return before review finalize" ]] || fail "manual fallback reason was not preserved in the aggregate review artifact"
+
+# 12.3) review_finalize passes when only accepted deferred risks and strategic observations remain.
+(
+  cd "$work_dir" &&
+  "$review_init" 20260305-230104 full-pr >/dev/null &&
+  "$review_prepare" 20260305-230104 full-pr security >/dev/null
+)
+cat > "$work_dir/.local/loop/review-20260305-230104-security.json" <<'JSON'
+{
+  "scope": "full-pr",
+  "dimension": "security",
+  "status": "complete",
+  "summary": "Only non-blocking review layers remain.",
+  "current_slice_findings": [],
+  "accepted_deferred_risks": [
+    {
+      "id": "D2",
+      "severity": "IMPORTANT",
+      "title": "Known deferred follow-up",
+      "area": "README.md",
+      "accepted_reason": "Accepted outside the current slice"
+    }
+  ],
+  "strategic_observations": [
+    {
+      "id": "SO2",
+      "title": "Future improvement",
+      "recommendation": "Refine reviewer examples after rollout"
+    }
+  ]
+}
+JSON
+(
+  cd "$work_dir" &&
+  "$review_finalize" 20260305-230104 .local/loop/review-20260305-230104-security.json >/dev/null
+)
+assert_exists "$work_dir/.local/loop/review-20260305-230104.json"
+[[ "$(jq -r '.counts.blocker' "$work_dir/.local/loop/review-20260305-230104.json")" == "0" ]] || fail "non-blocking layers should not create blocker counts"
+[[ "$(jq -r '.counts.important' "$work_dir/.local/loop/review-20260305-230104.json")" == "0" ]] || fail "non-blocking layers should not create important counts"
+[[ "$(jq -r '.counts.accepted_deferred_risks' "$work_dir/.local/loop/review-20260305-230104.json")" == "1" ]] || fail "accepted_deferred_risks count was not preserved"
+[[ "$(jq -r '.counts.strategic_observations' "$work_dir/.local/loop/review-20260305-230104.json")" == "1" ]] || fail "strategic_observations count was not preserved"
 
 # 13) review_finalize fails when an undeclared reviewer output is present on disk.
 (
