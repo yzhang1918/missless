@@ -49,9 +49,36 @@ This writes `.local/loop/review-launch-<round-id>.json`.
 Use the manifest shape in `references/reviewer-launch-manifest.md`.
 The manifest is the authoritative machine-readable contract for that round's
 expected reviewer outputs and repo-observable ownership boundary.
+The same step also prepares `.local/loop/review-dispatch-<round-id>.json`;
+use the shape in `references/reviewer-dispatch-record.md`.
 
 5. Spawn subagent reviewers from the manifest entries using `loop-reviewer`.
    The caller/runtime owns the actual spawn mechanism; the repository helper only emits launch data and prompt text.
+   Reviewer-subagent launch is mandatory for every manifest reviewer slot.
+   Before or immediately when the runtime launches a reviewer, record it with:
+
+```sh
+.agents/skills/loop-review-loop/scripts/review_record_dispatch.sh <round-id YYYYMMDD-HHMMSS> <dimension-slug> launch-started
+```
+
+   When the reviewer produces its artifact, record:
+
+```sh
+.agents/skills/loop-review-loop/scripts/review_record_dispatch.sh <round-id YYYYMMDD-HHMMSS> <dimension-slug> artifact-written
+```
+
+   If the reviewer launch or return path fails, record one of:
+   - `launch-failed`
+   - `timeout`
+   - `invalid-artifact`
+   - `runtime-blocked`
+
+   `launch-failed`, `artifact-written`, `timeout`, and `invalid-artifact` are
+   only valid immediately after `launch-started` for the same reviewer slot.
+
+   `runtime-blocked` is a review blocker, not a valid reason to switch to
+   `manual-fallback`. Once a slot records `runtime-blocked`, do not append more
+   dispatch events to that slot in the same round.
 6. Each subagent gathers its own context via local git commands (`git diff`, `git show`, `git log`) instead of requiring raw diff injection.
 7. Each reviewer writes JSON directly to `.local/loop/review-<round-id>-<dimension-slug>.json`.
    Use the schema in `references/reviewer-output-schema.md`.
@@ -73,9 +100,16 @@ reviewer artifacts are missing or the gate is otherwise blocked, it exits
 non-zero (currently `2`) after printing the path.
 
 9. If blocked, fix findings and run another review round.
-   - If a reviewer did not return, either rerun the reviewer or write an
-     explicit manual-fallback artifact to the designated output path with a
-     recorded `producer.reason` before re-finalizing the round.
+   - If a reviewer did not return, first record the reviewer-slot failure in the
+     dispatch ledger.
+   - Only after a recorded `launch-failed`, `timeout`, or `invalid-artifact`
+     status for the same reviewer slot may you write an explicit
+     `manual-fallback` artifact to the designated output path with a recorded
+     `producer.reason`.
+   - If the runtime cannot launch reviewer subagents at all, record
+     `runtime-blocked` and stop with a review blocker instead of silently
+     falling back. Start a fresh round in a capable runtime instead of
+     appending more dispatch events to that slot.
    - Only `current_slice_findings[]` with blocking severities should hold the review gate; accepted deferred risks and strategic observations stay visible but non-blocking.
 10. Summarize accepted review outcome in the tracked plan or PR description using summary-first evidence.
    - record the final clean result, key commands, and final conclusion
@@ -111,4 +145,9 @@ Promoted bundles under `.local/final-evidence/` must remain untouched by this cl
   declared reviewer outputs, tracked-worktree drift, and `HEAD` movement, not
   as full runtime sandboxing or arbitrary untracked-file isolation.
 - Do not hand-author reviewer JSON when reviewer subagent output is available.
+- Do not use `manual-fallback` unless the matching reviewer slot already has a
+  recorded `launch-failed`, `timeout`, or `invalid-artifact` dispatch status.
+- Do not treat `runtime-blocked` as fallback-eligible.
+- Do not append more dispatch events to a reviewer slot after it records
+  `runtime-blocked`; start a fresh round instead.
 - If fallback manual reviewer artifacts are required, record the reason in the plan/PR review summary.

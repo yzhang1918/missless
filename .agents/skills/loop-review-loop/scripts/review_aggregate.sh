@@ -89,6 +89,7 @@ repo_root="$(git rev-parse --show-toplevel)"
 out_dir=".local/loop"
 out_file="$out_dir/review-${round_id}.json"
 manifest_file="$out_dir/review-launch-${round_id}.json"
+dispatch_file="$out_dir/review-dispatch-${round_id}.json"
 mkdir -p "$out_dir"
 
 if [[ ! -f "$manifest_file" ]]; then
@@ -96,7 +97,7 @@ if [[ ! -f "$manifest_file" ]]; then
   exit 1
 fi
 
-if ! jq -e --arg round_id "$round_id" '
+if ! jq -e --arg round_id "$round_id" --arg dispatch_file "$dispatch_file" '
   (.round_id == $round_id)
   and (.scope | type == "string")
   and (.baseline_repo_state | type == "object")
@@ -112,6 +113,7 @@ if ! jq -e --arg round_id "$round_id" '
   and (.ownership_boundary.detects_remote_side_effects == false)
   and (.allowed_output_paths | type == "array")
   and all(.allowed_output_paths[]?; type == "string")
+  and (.dispatch_record_path == $dispatch_file)
   and (.reviewers | type == "array")
   and ((.reviewers | length) > 0)
   and all(.reviewers[]?;
@@ -126,6 +128,50 @@ if ! jq -e --arg round_id "$round_id" '
   )
 ' "$manifest_file" >/dev/null; then
   echo "Invalid reviewer launch manifest: contract shape mismatch" >&2
+  exit 1
+fi
+
+if [[ ! -f "$dispatch_file" ]]; then
+  echo "Missing reviewer dispatch record: $dispatch_file" >&2
+  exit 1
+fi
+
+if ! jq -e --arg round_id "$round_id" --arg manifest_path "$manifest_file" '
+  def valid_status:
+    . == "pending"
+    or . == "launch-started"
+    or . == "artifact-written"
+    or . == "launch-failed"
+    or . == "timeout"
+    or . == "invalid-artifact"
+    or . == "runtime-blocked";
+  (.round_id == $round_id)
+  and (.manifest_path == $manifest_path)
+  and (.generated_at | type == "string")
+  and (.reviewers | type == "array")
+  and ((.reviewers | length) > 0)
+  and all(.reviewers[]?;
+    (.dimension | type == "string")
+    and (.dimension_slug | type == "string")
+    and (.output_path | type == "string")
+    and (.last_status | type == "string")
+    and (.last_status | valid_status)
+    and (.last_reason | type == "string")
+    and ((.last_recorded_at // null) == null or (.last_recorded_at | type == "string"))
+    and (.last_artifact_path | type == "string")
+    and (.attempts | type == "array")
+    and all(.attempts[]?;
+      (.status | type == "string")
+      and (.status | valid_status)
+      and (.recorded_at | type == "string")
+      and ((.reason // "") | type == "string")
+      and ((.artifact_path // "") | type == "string")
+    )
+  )
+  and (([.reviewers[] | .dimension_slug] | unique | length) == (.reviewers | length))
+  and (([.reviewers[] | .output_path] | unique | length) == (.reviewers | length))
+' "$dispatch_file" >/dev/null; then
+  echo "Invalid reviewer dispatch record: contract shape mismatch" >&2
   exit 1
 fi
 
@@ -306,9 +352,11 @@ current_tracked_worktree="$(tracked_worktree_json)"
 
 jq -n \
   --slurpfile manifest "$manifest_file" \
+  --slurpfile dispatch "$dispatch_file" \
   --slurpfile actual_bundle "$actual_bundle" \
   --arg round_id "$round_id" \
   --arg manifest_path "$manifest_file" \
+  --arg dispatch_path "$dispatch_file" \
   --arg current_head_sha "$current_head_sha" \
   --argjson current_tracked_worktree "$current_tracked_worktree" \
   --argjson duplicate_input_paths "$duplicate_input_paths_json" \
@@ -329,8 +377,12 @@ jq -n \
       ($manifest.reviewers // []);
     def expected_paths($manifest):
       [ expected_reviewers($manifest)[] | .output_path ];
+    def dispatch_reviewers($dispatch):
+      ($dispatch.reviewers // []);
     def artifact_for_path($actual; $path):
       ([ $actual[] | select(.artifact_path == $path) ] | first);
+    def dispatch_for_path($dispatch; $path):
+      ([ dispatch_reviewers($dispatch)[] | select(.output_path == $path) ] | first);
     def current_slice_findings($payload):
       if has_layered_fields($payload) then
         ($payload.current_slice_findings // [])
@@ -349,10 +401,11 @@ jq -n \
       else
         []
       end;
-    def reviewer_records($manifest; $actual):
+    def reviewer_records($manifest; $dispatch; $actual):
       [
         expected_reviewers($manifest)[] as $expected
         | (artifact_for_path($actual; $expected.output_path)) as $artifact
+        | (dispatch_for_path($dispatch; $expected.output_path)) as $dispatch_record
         | {
             dimension: $expected.dimension,
             dimension_slug: $expected.dimension_slug,
@@ -362,7 +415,10 @@ jq -n \
             artifact_path: (if $artifact == null then null else $artifact.artifact_path end),
             current_slice_count: (if $artifact == null then 0 else ([ current_slice_findings($artifact.payload)[] ] | length) end),
             accepted_deferred_risk_count: (if $artifact == null then 0 else ([ accepted_deferred_risks($artifact.payload)[] ] | length) end),
-            strategic_observation_count: (if $artifact == null then 0 else ([ strategic_observations($artifact.payload)[] ] | length) end)
+            strategic_observation_count: (if $artifact == null then 0 else ([ strategic_observations($artifact.payload)[] ] | length) end),
+            dispatch_status: (if $dispatch_record == null then "missing" else ($dispatch_record.last_status // "unknown") end),
+            dispatch_reason: (if $dispatch_record == null then "" else ($dispatch_record.last_reason // "") end),
+            dispatch_attempt_count: (if $dispatch_record == null then 0 else ([ $dispatch_record.attempts[] ] | length) end)
           }
           + (
             if $artifact != null and (($artifact.payload.producer // null) != null) then
@@ -372,9 +428,130 @@ jq -n \
             end
           )
       ];
-    def missing_reviewers($manifest; $actual):
+    def unexpected_dispatch_entries($manifest; $dispatch):
       [
-        reviewer_records($manifest; $actual)[]
+        dispatch_reviewers($dispatch)[] as $record
+        | select((expected_paths($manifest) | index($record.output_path)) == null)
+        | {
+            output_path: $record.output_path,
+            dimension_slug: ($record.dimension_slug // "")
+          }
+      ];
+    def missing_dispatch_entries($manifest; $dispatch; $actual):
+      [
+        reviewer_records($manifest; $dispatch; $actual)[]
+        | select(.dispatch_status == "missing")
+        | {
+            dimension,
+            output_path
+          }
+      ];
+    def missing_dispatch_attempts($manifest; $dispatch; $actual):
+      [
+        reviewer_records($manifest; $dispatch; $actual)[]
+        | select(.dispatch_status != "missing" and .dispatch_attempt_count == 0)
+        | {
+            dimension,
+            output_path
+          }
+      ];
+    def runtime_blocked_reviewers($manifest; $dispatch; $actual):
+      [
+        reviewer_records($manifest; $dispatch; $actual)[]
+        | select(.dispatch_status == "runtime-blocked")
+        | {
+            dimension,
+            output_path,
+            reason: .dispatch_reason
+          }
+      ];
+    def runtime_blocked_not_terminal_reviewers($manifest; $dispatch; $actual):
+      [
+        reviewer_records($manifest; $dispatch; $actual)[] as $record
+        | (dispatch_for_path($dispatch; $record.output_path)) as $dispatch_record
+        | select($dispatch_record != null)
+        | ($dispatch_record.attempts // []) as $attempts
+        | ([ $attempts | to_entries[] | select(.value.status == "runtime-blocked") | .key ] | first) as $runtime_blocked_index
+        | select($runtime_blocked_index != null and $runtime_blocked_index < (($attempts | length) - 1))
+        | {
+            dimension: $record.dimension,
+            output_path: $record.output_path,
+            last_status: $record.dispatch_status
+          }
+      ];
+    def has_valid_launch_sequence($dispatch_record):
+      ($dispatch_record.attempts // []) as $attempts
+      | all(range(0; ($attempts | length));
+          . as $idx
+          | ($attempts[$idx].status // "") as $status
+          | if (
+              $status == "launch-failed"
+              or $status == "artifact-written"
+              or $status == "timeout"
+              or $status == "invalid-artifact"
+            ) then
+              ($idx > 0 and (($attempts[$idx - 1].status // "") == "launch-started"))
+            else
+              true
+            end
+        );
+    def missing_launch_started_reviewers($manifest; $dispatch; $actual):
+      [
+        reviewer_records($manifest; $dispatch; $actual)[] as $record
+        | select(
+            $record.dispatch_status == "launch-failed"
+            or $record.dispatch_status == "artifact-written"
+            or $record.dispatch_status == "timeout"
+            or $record.dispatch_status == "invalid-artifact"
+          )
+        | (dispatch_for_path($dispatch; $record.output_path)) as $dispatch_record
+        | select($dispatch_record != null and (has_valid_launch_sequence($dispatch_record) | not))
+        | {
+            dimension: $record.dimension,
+            output_path: $record.output_path,
+            dispatch_status: $record.dispatch_status
+          }
+      ];
+    def invalid_dispatch_tail_statuses($dispatch):
+      [
+        dispatch_reviewers($dispatch)[] as $record
+        | ($record.attempts // []) as $attempts
+        | select(
+            (($attempts | length) == 0 and (($record.last_status // "pending") != "pending"))
+            or (($attempts | length) > 0 and (($attempts[-1].status // "") != ($record.last_status // "")))
+          )
+        | {
+            dimension: ($record.dimension // ""),
+            output_path: ($record.output_path // ""),
+            last_status: ($record.last_status // "unknown")
+          }
+      ];
+    def invalid_fallback_reviewers($manifest; $dispatch; $actual):
+      [
+        reviewer_records($manifest; $dispatch; $actual)[]
+        | select((.producer.type // "") == "manual-fallback")
+        | select(.dispatch_status != "launch-failed" and .dispatch_status != "timeout" and .dispatch_status != "invalid-artifact")
+        | {
+            dimension,
+            output_path,
+            dispatch_status,
+            reason: .dispatch_reason
+          }
+      ];
+    def subagent_dispatch_mismatches($manifest; $dispatch; $actual):
+      [
+        reviewer_records($manifest; $dispatch; $actual)[]
+        | select(.artifact_path != null and (.producer.type // "") != "manual-fallback")
+        | select(.dispatch_status != "artifact-written")
+        | {
+            dimension,
+            output_path,
+            dispatch_status
+          }
+      ];
+    def missing_reviewers($manifest; $dispatch; $actual):
+      [
+        reviewer_records($manifest; $dispatch; $actual)[]
         | select(.artifact_path == null)
         | {
             dimension,
@@ -402,9 +579,9 @@ jq -n \
             actual_dimension: ($artifact.payload.dimension // "")
           }
       ];
-    def recovery($manifest; $actual):
+    def recovery($manifest; $dispatch; $actual):
       [
-        reviewer_records($manifest; $actual)[]
+        reviewer_records($manifest; $dispatch; $actual)[]
         | select((.producer.type // "") == "manual-fallback")
         | {
             dimension,
@@ -413,10 +590,10 @@ jq -n \
             reason: (.producer.reason // "")
           }
       ];
-    def contract_violations($manifest; $actual):
+    def contract_violations($manifest; $dispatch; $actual):
       (
         [
-          missing_reviewers($manifest; $actual)[]
+          missing_reviewers($manifest; $dispatch; $actual)[]
           | {
               kind: "missing-reviewer",
               dimension,
@@ -430,6 +607,92 @@ jq -n \
               kind: "unexpected-output",
               artifact_path,
               message: ("Unexpected reviewer artifact path: " + .artifact_path)
+            }
+        ]
+        + [
+          missing_dispatch_entries($manifest; $dispatch; $actual)[]
+          | {
+              kind: "missing-dispatch-entry",
+              dimension,
+              output_path,
+              message: ("Missing reviewer dispatch entry for " + .dimension)
+            }
+        ]
+        + [
+          missing_dispatch_attempts($manifest; $dispatch; $actual)[]
+          | {
+              kind: "missing-dispatch-attempt",
+              dimension,
+              output_path,
+              message: ("Reviewer dispatch has no recorded subagent attempt for " + .dimension)
+            }
+        ]
+        + [
+          unexpected_dispatch_entries($manifest; $dispatch)[]
+          | {
+              kind: "unexpected-dispatch-entry",
+              output_path,
+              message: ("Unexpected reviewer dispatch entry for output path: " + .output_path)
+            }
+        ]
+        + [
+          invalid_dispatch_tail_statuses($dispatch)[]
+          | {
+              kind: "invalid-dispatch-tail-status",
+              dimension,
+              output_path,
+              last_status,
+              message: ("Reviewer dispatch tail status is inconsistent for " + .dimension)
+            }
+        ]
+        + [
+          runtime_blocked_reviewers($manifest; $dispatch; $actual)[]
+          | {
+              kind: "runtime-blocked",
+              dimension,
+              output_path,
+              reason,
+              message: ("Reviewer runtime was blocked for " + .dimension)
+            }
+        ]
+        + [
+          runtime_blocked_not_terminal_reviewers($manifest; $dispatch; $actual)[]
+          | {
+              kind: "runtime-blocked-not-terminal",
+              dimension,
+              output_path,
+              last_status,
+              message: ("Reviewer dispatch for " + .dimension + " recorded later events after runtime-blocked")
+            }
+        ]
+        + [
+          missing_launch_started_reviewers($manifest; $dispatch; $actual)[]
+          | {
+              kind: "missing-launch-start",
+              dimension,
+              output_path,
+              dispatch_status,
+              message: ("Reviewer dispatch for " + .dimension + " recorded " + .dispatch_status + " without a prior launch-started event")
+            }
+        ]
+        + [
+          invalid_fallback_reviewers($manifest; $dispatch; $actual)[]
+          | {
+              kind: "invalid-fallback-dispatch-status",
+              dimension,
+              output_path,
+              dispatch_status,
+              message: ("Manual fallback is not allowed for " + .dimension + " with dispatch status " + .dispatch_status)
+            }
+        ]
+        + [
+          subagent_dispatch_mismatches($manifest; $dispatch; $actual)[]
+          | {
+              kind: "dispatch-status-mismatch",
+              dimension,
+              output_path,
+              dispatch_status,
+              message: ("Reviewer artifact for " + .dimension + " did not record artifact-written in dispatch history")
             }
         ]
         + [
@@ -479,23 +742,24 @@ jq -n \
           end
         )
       );
-    def incomplete_reviewers($manifest; $actual):
-      ([ reviewer_records($manifest; $actual)[] | .status | select(. != "complete") ] | length);
+    def incomplete_reviewers($manifest; $dispatch; $actual):
+      ([ reviewer_records($manifest; $dispatch; $actual)[] | .status | select(. != "complete") ] | length);
     def blocking_current_slice_findings($actual):
       ([ $actual[] | current_slice_findings(.payload)[] | select((.severity // "") == "BLOCKER" or (.severity // "") == "IMPORTANT") ] | length);
 
     $manifest[0] as $manifest
+    | $dispatch[0] as $dispatch
     | $actual_bundle[0] as $actual
     | {
         round_id: $round_id,
         scope: ($manifest.scope // "delta"),
         status: (
-          if (incomplete_reviewers($manifest; $actual) > 0 or (contract_violations($manifest; $actual) | length) > 0)
+          if (incomplete_reviewers($manifest; $dispatch; $actual) > 0 or (contract_violations($manifest; $dispatch; $actual) | length) > 0)
           then "incomplete"
           else "complete"
           end
         ),
-        reviewers: reviewer_records($manifest; $actual),
+        reviewers: reviewer_records($manifest; $dispatch; $actual),
         unexpected_reviewers: unexpected_outputs($manifest; $actual),
         current_slice_findings: [ $actual[] | current_slice_findings(.payload)[] ],
         findings: [ $actual[] | current_slice_findings(.payload)[] ],
@@ -511,22 +775,33 @@ jq -n \
         },
         contract: {
           manifest_path: $manifest_path,
+          dispatch_path: $dispatch_path,
           status: (
-            if (contract_violations($manifest; $actual) | length) > 0 then
+            if (contract_violations($manifest; $dispatch; $actual) | length) > 0 then
               "violated"
             else
               "ok"
             end
           ),
           expected_reviewers: (expected_reviewers($manifest) | length),
-          actual_reviewers: ([ reviewer_records($manifest; $actual)[] | select(.artifact_path != null) ] | length),
+          actual_reviewers: ([ reviewer_records($manifest; $dispatch; $actual)[] | select(.artifact_path != null) ] | length),
           allowed_output_paths: ($manifest.allowed_output_paths // expected_paths($manifest)),
-          missing_reviewers: missing_reviewers($manifest; $actual),
+          dispatch_reviewers: (dispatch_reviewers($dispatch) | length),
+          missing_reviewers: missing_reviewers($manifest; $dispatch; $actual),
+          missing_dispatch_entries: missing_dispatch_entries($manifest; $dispatch; $actual),
+          missing_dispatch_attempts: missing_dispatch_attempts($manifest; $dispatch; $actual),
+          unexpected_dispatch_entries: unexpected_dispatch_entries($manifest; $dispatch),
+          invalid_dispatch_tail_statuses: invalid_dispatch_tail_statuses($dispatch),
+          runtime_blocked_reviewers: runtime_blocked_reviewers($manifest; $dispatch; $actual),
+          runtime_blocked_not_terminal_reviewers: runtime_blocked_not_terminal_reviewers($manifest; $dispatch; $actual),
+          missing_launch_started_reviewers: missing_launch_started_reviewers($manifest; $dispatch; $actual),
+          invalid_fallback_reviewers: invalid_fallback_reviewers($manifest; $dispatch; $actual),
+          subagent_dispatch_mismatches: subagent_dispatch_mismatches($manifest; $dispatch; $actual),
           unexpected_outputs: unexpected_outputs($manifest; $actual),
           duplicate_input_paths: $duplicate_input_paths,
           dimension_mismatches: dimension_mismatches($manifest; $actual),
-          recovery: recovery($manifest; $actual),
-          violations: contract_violations($manifest; $actual),
+          recovery: recovery($manifest; $dispatch; $actual),
+          violations: contract_violations($manifest; $dispatch; $actual),
           baseline_repo_state: $manifest.baseline_repo_state,
           current_repo_state: {
             head_sha: $current_head_sha,
@@ -536,7 +811,7 @@ jq -n \
           tracked_worktree_changed: ($manifest.baseline_repo_state.tracked_worktree != $current_tracked_worktree)
         },
         recommendation: (
-          if (incomplete_reviewers($manifest; $actual) > 0 or blocking_current_slice_findings($actual) > 0 or (contract_violations($manifest; $actual) | length) > 0)
+          if (incomplete_reviewers($manifest; $dispatch; $actual) > 0 or blocking_current_slice_findings($actual) > 0 or (contract_violations($manifest; $dispatch; $actual) | length) > 0)
           then "needs-fixes"
           else "ready"
           end

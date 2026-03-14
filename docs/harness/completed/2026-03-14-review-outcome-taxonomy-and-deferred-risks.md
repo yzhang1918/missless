@@ -5,14 +5,15 @@
 - Plan name: Review Outcome Taxonomy And Deferred Risks
 - Owner: Human+Codex
 - Date opened: 2026-03-14
+- Date reopened: 2026-03-15
 - Intake source: GitHub issues `#20` and `#22`
 - Work type: Harness/process
 - Related issue(s): `#20`, `#22`
-- Scope note: This is one coherent harness task because both issues tighten the same review contract: how reviewers classify current-slice blockers versus accepted deferred risks and strategic observations, and how review/final gate consume that distinction.
+- Scope note: This is one coherent harness task because both issues tighten the same review contract: how reviewers classify current-slice blockers versus accepted deferred risks and strategic observations, how reviewer subagents are required to run, and when fallback is legitimately allowed.
 
 ## Objective
 
-Make review artifacts and gate decisions explicitly distinguish current-slice blockers from accepted deferred risks and broader strategic observations so known deferrals stay visible without repeatedly blocking later review loops.
+Make review artifacts and gate decisions explicitly distinguish current-slice blockers from accepted deferred risks and broader strategic observations, while also enforcing that reviewer subagents are attempted for every reviewer slot and that manual fallback is only valid after a documented reviewer-subagent failure.
 
 ## Scope
 
@@ -21,8 +22,10 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
   - Update reviewer output guidance, reviewer launch prompts, aggregation, and review/final-gate script contracts to consume the new structure.
   - Add a stable plan section for accepted deferred risks and update workflow/standards docs to explain how those records should be used.
   - Extend regression coverage so the new taxonomy and gate semantics fail closed when the artifact shape is wrong and pass when only non-blocking layers are populated.
+  - Tighten review-loop workflow rules so reviewer subagents are the required first path for each manifest entry and manual fallback is allowed only after a recorded reviewer-subagent failure.
+  - Add a machine-readable reviewer-dispatch or equivalent round record so fallback eligibility is repo-observable instead of relying on narrative text alone.
 - Out of scope:
-  - Changing reviewer spawn/runtime mechanics or reviewer ownership enforcement beyond the already shipped manifest contract.
+  - Replacing the runtime-owned reviewer launcher with a repository-specific agent runtime.
   - Introducing automatic GitHub issue creation from reviewer artifacts.
   - Product-runtime changes outside the harness/review workflow surface.
 
@@ -33,6 +36,9 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - [x] `review_gate.sh` and `final_gate.sh` only block on current-slice `BLOCKER` or `IMPORTANT` findings, while accepted deferred risks and strategic observations remain visible but non-blocking.
 - [x] Harness workflow/standards/template guidance defines a stable `## Accepted Deferred Risks` plan section and explains how accepted issues or defer reasons should be recorded there.
 - [x] Regression coverage exercises layered reviewer output, malformed artifact rejection, and the non-blocking behavior of accepted deferred risks plus strategic observations.
+- [x] `loop-review-loop` and related standards make reviewer subagent launch mandatory for every manifest reviewer slot and treat runtime-level inability to launch reviewers as a review blocker rather than implicit fallback.
+- [x] Manual fallback reviewer artifacts are accepted only when the same reviewer slot has a machine-readable recorded subagent failure or timeout; fallback without a recorded failed reviewer attempt fails closed.
+- [x] Regression coverage proves both the happy path with recorded reviewer dispatch and the blocked path where fallback is attempted without an eligible failed reviewer-subagent record.
 
 ## Accepted Deferred Risks
 
@@ -104,6 +110,35 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
   - Updated `stateful_gate_regression.sh` so final-gate regression coverage consumes a layered clean review artifact rather than a legacy `findings[]`-only shape.
   - Ran `.agents/skills/loop-review-loop/scripts/review_regression.sh`, `.agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh`, and `git diff --check`; all passed.
 
+### Step 4
+
+- Status: completed
+- Objective: Enforce reviewer-subagent-first review execution so fallback artifacts are allowed only after a machine-readable recorded reviewer-subagent failure for the same reviewer slot.
+- Expected files:
+  - `.agents/skills/loop-review-loop/SKILL.md`
+  - `.agents/skills/loop-reviewer/SKILL.md`
+  - `.agents/skills/AGENT_LOOP_WORKFLOW.md`
+  - `docs/standards/repository-standards.md`
+  - `.agents/skills/loop-review-loop/references/reviewer-launch-manifest.md`
+  - `.agents/skills/loop-review-loop/references/reviewer-output-schema.md`
+  - `.agents/skills/loop-review-loop/scripts/review_prepare_reviewers.sh`
+  - `.agents/skills/loop-review-loop/scripts/review_aggregate.sh`
+  - `.agents/skills/loop-review-loop/scripts/review_finalize.sh`
+  - `.agents/skills/loop-review-loop/scripts/review_regression.sh`
+  - Any new helper kept local to `.agents/skills/loop-review-loop/scripts/`
+- Validation commands:
+  - `bash -n` for every changed `loop-review-loop` shell entry point
+  - `.agents/skills/loop-review-loop/scripts/review_regression.sh`
+  - `git diff --check`
+- Documentation impact:
+  - Make reviewer-subagent-first review and fallback eligibility explicit in both human guidance and machine-readable review-round records.
+- Evidence:
+  - Added `.agents/skills/loop-review-loop/references/reviewer-dispatch-record.md` plus `.agents/skills/loop-review-loop/scripts/review_record_dispatch.sh`, and updated `review_prepare_reviewers.sh` so every review round now emits a matching machine-readable dispatch ledger alongside the reviewer launch manifest.
+  - Tightened `.agents/skills/loop-review-loop/SKILL.md`, `.agents/skills/AGENT_LOOP_WORKFLOW.md`, `docs/standards/repository-standards.md`, `.agents/skills/loop-review-loop/references/reviewer-launch-manifest.md`, and `.agents/skills/loop-review-loop/references/reviewer-output-schema.md` so reviewer-subagent launch is the required first path and manual fallback is only valid after the same slot records `launch-failed`, `timeout`, or `invalid-artifact`.
+  - Updated `review_record_dispatch.sh` and `review_aggregate.sh` so reviewer slots reject or fail closed on missing subagent attempts, `runtime-blocked` fallback, terminal reviewer states that skip `launch-started`, and crafted dispatch histories that append later events after `runtime-blocked`, while preserving dispatch/fallback evidence in the contract summary.
+  - Extended `review_regression.sh` so regression now covers dispatch scaffolding, helper-level rejection of direct terminal states, valid recorded timeout fallback, invalid fallback without an eligible failed status, `runtime-blocked` rejection, the `missing-launch-start` failure mode, and the new `runtime-blocked` terminal invariant.
+  - Ran `bash -n .agents/skills/loop-review-loop/scripts/review_prepare_reviewers.sh .agents/skills/loop-review-loop/scripts/review_record_dispatch.sh .agents/skills/loop-review-loop/scripts/review_aggregate.sh .agents/skills/loop-review-loop/scripts/review_cleanup.sh .agents/skills/loop-review-loop/scripts/review_regression.sh`, `.agents/skills/loop-review-loop/scripts/review_regression.sh`, and `git diff --check`; all passed on 2026-03-15.
+
 ## Validation Plan
 
 - Checks to run:
@@ -112,45 +147,48 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
   - `git diff --check`
 - Evidence to capture:
   - One delta review after the layered contract and gate logic land
-  - One final full-pr review before final gate/publish work
+  - One delta review after reviewer-subagent enforcement lands
+  - One final full-pr review before final gate/publish work on the reopened branch head
   - Validation results showing accepted deferred risks and strategic observations do not block when current-slice blockers are absent
+  - Validation results showing fallback without a recorded reviewer-subagent failure fails closed
 
 ## Review Cadence
 
 - Delta review after Step 2 because the taxonomy affects cross-cutting review/gate semantics.
-- Full-pr review before final gate after all steps are complete.
+- Delta review after Step 4 because reviewer-subagent enforcement changes review-loop execution semantics.
+- Full-pr review before final gate after all steps are complete on the reopened branch head.
 
 ## Final Gate Conditions
 
 - Layered reviewer outputs, aggregate artifacts, and gate scripts agree on the same machine-readable taxonomy.
 - Accepted deferred risks remain visible with explicit issue links or defer reasons but do not block review/final gate by themselves.
 - Strategic observations remain visible but never count toward current-slice blocker totals.
-- Regression coverage passes for malformed layered artifacts, current-slice blocker failures, and non-blocking deferment/strategy-only cases.
+- Reviewer fallback is impossible unless the same reviewer slot has a recorded subagent launch failure or timeout that makes fallback eligible.
+- Regression coverage passes for malformed layered artifacts, current-slice blocker failures, non-blocking deferment/strategy-only cases, and invalid fallback-without-failure attempts.
 
 ## Validation Summary
 
-- Ran `rg -n "current_slice_findings|accepted_deferred_risks|strategic_observations|Accepted Deferred Risks" .agents/skills/loop-reviewer/SKILL.md .agents/skills/loop-review-loop/SKILL.md .agents/skills/loop-review-loop/references/reviewer-output-schema.md .agents/skills/loop-review-loop/scripts/review_prepare_reviewers.sh .agents/skills/AGENT_LOOP_WORKFLOW.md docs/standards/repository-standards.md docs/exec-plans/templates/execution-plan-template.md .agents/skills/loop-plan/SKILL.md docs/harness/active/README.md docs/exec-plans/active/README.md`; the layered contract wording and plan-section guidance were present across the intended workflow surfaces.
-- Ran `bash -n .agents/skills/loop-review-loop/scripts/review_prepare_reviewers.sh`, `bash -n .agents/skills/loop-review-loop/scripts/review_aggregate.sh`, `bash -n .agents/skills/loop-review-loop/scripts/review_gate.sh`, `bash -n .agents/skills/loop-review-loop/scripts/review_regression.sh`, `bash -n .agents/skills/loop-final-gate/scripts/final_gate.sh`, and `bash -n .agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh`; all changed shell entry points parsed cleanly.
-- Ran `.agents/skills/loop-review-loop/scripts/review_regression.sh`; it passed after adding layered schema coverage, malformed accepted-deferred-risk rejection, and the non-blocking deferment/strategy-only pass path.
-- Ran `.agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh`; it passed after switching the clean final-gate fixture to the layered review artifact shape.
-- Ran `git diff --check`; no whitespace or patch-format issues were reported.
-- Published PR `#40`: `https://github.com/yzhang1918/missless/pull/40`.
-- Exported `.local/loop/ci-status-pr40.json` with `export_ci_status.sh` after required `harness-checks` passed for PR `#40`.
-- Ran `.agents/skills/loop-final-gate/scripts/final_gate.sh .local/loop/review-20260314-152557.json .local/loop/ci-status-pr40.json docs/harness/completed/2026-03-14-review-outcome-taxonomy-and-deferred-risks.md main .local/loop/final-gate-pr40.json`; it passed and promoted the retained evidence bundle to `.local/final-evidence/2026-03-14-review-outcome-taxonomy-and-deferred-risks/`.
+- Reopened on 2026-03-15 to add reviewer-subagent enforcement and fallback-eligibility tightening to PR `#40`.
+- Earlier validation, review, publish, and final-gate records below remain useful baseline evidence for Steps 1-3 but are now stale with respect to the reopened branch head; rerun closeout evidence after Step 4 completes.
+- On 2026-03-15, `bash -n` passed for every changed `loop-review-loop` shell entry point involved in the reopened scope.
+- On 2026-03-15, `.agents/skills/loop-review-loop/scripts/review_regression.sh` passed after adding dispatch-ledger enforcement, runtime-blocked rejection, runtime-blocked terminal enforcement, and launch-start ordering validation.
+- On 2026-03-15, `git diff --check` passed after the reopened Step 4 edits.
+- On 2026-03-15, both `gh auth status` and `git fetch --prune origin` succeeded in this worktree, so stateful publish/final-gate refresh is no longer blocked by the earlier environment issues.
+- On 2026-03-15, the latest clean full-pr review for the reopened branch head finalized with no current-slice blockers.
 
 ## Review Summary
 
-- Delta review round `20260314-152556` passed with current-slice `BLOCKER=0` and `IMPORTANT=0`.
-- Full-pr review round `20260314-152557` passed with current-slice `BLOCKER=0` and `IMPORTANT=0`.
-- Manual fallback reviewer artifacts were used for both clean rounds because reviewer subagents were not launched in this session; each designated reviewer output records its `producer.reason`.
-- The clean review rounds did not surface blocking findings after the layered schema, gate logic, and regression coverage landed together.
+- Earlier 2026-03-14 review rounds remain part of the branch history for Steps 1-3.
+- Reopened scope requires new review evidence after Step 4 lands because the previous clean rounds relied on manual fallback reviewer artifacts, which this reopened work is intended to tighten.
+- During 2026-03-15 delta review iteration, a `correctness` reviewer subagent identified one additional current-slice gap: terminal dispatch statuses could bypass `launch-started`; that finding was fixed in the reopened Step 4 implementation and covered by regression.
+- The latest clean full-pr review for the reopened branch head finalized with no current-slice blockers.
+- In that final full-pr round, both reviewer slots completed via real reviewer subagents and recorded `artifact-written`.
+- In that same full-pr round, the `docs/spec consistency` slot preserved one interrupted attempt in the dispatch ledger before a successful retried reviewer-subagent run; no manual fallback artifact was needed in the clean round.
 
 ## Final Gate Summary
 
-- Published branch `codex/issue-20-22-review-taxonomy` to PR `#40`: `https://github.com/yzhang1918/missless/pull/40`.
-- Exported CI status from PR `#40` with required `harness-checks` green and `docs_updated=true`.
-- Final gate passed with `review_ok=true`, `ci_ok=true`, `branch_ok=true`, and `docs_ok=true`.
-- Retained final-evidence bundle: `.local/final-evidence/2026-03-14-review-outcome-taxonomy-and-deferred-risks/`.
+- Earlier final-gate records from 2026-03-14 are now stale for the reopened branch head and must be refreshed after Step 4 completes.
+- Final gate has not been refreshed yet for the reopened branch head because the latest Step 4 changes still need to be committed and pushed to PR `#40` before GitHub-backed CI evidence can be exported against the published head.
 
 ## Risks and Mitigations
 
@@ -158,6 +196,10 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - Mitigation: Make the schema and prompt language explicit about the intent of each layer and keep gate consumption limited to current-slice findings.
 - Risk: Gate scripts and regression fixtures drift from the documented layered schema.
 - Mitigation: Update docs, scripts, and regression coverage in the same branch and validate all touched shell entry points.
+- Risk: Reviewer-subagent enforcement becomes unenforceable because the runtime-owned launch step leaves no repo-observable trace.
+- Mitigation: Add a small machine-readable reviewer-dispatch record to the review round and validate fallback eligibility against it.
+- Risk: Runtime-level inability to launch reviewer subagents becomes silently treated as ordinary fallback.
+- Mitigation: Make runtime launch blockers fail closed in the review loop contract rather than qualifying for manual fallback.
 
 ## Completion Summary
 
@@ -166,13 +208,15 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - Review aggregation and both gate scripts now preserve those layers while counting only current-slice blocker/important findings toward review/final-gate failure.
 - Workflow standards and plan guidance now define a stable `## Accepted Deferred Risks` section for intentional deferment records.
 - Regression coverage now proves malformed layered artifacts fail closed and accepted deferred risks or strategic observations do not block by themselves.
-- Published PR `#40` and recorded a passing final gate plus retained local final-evidence bundle for the current head.
+- Earlier publish/final-gate records for PR `#40` are preserved as baseline history but are stale after the 2026-03-15 reopen.
+- Reviewer-subagent-first execution is now repo-observable through per-round dispatch ledgers, explicit fallback-eligibility rules, and aggregate enforcement for missing subagent attempts or missing `launch-started` events.
+- Reviewer dispatch now also treats `runtime-blocked` as a terminal per-slot state, with helper-level rejection plus aggregate fail-closed enforcement if later events are appended.
+- A fresh clean full-pr review artifact now exists for the reopened branch head and shows no current-slice blockers.
 - Not delivered:
-- Merge/landing and issue auto-close remain pending until PR `#40` lands.
+- Publish/push, refreshed final-gate evidence, and issue/PR sync for the reopened branch head are still pending until the latest Step 4 commit is pushed to PR `#40`.
+- Merge/landing and issue auto-close remain pending until PR `#40` lands after the reopened scope is complete.
 - Linked issue updates:
-- Published as PR `#40` (`https://github.com/yzhang1918/missless/pull/40`); the current published head SHA is `53f0f32c320cce4b3444c467d6ccf68814d37563`.
-- Issue `#20` was updated with the archived plan path, PR link, review status, and final-gate result via comment `https://github.com/yzhang1918/missless/issues/20#issuecomment-4060720960`.
-- Issue `#22` was updated with the archived plan path, PR link, review status, and final-gate result via comment `https://github.com/yzhang1918/missless/issues/22#issuecomment-4060720961`.
-- The PR body uses merge-time closing keywords for `#20` and `#22`, so both issues should remain open until the PR lands.
+- PR `#40` remains the active publication path for this reopened work: `https://github.com/yzhang1918/missless/pull/40`.
+- Refresh issue and PR closeout records after final-gate evidence is captured for the latest published head on PR `#40`.
 - Spawned follow-up issues:
 - None.

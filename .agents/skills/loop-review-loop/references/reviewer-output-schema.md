@@ -66,6 +66,9 @@ Each subagent reviewer writes one JSON file to `.local/loop/review-<round-id>-<d
 - When a manual fallback artifact is used to recover from missing reviewer output,
   keep the designated `output_path`, set `producer.type` to
   `manual-fallback`, and record a non-empty `producer.reason`.
+- A `manual-fallback` artifact is valid only after the matching reviewer slot
+  recorded a fallback-eligible dispatch status in
+  `references/reviewer-dispatch-record.md`.
 - During the transition to the layered contract, `review_aggregate.sh` still
   accepts legacy reviewer artifacts that use `findings[]` only and interprets
   them as `current_slice_findings[]`. New reviewer outputs should use the

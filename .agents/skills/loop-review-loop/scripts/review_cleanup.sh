@@ -173,7 +173,7 @@ while IFS= read -r -d '' path; do
   fi
 
   # Cleanup launch manifests plus ad-hoc smoke/probe and ci/final-gate scratch artifacts
-  if [[ "$base" =~ ^(ci-.*\.json|final-gate-.*\.json|review-launch-.*\.json|review-smoke.*\.json|review-secprobe.*\.json|review-reg-case\.json|review-testround\.json|review-[0-9]{8}\.json)$ ]]; then
+  if [[ "$base" =~ ^(ci-.*\.json|final-gate-.*\.json|review-launch-.*\.json|review-dispatch-.*\.json|review-smoke.*\.json|review-secprobe.*\.json|review-reg-case\.json|review-testround\.json|review-[0-9]{8}\.json)$ ]]; then
     if ! is_safe_target "$path"; then
       echo "Refusing unsafe cleanup target: $path" >&2
       exit 1
