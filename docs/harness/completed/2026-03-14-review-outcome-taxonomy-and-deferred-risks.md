@@ -134,6 +134,9 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - Ran `.agents/skills/loop-review-loop/scripts/review_regression.sh`; it passed after adding layered schema coverage, malformed accepted-deferred-risk rejection, and the non-blocking deferment/strategy-only pass path.
 - Ran `.agents/skills/loop-final-gate/scripts/stateful_gate_regression.sh`; it passed after switching the clean final-gate fixture to the layered review artifact shape.
 - Ran `git diff --check`; no whitespace or patch-format issues were reported.
+- Published PR `#40`: `https://github.com/yzhang1918/missless/pull/40`.
+- Exported `.local/loop/ci-status-pr40.json` with `export_ci_status.sh` after required `harness-checks` passed for PR `#40`.
+- Ran `.agents/skills/loop-final-gate/scripts/final_gate.sh .local/loop/review-20260314-152557.json .local/loop/ci-status-pr40.json docs/harness/completed/2026-03-14-review-outcome-taxonomy-and-deferred-risks.md main .local/loop/final-gate-pr40.json`; it passed and promoted the retained evidence bundle to `.local/final-evidence/2026-03-14-review-outcome-taxonomy-and-deferred-risks/`.
 
 ## Review Summary
 
@@ -141,6 +144,13 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - Full-pr review round `20260314-152557` passed with current-slice `BLOCKER=0` and `IMPORTANT=0`.
 - Manual fallback reviewer artifacts were used for both clean rounds because reviewer subagents were not launched in this session; each designated reviewer output records its `producer.reason`.
 - The clean review rounds did not surface blocking findings after the layered schema, gate logic, and regression coverage landed together.
+
+## Final Gate Summary
+
+- Published branch `codex/issue-20-22-review-taxonomy` to PR `#40`: `https://github.com/yzhang1918/missless/pull/40`.
+- Exported CI status from PR `#40` with required `harness-checks` green and `docs_updated=true`.
+- Final gate passed with `review_ok=true`, `ci_ok=true`, `branch_ok=true`, and `docs_ok=true`.
+- Retained final-evidence bundle: `.local/final-evidence/2026-03-14-review-outcome-taxonomy-and-deferred-risks/`.
 
 ## Risks and Mitigations
 
@@ -156,9 +166,13 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - Review aggregation and both gate scripts now preserve those layers while counting only current-slice blocker/important findings toward review/final-gate failure.
 - Workflow standards and plan guidance now define a stable `## Accepted Deferred Risks` section for intentional deferment records.
 - Regression coverage now proves malformed layered artifacts fail closed and accepted deferred risks or strategic observations do not block by themselves.
+- Published PR `#40` and recorded a passing final gate plus retained local final-evidence bundle for the current head.
 - Not delivered:
-- Publish, PR creation, final gate against a published PR, and merge/issue auto-close remain pending until the archived plan is published.
+- Merge/landing and issue auto-close remain pending until PR `#40` lands.
 - Linked issue updates:
-- Pending until publish/PR sync completes.
+- Published as PR `#40` (`https://github.com/yzhang1918/missless/pull/40`); the current published head SHA is `53f0f32c320cce4b3444c467d6ccf68814d37563`.
+- Issue `#20` was updated with the archived plan path, PR link, review status, and final-gate result via comment `https://github.com/yzhang1918/missless/issues/20#issuecomment-4060720960`.
+- Issue `#22` was updated with the archived plan path, PR link, review status, and final-gate result via comment `https://github.com/yzhang1918/missless/issues/22#issuecomment-4060720961`.
+- The PR body uses merge-time closing keywords for `#20` and `#22`, so both issues should remain open until the PR lands.
 - Spawned follow-up issues:
 - None.
