@@ -58,7 +58,10 @@ For non-trivial work:
 - run full review before final merge
 - PRs must identify linked issue(s), or explicitly say `direct request (no issue)` when no intake issue exists. Use closing keywords only for issues that should close on merge.
 - Do not close implementation issues as resolved before the merge result is known; after merge, verify auto-close happened or close them manually with the merge reference.
+- review artifacts must separate `current_slice_findings`, `accepted_deferred_risks`, and `strategic_observations`
 - resolve blocking/important findings before final gate
+- only current-slice `BLOCKER` or `IMPORTANT` findings may block review/final gate; accepted deferred risks and strategic observations stay visible but non-blocking
+- accepted deferred risks should link the accepted follow-up issue when available, or record an explicit defer reason when no issue exists yet
 - convert unresolved follow-ups or debt into GitHub issues before closing the current plan
 - keep completed-plan docs linked to any spawned or source issues
 - keep tracked plan/PR evidence summary-first rather than treating local JSON paths as durable evidence
@@ -67,6 +70,7 @@ For non-trivial work:
 ## Stateful Gate Standards
 
 - Before stateful review, publish, final-gate, or land decisions, synchronize remote repository state first (`git fetch --prune origin` or stricter equivalent).
+- Plans that intentionally carry known out-of-slice concerns should include a `## Accepted Deferred Risks` section with issue links or defer reasons so later review loops can distinguish accepted deferment from unresolved current-slice work.
 - Repositories that use publish/final-gate must provide one explicit repository-readiness preflight entry point and reuse that same readiness contract inside both surfaces.
 - Before publish/final-gate/land, the working tree must be clean so the evidence and decision point match the published `HEAD`.
 - `loop-publish`, `loop-final-gate`, and `loop-land` must fail closed when they are given stale repository state, stale gate artifacts, or an incomplete plan record.

@@ -59,6 +59,8 @@ build_prompt() {
   printf 'Inspect repository context with local git commands (`git diff`, `git show`, `git log`).\n'
   printf 'Write one schema-valid JSON artifact to `%s` using `%s`.\n' "$output_path" "$schema_path"
   printf 'Only write that JSON artifact; do not modify tracked files, move HEAD, or write review artifacts anywhere else.\n'
+  printf 'Classify output strictly into `current_slice_findings`, `accepted_deferred_risks`, and `strategic_observations`.\n'
+  printf 'Only put must-fix issues for this slice into `current_slice_findings`; keep accepted out-of-slice concerns in `accepted_deferred_risks` with `tracking_issue` or `accepted_reason`, and keep longer-horizon advice in `strategic_observations`.\n'
   printf 'Focus on risks relevant to `%s`.\n' "$dimension"
   if [[ -n "$focus" ]]; then
     printf 'Additional focus: %s.\n' "$focus"

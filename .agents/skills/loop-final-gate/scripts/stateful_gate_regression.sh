@@ -829,7 +829,23 @@ assert_exists "$pending_ci_path"
 cat > "$work_dir/.local/loop/review-clean.json" <<'JSON'
 {
   "status": "complete",
-  "findings": [],
+  "current_slice_findings": [],
+  "accepted_deferred_risks": [
+    {
+      "id": "D1",
+      "severity": "IMPORTANT",
+      "title": "Known deferred follow-up",
+      "area": "README.md",
+      "tracking_issue": "#20"
+    }
+  ],
+  "strategic_observations": [
+    {
+      "id": "SO1",
+      "title": "Future review cleanup",
+      "recommendation": "Keep taxonomy examples aligned across docs"
+    }
+  ],
   "counts": {"blocker": 0, "important": 0, "minor": 0, "nit": 0}
 }
 JSON
