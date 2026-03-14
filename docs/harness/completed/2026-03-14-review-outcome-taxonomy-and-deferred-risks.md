@@ -175,6 +175,7 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - On 2026-03-15, `git diff --check` passed after the reopened Step 4 edits.
 - On 2026-03-15, both `gh auth status` and `git fetch --prune origin` succeeded in this worktree, so stateful publish/final-gate refresh is no longer blocked by the earlier environment issues.
 - On 2026-03-15, the latest clean full-pr review for the reopened branch head finalized with no current-slice blockers.
+- On 2026-03-15, GitHub-backed CI export plus final gate both passed for the latest published head, and `final_gate.sh` retained the refreshed evidence bundle at `.local/final-evidence/2026-03-14-review-outcome-taxonomy-and-deferred-risks/`.
 
 ## Review Summary
 
@@ -188,7 +189,9 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 ## Final Gate Summary
 
 - Earlier final-gate records from 2026-03-14 are now stale for the reopened branch head and must be refreshed after Step 4 completes.
-- Final gate has not been refreshed yet for the reopened branch head because the latest Step 4 changes still need to be committed and pushed to PR `#40` before GitHub-backed CI evidence can be exported against the published head.
+- On 2026-03-15, `export_ci_status.sh main --docs-updated true --pr 40 --output .local/loop/ci-status-20260315-005921.json` exported a GitHub-backed CI artifact for the latest published PR head.
+- On 2026-03-15, `final_gate.sh` passed against `.local/loop/review-20260315-005808.json`, the exported CI artifact, and this archived plan.
+- The retained local evidence bundle for the latest passing state is `.local/final-evidence/2026-03-14-review-outcome-taxonomy-and-deferred-risks/`.
 
 ## Risks and Mitigations
 
@@ -212,11 +215,11 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - Reviewer-subagent-first execution is now repo-observable through per-round dispatch ledgers, explicit fallback-eligibility rules, and aggregate enforcement for missing subagent attempts or missing `launch-started` events.
 - Reviewer dispatch now also treats `runtime-blocked` as a terminal per-slot state, with helper-level rejection plus aggregate fail-closed enforcement if later events are appended.
 - A fresh clean full-pr review artifact now exists for the reopened branch head and shows no current-slice blockers.
+- GitHub-backed CI export and final gate both passed for the latest published PR head, and the refreshed evidence bundle has been retained locally under `.local/final-evidence/2026-03-14-review-outcome-taxonomy-and-deferred-risks/`.
 - Not delivered:
-- Publish/push, refreshed final-gate evidence, and issue/PR sync for the reopened branch head are still pending until the latest Step 4 commit is pushed to PR `#40`.
 - Merge/landing and issue auto-close remain pending until PR `#40` lands after the reopened scope is complete.
 - Linked issue updates:
 - PR `#40` remains the active publication path for this reopened work: `https://github.com/yzhang1918/missless/pull/40`.
-- Refresh issue and PR closeout records after final-gate evidence is captured for the latest published head on PR `#40`.
+- Issue `#20`, issue `#22`, and PR `#40` now all reflect the reopened Step 4 closeout status and latest final-gate result.
 - Spawned follow-up issues:
 - None.
