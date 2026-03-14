@@ -127,7 +127,7 @@ if (reviewMatch !== null) {
     );
   }
 
-  for (const command of ["validate-draft", "anchor-evidence", "render-review"]) {
+  for (const command of ["validate", "anchor", "review"]) {
     const result = spawnSync(
       process.execPath,
       [path.join(cwd, "apps/cli/dist/index.js"), command, "--run-dir", runDir],

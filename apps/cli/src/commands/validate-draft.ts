@@ -14,7 +14,6 @@ export async function runValidateDraftCommand(
   args: readonly string[]
 ): Promise<number> {
   let runDir: string | undefined;
-  let jsonMode = false;
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -26,24 +25,38 @@ export async function runValidateDraftCommand(
     }
 
     if (arg === "--json") {
-      jsonMode = true;
       continue;
     }
 
-    throw new Error(`Unknown option for validate-draft: ${arg}`);
+    throw new Error(`Unknown option for validate: ${arg}`);
   }
 
   if (runDir === undefined) {
-    throw new Error("validate-draft requires --run-dir <dir>");
+    throw new Error("validate requires --run-dir <dir>");
   }
 
   const result = await validateDraftInRunDir(runDir);
-
-  if (jsonMode) {
-    console.log(JSON.stringify(result, null, 2));
-  } else {
-    console.log(result.summary);
-  }
+  console.log(
+    JSON.stringify(
+      {
+        ok: result.ok,
+        command: "validate",
+        summary: result.summary,
+        run_dir: result.runDir,
+        artifacts: {
+          run: result.artifacts.runManifest,
+          source: result.artifacts.source,
+          canonical_text: result.artifacts.canonicalText,
+          extraction_draft: result.artifacts.extractionDraft
+        },
+        diagnostics: result.diagnostics,
+        decision: result.decision,
+        atom_count: result.atomCount
+      },
+      null,
+      2
+    )
+  );
 
   return result.ok ? 0 : 1;
 }

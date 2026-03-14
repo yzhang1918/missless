@@ -233,7 +233,7 @@ export async function anchorEvidenceInRunDir(
     const failedResult: EvidenceAnchoringResult = {
       ok: false,
       summary:
-        "Cannot anchor evidence because validate-draft did not pass. Re-run with --json for details.",
+        "Cannot anchor evidence because validate did not pass. Inspect diagnostics for details.",
       run_dir: resolvedRunDir,
       atoms: [],
       diagnostics: draftValidation.diagnostics

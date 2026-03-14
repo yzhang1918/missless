@@ -18,6 +18,21 @@ const fixtureCanonicalPath = new URL(
   "../../fixtures/jina/harness-engineering.md",
   import.meta.url
 );
+const fixtureSourceArtifact =
+  [
+    "{",
+    '  "requested": {',
+    '    "url": "https://example.com/agent-harness",',
+    '    "fetch_method": "auto"',
+    "  },",
+    '  "decision_basis": {',
+    '    "url": "https://example.com/agent-harness",',
+    '    "fetch_method": "jina_reader",',
+    '    "snapshot_sha256": "fixture-sha"',
+    "  },",
+    '  "fetched_at": "2026-03-09T00:00:00.000Z"',
+    "}"
+  ].join("\n") + "\n";
 
 async function loadFixtureDraft(): Promise<ExtractionDraft> {
   return JSON.parse(
@@ -41,7 +56,7 @@ async function createFixtureRun(
   );
   await writeFile(
     paths.source,
-    '{\n  "source_url": "https://example.com/agent-harness"\n}\n',
+    fixtureSourceArtifact,
     "utf8"
   );
   await writeFile(paths.canonicalText, await readFile(fixtureCanonicalPath, "utf8"), "utf8");

@@ -29,28 +29,71 @@ export async function runRenderReviewCommand(
       continue;
     }
 
-    throw new Error(`Unknown option for render-review: ${arg}`);
+    throw new Error(`Unknown option for review: ${arg}`);
   }
 
   if (runDir === undefined) {
-    throw new Error("render-review requires --run-dir <dir>");
+    throw new Error("review requires --run-dir <dir>");
   }
 
   const resolvedRunDir = resolve(runDir);
   const artifactPaths = getRunArtifactPaths(resolvedRunDir);
-  const reviewBundle = await buildReviewBundleInRunDir(resolvedRunDir);
-  const html = renderReviewHtml(reviewBundle);
-  const reviewHtmlTemp = `${artifactPaths.reviewHtml}.tmp`;
-
   try {
+    const reviewBundle = await buildReviewBundleInRunDir(resolvedRunDir);
+    const html = renderReviewHtml(reviewBundle);
+    const reviewHtmlTemp = `${artifactPaths.reviewHtml}.tmp`;
+
     await writeFile(reviewHtmlTemp, html, "utf8");
     await rename(reviewHtmlTemp, artifactPaths.reviewHtml);
+    console.log(
+      JSON.stringify(
+        {
+          ok: true,
+          command: "review",
+          summary: `Review package written to ${artifactPaths.reviewHtml}.`,
+          run_dir: resolvedRunDir,
+          artifacts: {
+            run: artifactPaths.runManifest,
+            source: artifactPaths.source,
+            canonical_text: artifactPaths.canonicalText,
+            extraction_draft: artifactPaths.extractionDraft,
+            evidence_result: artifactPaths.evidenceResult,
+            review_bundle: artifactPaths.reviewBundle,
+            review_html: artifactPaths.reviewHtml
+          },
+          review_bundle: artifactPaths.reviewBundle,
+          review_html: artifactPaths.reviewHtml,
+          ready_for: ["inspect_review_html", "report_result"]
+        },
+        null,
+        2
+      )
+    );
+    return 0;
   } catch (error) {
-    await rm(reviewHtmlTemp, { force: true });
-    throw error;
+    await rm(`${artifactPaths.reviewHtml}.tmp`, { force: true });
+    console.log(
+      JSON.stringify(
+        {
+          ok: false,
+          command: "review",
+          summary: error instanceof Error ? error.message : String(error),
+          run_dir: resolvedRunDir,
+          artifacts: {
+            run: artifactPaths.runManifest,
+            source: artifactPaths.source,
+            canonical_text: artifactPaths.canonicalText,
+            extraction_draft: artifactPaths.extractionDraft,
+            evidence_result: artifactPaths.evidenceResult,
+            review_bundle: artifactPaths.reviewBundle,
+            review_html: artifactPaths.reviewHtml
+          },
+          ready_for: []
+        },
+        null,
+        2
+      )
+    );
+    return 1;
   }
-
-  console.log(`Review package written: ${artifactPaths.reviewHtml}`);
-
-  return 0;
 }

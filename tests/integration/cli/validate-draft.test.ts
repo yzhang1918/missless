@@ -10,7 +10,7 @@ const cliEntrypoint = new URL("../../../apps/cli/dist/index.js", import.meta.url
 const fixtureDraftPath = new URL("../../fixtures/drafts/valid-extraction-draft.json", import.meta.url);
 const fixtureCanonicalPath = new URL("../../fixtures/jina/harness-engineering.md", import.meta.url);
 
-test("validate-draft emits summary output by default and JSON diagnostics on failure", async () => {
+test("validate emits a JSON result by default for both success and failure", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-cli-validate-"));
   const runDir = join(runsRoot, "run-validate");
   const validDraft = JSON.parse(
@@ -30,7 +30,20 @@ test("validate-draft emits summary output by default and JSON diagnostics on fai
   );
   await writeFile(
     join(runDir, "source.json"),
-    "{\n  \"source_url\": \"https://example.com/agent-harness\"\n}\n",
+    [
+      "{",
+      '  "requested": {',
+      '    "url": "https://example.com/agent-harness",',
+      '    "fetch_method": "auto"',
+      "  },",
+      '  "decision_basis": {',
+      '    "url": "https://example.com/agent-harness",',
+      '    "fetch_method": "jina_reader",',
+      '    "snapshot_sha256": "fixture-sha"',
+      "  },",
+      '  "fetched_at": "2026-03-09T00:00:00.000Z"',
+      "}"
+    ].join("\n") + "\n",
     "utf8"
   );
   await writeFile(
@@ -41,7 +54,7 @@ test("validate-draft emits summary output by default and JSON diagnostics on fai
 
   const success = spawnSync(
     process.execPath,
-    [cliEntrypoint.pathname, "validate-draft", "--run-dir", runDir],
+    [cliEntrypoint.pathname, "validate", "--run-dir", runDir],
     {
       cwd: repoRoot,
       encoding: "utf8",
@@ -50,7 +63,23 @@ test("validate-draft emits summary output by default and JSON diagnostics on fai
   );
 
   assert.equal(success.status, 0, success.stderr);
-  assert.match(success.stdout, /Draft is valid/);
+  const successPayload = JSON.parse(success.stdout) as {
+    ok: boolean;
+    command: string;
+    summary: string;
+    run_dir: string;
+    decision?: string;
+    atom_count?: number;
+  };
+  assert.equal(successPayload.ok, true);
+  assert.equal(successPayload.command, "validate");
+  assert.match(successPayload.summary, /Draft is valid/);
+  assert.equal(successPayload.run_dir, runDir);
+  assert.equal(successPayload.decision, "deep_read");
+  assert.equal(
+    successPayload.atom_count,
+    (validDraft.atom_candidates as unknown[]).length
+  );
 
   const duplicateDraft = structuredClone(validDraft);
   const atomCandidates = duplicateDraft.atom_candidates as Array<Record<string, unknown>>;
@@ -67,7 +96,7 @@ test("validate-draft emits summary output by default and JSON diagnostics on fai
 
   const failure = spawnSync(
     process.execPath,
-    [cliEntrypoint.pathname, "validate-draft", "--run-dir", runDir, "--json"],
+    [cliEntrypoint.pathname, "validate", "--run-dir", runDir],
     {
       cwd: repoRoot,
       encoding: "utf8",
@@ -79,9 +108,13 @@ test("validate-draft emits summary output by default and JSON diagnostics on fai
 
   const diagnostics = JSON.parse(failure.stdout) as {
     ok: boolean;
+    command: string;
+    summary: string;
     diagnostics: Array<{ code: string }>;
   };
 
   assert.equal(diagnostics.ok, false);
+  assert.equal(diagnostics.command, "validate");
+  assert.match(diagnostics.summary, /Draft validation failed/);
   assert.equal(diagnostics.diagnostics[0]?.code, "duplicate_atom_claim");
 });

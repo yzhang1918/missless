@@ -135,7 +135,7 @@ function assertMisslessContract(binPath: string): void {
   assert.deepEqual(payload.decision_labels, ["deep_read", "skim", "skip"]);
 }
 
-function runMisslessFetchNormalize(
+function runMisslessFetch(
   binPath: string,
   sourceUrl: string,
   runsDir: string,
@@ -149,7 +149,7 @@ function runMisslessFetchNormalize(
     const child = spawn(
       binPath,
       [
-        "fetch-normalize",
+        "fetch",
         sourceUrl,
         "--runs-dir",
         runsDir
@@ -181,7 +181,16 @@ function runMisslessFetchNormalize(
 
 async function readSingleRunArtifacts(runsDir: string): Promise<{
   runDir: string;
-  source: Record<string, string>;
+  source: {
+    requested: {
+      url: string;
+      fetch_method: string;
+    };
+    decision_basis: {
+      url: string;
+      fetch_method: string;
+    };
+  };
   canonicalText: string;
 }> {
   const entries = (await readdir(runsDir, { withFileTypes: true })).filter((entry) =>
@@ -193,7 +202,16 @@ async function readSingleRunArtifacts(runsDir: string): Promise<{
   const runDir = join(runsDir, entries[0]!.name);
   const source = JSON.parse(
     await readFile(join(runDir, "source.json"), "utf8")
-  ) as Record<string, string>;
+  ) as {
+    requested: {
+      url: string;
+      fetch_method: string;
+    };
+    decision_basis: {
+      url: string;
+      fetch_method: string;
+    };
+  };
   const canonicalText = await readFile(join(runDir, "canonical_text.md"), "utf8");
 
   return {
@@ -237,18 +255,23 @@ test("packed apps/cli tarball installs offline for local and prefix-global flows
     assertMisslessHelp(localBin);
     assertMisslessContract(localBin);
 
-    const localCommand = await runMisslessFetchNormalize(
+    const localCommand = await runMisslessFetch(
       localBin,
       happyPathSourceUrl,
       localRunsDir,
       createPackagedFetchEnv(happyPathSourceUrl, "happy-path", address.port)
     );
     assert.equal(localCommand.status, 0, localCommand.stderr);
-    assert.match(localCommand.stdout, /Created run directory:/);
+    const localPayload = JSON.parse(localCommand.stdout) as {
+      ok: boolean;
+      command: string;
+    };
+    assert.equal(localPayload.ok, true);
+    assert.equal(localPayload.command, "fetch");
 
     const localArtifacts = await readSingleRunArtifacts(localRunsDir);
-    assert.equal(localArtifacts.source.source_url, happyPathSourceUrl);
-    assert.equal(localArtifacts.source.provider, "jina_reader");
+    assert.equal(localArtifacts.source.requested.url, happyPathSourceUrl);
+    assert.equal(localArtifacts.source.decision_basis.fetch_method, "jina_reader");
     assert.equal(localArtifacts.canonicalText, fixtureBody.trimEnd() + "\n");
 
     installTarball(tarballPath, globalPrefix, globalCacheDir, true);
@@ -256,18 +279,23 @@ test("packed apps/cli tarball installs offline for local and prefix-global flows
     assertMisslessHelp(globalBin);
     assertMisslessContract(globalBin);
 
-    const globalCommand = await runMisslessFetchNormalize(
+    const globalCommand = await runMisslessFetch(
       globalBin,
       happyPathSourceUrl,
       globalRunsDir,
       createPackagedFetchEnv(happyPathSourceUrl, "happy-path", address.port)
     );
     assert.equal(globalCommand.status, 0, globalCommand.stderr);
-    assert.match(globalCommand.stdout, /Created run directory:/);
+    const globalPayload = JSON.parse(globalCommand.stdout) as {
+      ok: boolean;
+      command: string;
+    };
+    assert.equal(globalPayload.ok, true);
+    assert.equal(globalPayload.command, "fetch");
 
     const globalArtifacts = await readSingleRunArtifacts(globalRunsDir);
-    assert.equal(globalArtifacts.source.source_url, happyPathSourceUrl);
-    assert.equal(globalArtifacts.source.provider, "jina_reader");
+    assert.equal(globalArtifacts.source.requested.url, happyPathSourceUrl);
+    assert.equal(globalArtifacts.source.decision_basis.fetch_method, "jina_reader");
     assert.equal(globalArtifacts.canonicalText, fixtureBody.trimEnd() + "\n");
   } finally {
     server.closeAllConnections();
@@ -304,24 +332,29 @@ test("installed missless bin covers fallback success and redirect-preflight fail
     installTarball(tarballPath, localPrefix, localCacheDir);
     const localBin = join(localPrefix, "node_modules/.bin/missless");
 
-    const fallbackCommand = await runMisslessFetchNormalize(
+    const fallbackCommand = await runMisslessFetch(
       localBin,
       fallbackSourceUrl,
       fallbackRunsDir,
       createPackagedFetchEnv(fallbackSourceUrl, "fallback-direct-origin", address.port)
     );
     assert.equal(fallbackCommand.status, 0, fallbackCommand.stderr);
-    assert.match(fallbackCommand.stdout, /Created run directory:/);
+    const fallbackPayload = JSON.parse(fallbackCommand.stdout) as {
+      ok: boolean;
+      command: string;
+    };
+    assert.equal(fallbackPayload.ok, true);
+    assert.equal(fallbackPayload.command, "fetch");
 
     const fallbackArtifacts = await readSingleRunArtifacts(fallbackRunsDir);
-    assert.equal(fallbackArtifacts.source.source_url, fallbackSourceUrl);
-    assert.equal(fallbackArtifacts.source.provider, "direct_origin");
-    assert.equal(fallbackArtifacts.source.resolved_source_url, fallbackSourceUrl);
-    assert.equal(fallbackArtifacts.source.provider_url, fallbackSourceUrl);
+    assert.equal(fallbackArtifacts.source.requested.url, fallbackSourceUrl);
+    assert.equal(fallbackArtifacts.source.requested.fetch_method, "auto");
+    assert.equal(fallbackArtifacts.source.decision_basis.fetch_method, "direct_origin");
+    assert.equal(fallbackArtifacts.source.decision_basis.url, fallbackSourceUrl);
     assert.match(fallbackArtifacts.canonicalText, /Fallback Article/);
     assert.match(fallbackArtifacts.canonicalText, /Recovered from origin/);
 
-    const blockedCommand = await runMisslessFetchNormalize(
+    const blockedCommand = await runMisslessFetch(
       localBin,
       blockedRedirectSourceUrl,
       blockedRunsDir,
@@ -332,10 +365,13 @@ test("installed missless bin covers fallback success and redirect-preflight fail
       )
     );
     assert.notEqual(blockedCommand.status, 0);
-    assert.match(
-      blockedCommand.stderr,
-      /redirect hops and final destinations/
-    );
+    assert.equal(blockedCommand.stderr, "");
+    const blockedPayload = JSON.parse(blockedCommand.stdout) as {
+      ok: boolean;
+      summary: string;
+    };
+    assert.equal(blockedPayload.ok, false);
+    assert.match(blockedPayload.summary, /redirect hops and final destinations/);
 
     const blockedEntries = (await readdir(blockedRunsDir, {
       withFileTypes: true

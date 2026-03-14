@@ -31,11 +31,11 @@ that `run_dir` and skip directly to reading `canonical_text.md`.
 Otherwise, fetch and normalize the URL into a run directory.
 
 ```bash
-missless fetch-normalize <url> --runs-dir .local/runs
+missless fetch <url> --runs-dir .local/runs
 ```
 
-Capture the `Created run directory:` path from stdout and treat it as the
-single handle for the rest of the workflow.
+Read the JSON stdout payload, capture `run_dir`, and treat it as the single
+handle for the rest of the workflow.
 
 3. Read `<run_dir>/canonical_text.md`.
 
@@ -49,25 +49,25 @@ The agent owns exactly one authored artifact in this slice:
 6. Validate the draft.
 
 ```bash
-missless validate-draft --run-dir <run_dir>
+missless validate --run-dir <run_dir>
 ```
 
-If validation fails, rerun with `--json`, repair `extraction_draft.json`, and
-validate again.
+If validation fails, inspect `diagnostics` in the JSON result, repair
+`extraction_draft.json`, and validate again.
 
 7. Anchor evidence.
 
 ```bash
-missless anchor-evidence --run-dir <run_dir>
+missless anchor --run-dir <run_dir>
 ```
 
-If anchoring fails, rerun with `--json`, repair `extraction_draft.json`, then
-rerun `validate-draft` and `anchor-evidence`.
+If anchoring fails, inspect `diagnostics` in the JSON result, repair
+`extraction_draft.json`, then rerun `validate` and `anchor`.
 
 8. Render the review package.
 
 ```bash
-missless render-review --run-dir <run_dir>
+missless review --run-dir <run_dir>
 ```
 
 9. Report the result in chat with:
@@ -83,7 +83,7 @@ missless render-review --run-dir <run_dir>
 - This first slice is knowledge-base-agnostic. Do not inject personal
   knowledge-base comparisons into the decision.
 - Stop at the review package. Do not persist atoms or invent commit behavior.
-- Before the first `validate-draft` attempt, limit context gathering to:
+- Before the first `validate` attempt, limit context gathering to:
   - this skill
   - `references/review-guidance.md`
   - `missless --help`

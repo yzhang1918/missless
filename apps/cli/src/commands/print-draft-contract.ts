@@ -21,12 +21,13 @@ const DRAFT_CONTRACT = {
     RUN_ARTIFACT_FILES.reviewBundle,
     RUN_ARTIFACT_FILES.reviewHtml
   ],
+  workflow_commands: ["fetch", "validate", "anchor", "review"],
   repair_loop: [
     "Write extraction_draft.json",
-    "Run validate-draft --run-dir <dir> [--json]",
+    "Run validate --run-dir <dir>",
     "Repair extraction_draft.json when diagnostics fail",
-    "Run anchor-evidence --run-dir <dir> [--json]",
-    "Run render-review --run-dir <dir>"
+    "Run anchor --run-dir <dir>",
+    "Run review --run-dir <dir>"
   ]
 } as const;
 
