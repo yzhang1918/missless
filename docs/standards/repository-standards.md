@@ -59,6 +59,9 @@ For non-trivial work:
 - PRs must identify linked issue(s), or explicitly say `direct request (no issue)` when no intake issue exists. Use closing keywords only for issues that should close on merge.
 - Do not close implementation issues as resolved before the merge result is known; after merge, verify auto-close happened or close them manually with the merge reference.
 - review artifacts must separate `current_slice_findings`, `accepted_deferred_risks`, and `strategic_observations`
+- `loop-review-loop` must attempt reviewer subagents for every reviewer slot before any manual fallback is valid
+- manual fallback is allowed only after the same reviewer slot has a machine-readable recorded `launch-failed`, `timeout`, or `invalid-artifact` dispatch status
+- `runtime-blocked` reviewer launch status is a review blocker, not a valid fallback trigger
 - resolve blocking/important findings before final gate
 - only current-slice `BLOCKER` or `IMPORTANT` findings may block review/final gate; accepted deferred risks and strategic observations stay visible but non-blocking
 - accepted deferred risks should link the accepted follow-up issue when available, or record an explicit defer reason when no issue exists yet

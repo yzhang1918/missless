@@ -8,6 +8,7 @@ review_aggregate="$script_dir/review_aggregate.sh"
 review_gate="$script_dir/review_gate.sh"
 review_finalize="$script_dir/review_finalize.sh"
 review_cleanup="$script_dir/review_cleanup.sh"
+review_record_dispatch="$script_dir/review_record_dispatch.sh"
 final_gate="$script_dir/../../loop-final-gate/scripts/final_gate.sh"
 
 fail() {
@@ -23,6 +24,13 @@ assert_exists() {
 assert_not_exists() {
   local path="$1"
   [[ ! -e "$path" ]] || fail "unexpected path exists: $path"
+}
+
+record_dispatch() {
+  (
+    cd "$work_dir" &&
+    "$review_record_dispatch" "$@"
+  ) >/dev/null
 }
 
 tmp_root="$(mktemp -d)"
@@ -293,6 +301,14 @@ manifest_worktree_count="$(jq -r '.baseline_repo_state.tracked_worktree | length
 [[ "$manifest_worktree_count" == "0" ]] || fail "expected empty tracked worktree snapshot, got $manifest_worktree_count"
 allowed_output_count="$(jq -r '.allowed_output_paths | length' "$prepare_manifest")"
 [[ "$allowed_output_count" == "2" ]] || fail "expected allowed output count=2, got $allowed_output_count"
+dispatch_path="$(jq -r '.dispatch_record_path' "$prepare_manifest")"
+[[ "$dispatch_path" == ".local/loop/review-dispatch-20260305-230000.json" ]] || fail "unexpected dispatch record path: $dispatch_path"
+dispatch_file="$work_dir/$dispatch_path"
+assert_exists "$dispatch_file"
+dispatch_count="$(jq -r '.reviewers | length' "$dispatch_file")"
+[[ "$dispatch_count" == "2" ]] || fail "expected dispatch reviewer count=2, got $dispatch_count"
+[[ "$(jq -r '.reviewers[] | select(.dimension_slug == "security") | .last_status' "$dispatch_file")" == "pending" ]] || fail "expected security dispatch slot to start pending"
+[[ "$(jq -r '.reviewers[] | select(.dimension_slug == "security") | .attempts | length' "$dispatch_file")" == "0" ]] || fail "expected security dispatch slot to start with zero attempts"
 security_output="$(jq -r '.reviewers[] | select(.dimension == "security") | .output_path' "$prepare_manifest")"
 [[ "$security_output" == ".local/loop/review-20260305-230000-security.json" ]] || fail "unexpected security output path: $security_output"
 docs_output="$(jq -r '.reviewers[] | select(.dimension == "docs/spec consistency") | .output_path' "$prepare_manifest")"
@@ -308,6 +324,20 @@ security_prompt="$(jq -r '.reviewers[] | select(.dimension == "security") | .pro
 [[ "$security_prompt" == *"current_slice_findings"* ]] || fail "review_prepare prompt did not describe current_slice_findings"
 [[ "$security_prompt" == *"accepted_deferred_risks"* ]] || fail "review_prepare prompt did not describe accepted_deferred_risks"
 [[ "$security_prompt" == *"strategic_observations"* ]] || fail "review_prepare prompt did not describe strategic_observations"
+
+# 7.1) review_record_dispatch rejects terminal reviewer states before launch-started.
+if (
+  cd "$work_dir" &&
+  "$review_record_dispatch" 20260305-230000 security artifact-written --artifact-path .local/loop/review-20260305-230000-security.json >/dev/null 2>&1
+); then
+  fail "review_record_dispatch accepted artifact-written before launch-started"
+fi
+if (
+  cd "$work_dir" &&
+  "$review_record_dispatch" 20260305-230000 security launch-failed --reason "reviewer launcher exited immediately" >/dev/null 2>&1
+); then
+  fail "review_record_dispatch accepted launch-failed before launch-started"
+fi
 
 # 8) initialize a valid review round.
 (
@@ -331,6 +361,8 @@ fi
 [[ "$missing_finalize_output" == *".local/loop/review-20260305-230000.json"* ]] || fail "review_finalize did not print aggregate path when reviewer artifacts were missing"
 missing_count="$(jq -r '.contract.missing_reviewers | length' "$work_dir/.local/loop/review-20260305-230000.json")"
 [[ "$missing_count" == "2" ]] || fail "expected two missing reviewers, got $missing_count"
+missing_dispatch_attempt_count="$(jq -r '.contract.missing_dispatch_attempts | length' "$work_dir/.local/loop/review-20260305-230000.json")"
+[[ "$missing_dispatch_attempt_count" == "2" ]] || fail "expected two missing dispatch attempts, got $missing_dispatch_attempt_count"
 
 # 9) aggregate rejects dash-prefixed reviewer filenames.
 cat > "$work_dir/.local/loop/-bad.json" <<'JSON'
@@ -420,6 +452,10 @@ cat > "$work_dir/.local/loop/review-20260305-230000-docs-spec-consistency.json" 
   "strategic_observations": []
 }
 JSON
+record_dispatch 20260305-230000 security launch-started
+record_dispatch 20260305-230000 security artifact-written --artifact-path .local/loop/review-20260305-230000-security.json
+record_dispatch 20260305-230000 docs-spec-consistency launch-started
+record_dispatch 20260305-230000 docs-spec-consistency artifact-written --artifact-path .local/loop/review-20260305-230000-docs-spec-consistency.json
 (
   cd "$work_dir" &&
   "$review_aggregate" 20260305-230000 .local/loop/review-20260305-230000-security.json .local/loop/review-20260305-230000-docs-spec-consistency.json >/dev/null
@@ -433,6 +469,7 @@ deferred_count="$(jq -r '.counts.accepted_deferred_risks' "$agg_file")"
 strategic_count="$(jq -r '.counts.strategic_observations' "$agg_file")"
 [[ "$strategic_count" == "1" ]] || fail "expected strategic_observations count=1, got $strategic_count"
 [[ "$(jq -r '.accepted_deferred_risks[0].tracking_issue' "$agg_file")" == "#20" ]] || fail "aggregate did not preserve accepted deferred risk tracking_issue"
+[[ "$(jq -r '.reviewers[] | select(.dimension == "security") | .dispatch_status' "$agg_file")" == "artifact-written" ]] || fail "aggregate did not preserve security dispatch artifact-written status"
 
 # 12.1) review_finalize fails when important findings remain and still prints aggregate path.
 set +e
@@ -448,7 +485,7 @@ fi
 [[ "$finalize_fail_status" -eq 2 ]] || fail "review_finalize expected exit status 2, got $finalize_fail_status"
 [[ "$finalize_fail_output" == *".local/loop/review-20260305-230000.json"* ]] || fail "review_finalize did not print aggregate path on failure"
 
-# 12.2) review_finalize accepts an explicit manual-fallback artifact when the reason is recorded.
+# 12.2) review_finalize rejects manual fallback unless the reviewer slot recorded an eligible failure.
 (
   cd "$work_dir" &&
   "$review_init" 20260305-230100 full-pr >/dev/null
@@ -468,6 +505,9 @@ cat > "$work_dir/.local/loop/review-20260305-230100-security.json" <<'JSON'
   "strategic_observations": []
 }
 JSON
+record_dispatch 20260305-230100 security launch-started
+record_dispatch 20260305-230100 security artifact-written --artifact-path .local/loop/review-20260305-230100-security.json
+record_dispatch 20260305-230100 docs-spec-consistency launch-started
 cat > "$work_dir/.local/loop/review-20260305-230100-docs-spec-consistency.json" <<'JSON'
 {
   "scope": "full-pr",
@@ -483,15 +523,230 @@ cat > "$work_dir/.local/loop/review-20260305-230100-docs-spec-consistency.json" 
   }
 }
 JSON
+set +e
+invalid_fallback_output="$(
+  cd "$work_dir" &&
+  "$review_finalize" 20260305-230100 .local/loop/review-20260305-230100-security.json .local/loop/review-20260305-230100-docs-spec-consistency.json 2>&1
+)"
+invalid_fallback_status=$?
+set -e
+if [[ "$invalid_fallback_status" -eq 0 ]]; then
+  fail "review_finalize unexpectedly passed with manual fallback before a recorded reviewer failure"
+fi
+[[ "$invalid_fallback_status" -eq 2 ]] || fail "review_finalize expected exit status 2 for invalid manual fallback, got $invalid_fallback_status"
+[[ "$invalid_fallback_output" == *".local/loop/review-20260305-230100.json"* ]] || fail "review_finalize did not print aggregate path for invalid manual fallback"
+invalid_fallback_dispatch_status="$(jq -r '.contract.invalid_fallback_reviewers[] | select(.dimension == "docs/spec consistency") | .dispatch_status' "$work_dir/.local/loop/review-20260305-230100.json")"
+[[ "$invalid_fallback_dispatch_status" == "launch-started" ]] || fail "expected invalid manual fallback to preserve launch-started dispatch status, got $invalid_fallback_dispatch_status"
+
+# 12.3) review_finalize accepts an explicit manual-fallback artifact after a recorded reviewer timeout.
 (
   cd "$work_dir" &&
-  "$review_finalize" 20260305-230100 .local/loop/review-20260305-230100-security.json .local/loop/review-20260305-230100-docs-spec-consistency.json >/dev/null
+  "$review_init" 20260305-230105 full-pr >/dev/null
 )
-assert_exists "$work_dir/.local/loop/review-20260305-230100.json"
-fallback_reason="$(jq -r '.contract.recovery[] | select(.dimension == "docs/spec consistency") | .reason' "$work_dir/.local/loop/review-20260305-230100.json")"
-[[ "$fallback_reason" == "reviewer subagent did not return before review finalize" ]] || fail "manual fallback reason was not preserved in the aggregate review artifact"
+(
+  cd "$work_dir" &&
+  "$review_prepare" 20260305-230105 full-pr security "docs/spec consistency" >/dev/null
+)
+cat > "$work_dir/.local/loop/review-20260305-230105-security.json" <<'JSON'
+{
+  "scope": "full-pr",
+  "dimension": "security",
+  "status": "complete",
+  "summary": "No current-slice issues.",
+  "current_slice_findings": [],
+  "accepted_deferred_risks": [],
+  "strategic_observations": []
+}
+JSON
+record_dispatch 20260305-230105 security launch-started
+record_dispatch 20260305-230105 security artifact-written --artifact-path .local/loop/review-20260305-230105-security.json
+record_dispatch 20260305-230105 docs-spec-consistency launch-started
+record_dispatch 20260305-230105 docs-spec-consistency timeout --reason "reviewer subagent timed out before artifact write"
+cat > "$work_dir/.local/loop/review-20260305-230105-docs-spec-consistency.json" <<'JSON'
+{
+  "scope": "full-pr",
+  "dimension": "docs/spec consistency",
+  "status": "complete",
+  "summary": "Manual fallback reviewer found no material issues.",
+  "current_slice_findings": [],
+  "accepted_deferred_risks": [],
+  "strategic_observations": [],
+  "producer": {
+    "type": "manual-fallback",
+    "reason": "reviewer subagent timed out before review finalize"
+  }
+}
+JSON
+(
+  cd "$work_dir" &&
+  "$review_finalize" 20260305-230105 .local/loop/review-20260305-230105-security.json .local/loop/review-20260305-230105-docs-spec-consistency.json >/dev/null
+)
+assert_exists "$work_dir/.local/loop/review-20260305-230105.json"
+fallback_reason="$(jq -r '.contract.recovery[] | select(.dimension == "docs/spec consistency") | .reason' "$work_dir/.local/loop/review-20260305-230105.json")"
+[[ "$fallback_reason" == "reviewer subagent timed out before review finalize" ]] || fail "manual fallback reason was not preserved in the aggregate review artifact"
+valid_fallback_count="$(jq -r '.contract.invalid_fallback_reviewers | length' "$work_dir/.local/loop/review-20260305-230105.json")"
+[[ "$valid_fallback_count" == "0" ]] || fail "recorded timeout should make manual fallback valid"
+valid_fallback_launch_start_count="$(jq -r '.contract.missing_launch_started_reviewers | length' "$work_dir/.local/loop/review-20260305-230105.json")"
+[[ "$valid_fallback_launch_start_count" == "0" ]] || fail "recorded timeout with launch-started should not trip missing-launch-start"
 
-# 12.3) review_finalize passes when only accepted deferred risks and strategic observations remain.
+# 12.4) runtime-blocked reviewer slots fail closed instead of silently allowing manual fallback.
+(
+  cd "$work_dir" &&
+  "$review_init" 20260305-230106 full-pr >/dev/null &&
+  "$review_prepare" 20260305-230106 full-pr security >/dev/null
+)
+record_dispatch 20260305-230106 security runtime-blocked --reason "runtime policy forbids reviewer subagent launch"
+if (
+  cd "$work_dir" &&
+  "$review_record_dispatch" 20260305-230106 security launch-started >/dev/null 2>&1
+); then
+  fail "review_record_dispatch accepted a later dispatch event after runtime-blocked"
+fi
+cat > "$work_dir/.local/loop/review-20260305-230106-security.json" <<'JSON'
+{
+  "scope": "full-pr",
+  "dimension": "security",
+  "status": "complete",
+  "summary": "Manual fallback attempted despite runtime block.",
+  "current_slice_findings": [],
+  "accepted_deferred_risks": [],
+  "strategic_observations": [],
+  "producer": {
+    "type": "manual-fallback",
+    "reason": "runtime policy forbids reviewer subagent launch"
+  }
+}
+JSON
+set +e
+runtime_blocked_output="$(
+  cd "$work_dir" &&
+  "$review_finalize" 20260305-230106 .local/loop/review-20260305-230106-security.json 2>&1
+)"
+runtime_blocked_status=$?
+set -e
+if [[ "$runtime_blocked_status" -eq 0 ]]; then
+  fail "review_finalize unexpectedly passed after a runtime-blocked reviewer slot"
+fi
+[[ "$runtime_blocked_status" -eq 2 ]] || fail "review_finalize expected exit status 2 for runtime-blocked reviewer slot, got $runtime_blocked_status"
+[[ "$runtime_blocked_output" == *".local/loop/review-20260305-230106.json"* ]] || fail "review_finalize did not print aggregate path for runtime-blocked reviewer slot"
+runtime_blocked_count="$(jq -r '.contract.runtime_blocked_reviewers | length' "$work_dir/.local/loop/review-20260305-230106.json")"
+[[ "$runtime_blocked_count" == "1" ]] || fail "expected runtime-blocked reviewer slot to be preserved in contract violations"
+
+# 12.5) aggregate fails closed when a crafted dispatch record appends events after runtime-blocked.
+(
+  cd "$work_dir" &&
+  "$review_init" 20260305-230108 full-pr >/dev/null &&
+  "$review_prepare" 20260305-230108 full-pr security >/dev/null
+)
+cat > "$work_dir/.local/loop/review-20260305-230108-security.json" <<'JSON'
+{
+  "scope": "full-pr",
+  "dimension": "security",
+  "status": "complete",
+  "summary": "Crafted dispatch history should fail closed when runtime-blocked is not terminal.",
+  "current_slice_findings": [],
+  "accepted_deferred_risks": [],
+  "strategic_observations": []
+}
+JSON
+tmp_runtime_blocked_dispatch="$work_dir/.local/loop/review-dispatch-20260305-230108.json.tmp"
+jq '
+  .reviewers |= map(
+    if .dimension_slug == "security" then
+      .attempts = [
+        {
+          status: "runtime-blocked",
+          reason: "runtime policy forbids reviewer subagent launch",
+          recorded_at: "2026-03-05T23:01:08Z"
+        },
+        {
+          status: "launch-started",
+          recorded_at: "2026-03-05T23:02:08Z"
+        }
+      ]
+      | .last_status = "launch-started"
+      | .last_reason = ""
+      | .last_recorded_at = "2026-03-05T23:02:08Z"
+      | .last_artifact_path = ""
+    else
+      .
+    end
+  )
+' "$work_dir/.local/loop/review-dispatch-20260305-230108.json" > "$tmp_runtime_blocked_dispatch"
+mv "$tmp_runtime_blocked_dispatch" "$work_dir/.local/loop/review-dispatch-20260305-230108.json"
+set +e
+runtime_blocked_not_terminal_output="$(
+  cd "$work_dir" &&
+  "$review_finalize" 20260305-230108 .local/loop/review-20260305-230108-security.json 2>&1
+)"
+runtime_blocked_not_terminal_status=$?
+set -e
+if [[ "$runtime_blocked_not_terminal_status" -eq 0 ]]; then
+  fail "review_finalize unexpectedly passed when runtime-blocked was not terminal"
+fi
+[[ "$runtime_blocked_not_terminal_status" -eq 2 ]] || fail "review_finalize expected exit status 2 for non-terminal runtime-blocked dispatch history, got $runtime_blocked_not_terminal_status"
+[[ "$runtime_blocked_not_terminal_output" == *".local/loop/review-20260305-230108.json"* ]] || fail "review_finalize did not print aggregate path for non-terminal runtime-blocked dispatch history"
+runtime_blocked_not_terminal_count="$(jq -r '.contract.runtime_blocked_not_terminal_reviewers | length' "$work_dir/.local/loop/review-20260305-230108.json")"
+[[ "$runtime_blocked_not_terminal_count" == "1" ]] || fail "expected non-terminal runtime-blocked dispatch history to be preserved in contract violations"
+
+# 12.6) review_finalize fails when a fallback-eligible dispatch status is recorded without a prior launch-started event.
+(
+  cd "$work_dir" &&
+  "$review_init" 20260305-230107 full-pr >/dev/null &&
+  "$review_prepare" 20260305-230107 full-pr security >/dev/null
+)
+tmp_dispatch="$work_dir/.local/loop/review-dispatch-20260305-230107.json.tmp"
+jq '
+  .reviewers |= map(
+    if .dimension_slug == "security" then
+      .attempts = [
+        {
+          status: "launch-failed",
+          reason: "reviewer launch failed before artifact write",
+          recorded_at: "2026-03-05T23:01:07Z"
+        }
+      ]
+      | .last_status = "launch-failed"
+      | .last_reason = "reviewer launch failed before artifact write"
+      | .last_recorded_at = "2026-03-05T23:01:07Z"
+      | .last_artifact_path = ""
+    else
+      .
+    end
+  )
+' "$work_dir/.local/loop/review-dispatch-20260305-230107.json" > "$tmp_dispatch"
+mv "$tmp_dispatch" "$work_dir/.local/loop/review-dispatch-20260305-230107.json"
+cat > "$work_dir/.local/loop/review-20260305-230107-security.json" <<'JSON'
+{
+  "scope": "full-pr",
+  "dimension": "security",
+  "status": "complete",
+  "summary": "Manual fallback was attempted after a malformed launch-failed record.",
+  "current_slice_findings": [],
+  "accepted_deferred_risks": [],
+  "strategic_observations": [],
+  "producer": {
+    "type": "manual-fallback",
+    "reason": "reviewer launch failed before artifact write"
+  }
+}
+JSON
+set +e
+missing_launch_start_output="$(
+  cd "$work_dir" &&
+  "$review_finalize" 20260305-230107 .local/loop/review-20260305-230107-security.json 2>&1
+)"
+missing_launch_start_status=$?
+set -e
+if [[ "$missing_launch_start_status" -eq 0 ]]; then
+  fail "review_finalize unexpectedly passed when reviewer dispatch skipped launch-started"
+fi
+[[ "$missing_launch_start_status" -eq 2 ]] || fail "review_finalize expected exit status 2 for missing launch-started, got $missing_launch_start_status"
+[[ "$missing_launch_start_output" == *".local/loop/review-20260305-230107.json"* ]] || fail "review_finalize did not print aggregate path for missing launch-started"
+missing_launch_start_count="$(jq -r '.contract.missing_launch_started_reviewers | length' "$work_dir/.local/loop/review-20260305-230107.json")"
+[[ "$missing_launch_start_count" == "1" ]] || fail "expected missing-launch-start violation to be preserved"
+
+# 12.7) review_finalize passes when only accepted deferred risks and strategic observations remain.
 (
   cd "$work_dir" &&
   "$review_init" 20260305-230104 full-pr >/dev/null &&
@@ -522,6 +777,8 @@ cat > "$work_dir/.local/loop/review-20260305-230104-security.json" <<'JSON'
   ]
 }
 JSON
+record_dispatch 20260305-230104 security launch-started
+record_dispatch 20260305-230104 security artifact-written --artifact-path .local/loop/review-20260305-230104-security.json
 (
   cd "$work_dir" &&
   "$review_finalize" 20260305-230104 .local/loop/review-20260305-230104-security.json >/dev/null
@@ -538,6 +795,8 @@ assert_exists "$work_dir/.local/loop/review-20260305-230104.json"
   "$review_init" 20260305-230101 full-pr >/dev/null &&
   "$review_prepare" 20260305-230101 full-pr security >/dev/null
 )
+record_dispatch 20260305-230101 security launch-started
+record_dispatch 20260305-230101 security artifact-written --artifact-path .local/loop/review-20260305-230101-security.json
 cat > "$work_dir/.local/loop/review-20260305-230101-security.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
 JSON
@@ -568,6 +827,8 @@ printf 'tracked-drift\n' >> "$work_dir/README.md"
 cat > "$work_dir/.local/loop/review-20260305-230102-security.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
 JSON
+record_dispatch 20260305-230102 security launch-started
+record_dispatch 20260305-230102 security artifact-written --artifact-path .local/loop/review-20260305-230102-security.json
 set +e
 worktree_drift_finalize="$(
   cd "$work_dir" &&
@@ -598,6 +859,8 @@ worktree_drift_detected="$(jq -r '.contract.tracked_worktree_changed' "$work_dir
 cat > "$work_dir/.local/loop/review-20260305-230103-security.json" <<'JSON'
 {"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
 JSON
+record_dispatch 20260305-230103 security launch-started
+record_dispatch 20260305-230103 security artifact-written --artifact-path .local/loop/review-20260305-230103-security.json
 set +e
 head_move_finalize="$(
   cd "$work_dir" &&
@@ -754,6 +1017,8 @@ prepare_cleanup_manifest_rel="$(
 )"
 prepare_cleanup_manifest="$work_dir/$prepare_cleanup_manifest_rel"
 assert_exists "$prepare_cleanup_manifest"
+prepare_cleanup_dispatch="$work_dir/$(jq -r '.dispatch_record_path' "$prepare_cleanup_manifest")"
+assert_exists "$prepare_cleanup_dispatch"
 cat > "$work_dir/.local/loop/review-20260305-230001.json" <<'JSON'
 {"round_id":"20260305-230001"}
 JSON
@@ -773,6 +1038,7 @@ JSON
 assert_exists "$work_dir/.local/loop/review-20260305-230001.json"
 assert_exists "$work_dir/.local/loop/review-20260305-230002.json"
 assert_exists "$prepare_cleanup_manifest"
+assert_exists "$prepare_cleanup_dispatch"
 (
   cd "$work_dir" &&
   "$review_cleanup" --keep-rounds 1 >/dev/null
@@ -782,6 +1048,7 @@ assert_not_exists "$work_dir/.local/loop/review-20260305-230001-correctness.json
 assert_exists "$work_dir/.local/loop/review-20260305-230002.json"
 assert_exists "$work_dir/.local/loop/review-20260305-230002-security.json"
 assert_not_exists "$prepare_cleanup_manifest"
+assert_not_exists "$prepare_cleanup_dispatch"
 assert_exists "$work_dir/.local/final-evidence/2026-03-11-review-regression-plan/review.json"
 assert_exists "$work_dir/.local/final-evidence/2026-03-11-review-regression-plan/ci-status.json"
 assert_exists "$work_dir/.local/final-evidence/2026-03-11-review-regression-plan/final-gate.json"

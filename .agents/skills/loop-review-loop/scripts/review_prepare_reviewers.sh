@@ -206,6 +206,7 @@ focus_for_dimension() {
 
 out_dir=".local/loop"
 out_file="$out_dir/review-launch-${round_id}.json"
+dispatch_file="$out_dir/review-dispatch-${round_id}.json"
 mkdir -p "$out_dir"
 
 tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/review-prepare.XXXXXX")"
@@ -253,8 +254,34 @@ baseline_tracked_worktree="$(tracked_worktree_json)"
 
 jq -s \
   --arg round_id "$round_id" \
+  --arg manifest_path "$out_file" \
+  --arg generated_at "$timestamp" \
+  '
+    {
+      round_id: $round_id,
+      manifest_path: $manifest_path,
+      generated_at: $generated_at,
+      reviewers: [
+        .[]
+        | {
+            dimension,
+            dimension_slug,
+            output_path,
+            last_status: "pending",
+            last_reason: "",
+            last_recorded_at: null,
+            last_artifact_path: "",
+            attempts: []
+          }
+      ]
+    }
+  ' -- "${reviewer_entries[@]}" > "$dispatch_file"
+
+jq -s \
+  --arg round_id "$round_id" \
   --arg scope "$scope" \
   --arg generated_at "$timestamp" \
+  --arg dispatch_record_path "$dispatch_file" \
   --arg baseline_head_sha "$baseline_head_sha" \
   --argjson baseline_tracked_worktree "$baseline_tracked_worktree" \
   '
@@ -262,6 +289,7 @@ jq -s \
       round_id: $round_id,
       scope: $scope,
       generated_at: $generated_at,
+      dispatch_record_path: $dispatch_record_path,
       baseline_repo_state: {
         head_sha: $baseline_head_sha,
         tracked_worktree: $baseline_tracked_worktree

@@ -20,6 +20,8 @@ stable reviewer launch records without binding the repository to a specific
 subagent runtime.
 
 - The caller still owns actual subagent spawning.
+- The caller/runtime must also keep the matching reviewer dispatch record up to
+  date.
 - `dimension` remains free-form.
 - Each reviewer entry carries a standard `loop-reviewer` prompt plus the target
   output artifact path.
@@ -33,6 +35,7 @@ subagent runtime.
   "round_id": "20260311-101500",
   "scope": "full-pr",
   "generated_at": "2026-03-11T10:15:00Z",
+  "dispatch_record_path": ".local/loop/review-dispatch-20260311-101500.json",
   "baseline_repo_state": {
     "head_sha": "abc123def456",
     "tracked_worktree": []
@@ -72,6 +75,8 @@ subagent runtime.
 - `baseline_repo_state` captures the repo-observable baseline immediately before
   reviewer launch so finalize can detect later `HEAD` movement or tracked
   worktree drift.
+- `dispatch_record_path` points to the matching per-round reviewer dispatch
+  ledger documented in `references/reviewer-dispatch-record.md`.
 - `ownership_boundary` makes the shipped enforcement boundary explicit: the
   harness checks declared reviewer output paths plus repo-observable tracked
   worktree and `HEAD` drift, but it does not claim arbitrary untracked-file,
