@@ -14,7 +14,16 @@ ship with `missless`.
 
 Product skills in this directory should describe repository-owned product
 behavior. They should target stable runtime command names rather than
-repository-relative `node .../dist/index.js` paths. When the current supported
-contract is repo-local activation, the skill should document the activation
-step needed to expose that command name and stay aligned with the canonical
-entrypoint described in the repository docs.
+repository-relative `node .../dist/index.js` paths.
+
+In the current development phase, the only supported way to expose the
+`missless` command is:
+
+```bash
+source scripts/dev-activate-missless.sh
+missless ...
+```
+
+Skills should document that activation step whenever they rely on `missless`
+and stay aligned with the canonical entrypoint described in the repository
+docs.
