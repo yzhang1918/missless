@@ -182,6 +182,9 @@ current supported path.
 - Added `bash` coverage to `tests/integration/cli/activation-cli.test.ts`,
   reran the relevant tests, and finalized the aggregated review result with
   `BLOCKER=0` and `IMPORTANT=0`.
+- Aligned `skills/README.md` with the narrowed contract so repository
+  skill-authoring guidance now points at stable runtime command names plus the
+  required activation step when the supported entrypoint is repo-local.
 - The final review outcome remained clean, and the deferred packaging
   follow-up stayed isolated under issue `#42`.
 
@@ -216,6 +219,8 @@ current supported path.
   regression coverage.
 - Collapsed the current documented entrypoint to one supported local workflow:
   `source scripts/dev-activate-missless.sh` then `missless ...`.
+- Aligned repository skill-authoring guidance with the activation-based
+  developer contract.
 - Preserved issue `#42` as the explicit future-release packaging follow-up
   instead of carrying tarball claims in current docs or tests.
 
@@ -231,6 +236,8 @@ current supported path.
 - `git diff --check` passed.
 - `rg -n "npm pack|npm install -g|tarball|packaged-install|installable-cli\\.test|bundleDependencies|prepack" README.md skills/missless/SKILL.md apps/cli/package.json tests/integration/cli -S`
   returned no matches.
+- `rg -n "stable installable runtime command|installable runtime" skills/README.md`
+  returned no matches.
 - `pnpm --filter @missless/cli typecheck` and `pnpm -r typecheck` still fail in
   the current workspace with pre-existing TypeScript issues outside the scope
   of this contract-cleanup slice.
@@ -239,3 +246,11 @@ current supported path.
 
 - Follow-up issue `#42` remains the repository-backed place to decide and
   implement future release or distribution packaging.
+
+## Publish Record
+
+- Publish outcome: created pull request [#44](https://github.com/yzhang1918/missless/pull/44)
+- Published branch head: `38412b4038c2f4abfdb80e810700188ee7996a5b`
+- Publish metadata: direct request (no issue); related follow-up remains `#42`
+- Synced the current contract cleanup back to issue `#42` in
+  `https://github.com/yzhang1918/missless/issues/42#issuecomment-4063112093`.
