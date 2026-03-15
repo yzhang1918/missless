@@ -332,7 +332,14 @@ into long-lived artifacts.
 - Full-pr review is passing locally.
 - Latest isolated full-pr review round: `20260315-092955`
   (`BLOCKER=0`, `IMPORTANT=0`, one non-blocking `NIT`).
-- Final gate remains pending until publish produces branch/CI evidence.
+- Final gate was attempted locally on 2026-03-15 via
+  `.agents/skills/loop-final-gate/scripts/export_ci_status.sh main --docs-updated true`
+  and failed closed because there is no open PR yet for branch
+  `codex/29-cli-provenance-agent-output`, so no machine-readable GitHub CI
+  artifact exists for the current `HEAD`.
+- Final gate therefore remains `no-go` until `loop-publish` creates or updates
+  the PR and required-check evidence can be exported against the published
+  branch head.
 
 ## Assumptions
 
