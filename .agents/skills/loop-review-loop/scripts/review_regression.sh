@@ -820,6 +820,73 @@ assert_exists "$work_dir/.local/loop/review-20260305-230104.json"
 [[ "$(jq -r '.counts.accepted_deferred_risks' "$work_dir/.local/loop/review-20260305-230104.json")" == "1" ]] || fail "accepted_deferred_risks count was not preserved"
 [[ "$(jq -r '.counts.strategic_observations' "$work_dir/.local/loop/review-20260305-230104.json")" == "1" ]] || fail "strategic_observations count was not preserved"
 
+# 12.8) review_finalize fails closed when a reviewer artifact omits scope.
+(
+  cd "$work_dir" &&
+  "$review_init" 20260305-230109 full-pr >/dev/null &&
+  "$review_prepare" 20260305-230109 full-pr security >/dev/null
+)
+cat > "$work_dir/.local/loop/review-20260305-230109-security.json" <<'JSON'
+{
+  "dimension": "security",
+  "status": "complete",
+  "summary": "Missing scope should fail closed during aggregation.",
+  "current_slice_findings": [],
+  "accepted_deferred_risks": [],
+  "strategic_observations": []
+}
+JSON
+record_dispatch 20260305-230109 security launch-started
+record_dispatch 20260305-230109 security artifact-written --artifact-path .local/loop/review-20260305-230109-security.json
+set +e
+missing_scope_output="$(
+  cd "$work_dir" &&
+  "$review_finalize" 20260305-230109 .local/loop/review-20260305-230109-security.json 2>&1
+)"
+missing_scope_status=$?
+set -e
+if [[ "$missing_scope_status" -eq 0 ]]; then
+  fail "review_finalize unexpectedly passed when reviewer scope was missing"
+fi
+[[ "$missing_scope_status" -eq 2 ]] || fail "review_finalize expected exit status 2 for missing reviewer scope, got $missing_scope_status"
+[[ "$missing_scope_output" == *".local/loop/review-20260305-230109.json"* ]] || fail "review_finalize did not print aggregate path for missing reviewer scope"
+missing_scope_count="$(jq -r '.contract.scope_mismatches | length' "$work_dir/.local/loop/review-20260305-230109.json")"
+[[ "$missing_scope_count" == "1" ]] || fail "expected missing reviewer scope to be preserved as a scope mismatch"
+
+# 12.9) review_finalize fails closed when a reviewer artifact scope disagrees with the round scope.
+(
+  cd "$work_dir" &&
+  "$review_init" 20260305-230110 full-pr >/dev/null &&
+  "$review_prepare" 20260305-230110 full-pr security >/dev/null
+)
+cat > "$work_dir/.local/loop/review-20260305-230110-security.json" <<'JSON'
+{
+  "scope": "delta",
+  "dimension": "security",
+  "status": "complete",
+  "summary": "Mismatched scope should fail closed during aggregation.",
+  "current_slice_findings": [],
+  "accepted_deferred_risks": [],
+  "strategic_observations": []
+}
+JSON
+record_dispatch 20260305-230110 security launch-started
+record_dispatch 20260305-230110 security artifact-written --artifact-path .local/loop/review-20260305-230110-security.json
+set +e
+wrong_scope_output="$(
+  cd "$work_dir" &&
+  "$review_finalize" 20260305-230110 .local/loop/review-20260305-230110-security.json 2>&1
+)"
+wrong_scope_status=$?
+set -e
+if [[ "$wrong_scope_status" -eq 0 ]]; then
+  fail "review_finalize unexpectedly passed with a mismatched reviewer scope"
+fi
+[[ "$wrong_scope_status" -eq 2 ]] || fail "review_finalize expected exit status 2 for mismatched reviewer scope, got $wrong_scope_status"
+[[ "$wrong_scope_output" == *".local/loop/review-20260305-230110.json"* ]] || fail "review_finalize did not print aggregate path for mismatched reviewer scope"
+wrong_scope_value="$(jq -r '.contract.scope_mismatches[0].actual_scope' "$work_dir/.local/loop/review-20260305-230110.json")"
+[[ "$wrong_scope_value" == "delta" ]] || fail "expected scope mismatch to preserve the reviewer artifact scope, got $wrong_scope_value"
+
 # 13) review_finalize fails when an undeclared reviewer output is present on disk.
 (
   cd "$work_dir" &&
