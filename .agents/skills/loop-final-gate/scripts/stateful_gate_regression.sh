@@ -850,6 +850,22 @@ cat > "$work_dir/.local/loop/review-clean.json" <<'JSON'
 }
 JSON
 
+cat > "$work_dir/.local/loop/review-missing-layers.json" <<'JSON'
+{
+  "status": "complete",
+  "current_slice_findings": [],
+  "counts": {"blocker": 0, "important": 0, "minor": 0, "nit": 0}
+}
+JSON
+
+if (
+  cd "$work_dir" &&
+  PATH="$fake_bin:$PATH" \
+  "$final_gate_script" .local/loop/review-missing-layers.json "$ci_path" "$complete_plan" main .local/loop/final-gate-missing-layers.json >/dev/null 2>&1
+); then
+  fail "final_gate accepted a review artifact missing required layered arrays"
+fi
+
 (
   cd "$work_dir" &&
   PATH="$fake_bin:$PATH" \
