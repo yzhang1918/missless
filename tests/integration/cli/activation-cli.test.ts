@@ -104,3 +104,26 @@ for (const shell of ["bash", "zsh"] as const) {
     assert.deepEqual(payload.decision_labels, ["deep_read", "skim", "skip"]);
   });
 }
+
+test("activated missless forwards fetch subcommands through the repo-local wrapper", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "missless-activation-fetch-unsafe-"));
+  const command = runActivatedShell(
+    "zsh",
+    `missless fetch "http://127.0.0.1/private" --runs-dir "${runsDir}"`
+  );
+
+  assert.notEqual(command.status, 0);
+  assert.equal(command.stderr, "");
+
+  const payload = JSON.parse(command.stdout) as {
+    ok: boolean;
+    command: string;
+    summary: string;
+    run_dir: string;
+  };
+
+  assert.equal(payload.ok, false);
+  assert.equal(payload.command, "fetch");
+  assert.match(payload.summary, /localhost, private, link-local, and single-label hosts/);
+  assert.match(payload.run_dir, new RegExp(`^${runsDir}/run-`));
+});

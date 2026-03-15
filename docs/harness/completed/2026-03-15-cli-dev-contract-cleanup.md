@@ -176,12 +176,15 @@ current supported path.
 - Reviewer-subagent runtime attempts in the current environment did not return
   usable artifacts, so the round completed with explicit `manual-fallback`
   reviewer artifacts after recorded `launch-failed` dispatch states.
-- Manual fallback review identified one current-slice gap before publish:
-  activation regression coverage only exercised `zsh` even though the sourced
-  developer contract supports both `bash` and `zsh`.
-- Added `bash` coverage to `tests/integration/cli/activation-cli.test.ts`,
-  reran the relevant tests, and finalized the aggregated review result with
-  `BLOCKER=0` and `IMPORTANT=0`.
+- Manual fallback review identified two current-slice gaps before the final
+  branch state:
+  activation regression coverage only exercised `zsh`, and the activated
+  wrapper path only smoke-tested `--help` plus `print-draft-contract` instead
+  of a behaviorful subcommand.
+- Added `bash` coverage and an activated-wrapper `fetch` regression to
+  `tests/integration/cli/activation-cli.test.ts`, reran the relevant tests,
+  and finalized the aggregated review result with `BLOCKER=0` and
+  `IMPORTANT=0`.
 - Aligned `skills/README.md` with the narrowed contract so repository
   skill-authoring guidance now points at stable runtime command names plus the
   required activation step when the supported entrypoint is repo-local.
