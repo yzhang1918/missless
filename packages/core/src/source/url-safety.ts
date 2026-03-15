@@ -147,16 +147,16 @@ export async function assertSafeHttpUrl(
   const parsed = new URL(sourceUrl);
 
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new Error("fetch-normalize only supports http and https URLs");
+    throw new Error("fetch only supports http and https URLs");
   }
 
   if (parsed.username !== "" || parsed.password !== "") {
-    throw new Error("fetch-normalize rejects source URLs with embedded credentials");
+    throw new Error("fetch rejects source URLs with embedded credentials");
   }
 
   if (isBlockedHostname(parsed.hostname)) {
     throw new Error(
-      "fetch-normalize rejects localhost, private, link-local, and single-label hosts"
+      "fetch rejects localhost, private, link-local, and single-label hosts"
     );
   }
 
@@ -166,7 +166,7 @@ export async function assertSafeHttpUrl(
 
   if (resolvedAddresses.some((result) => isBlockedHostname(result.address))) {
     throw new Error(
-      "fetch-normalize rejects hostnames that resolve to localhost, private, or link-local addresses"
+      "fetch rejects hostnames that resolve to localhost, private, or link-local addresses"
     );
   }
 }
@@ -211,7 +211,7 @@ export async function resolveSafeRedirectChain(
     } catch (error) {
       if (redirects.length > 0) {
         throw new Error(
-          "fetch-normalize rejects redirect hops and final destinations that are localhost, private, or link-local",
+          "fetch rejects redirect hops and final destinations that are localhost, private, or link-local",
           {
             cause: error
           }
@@ -230,7 +230,7 @@ export async function resolveSafeRedirectChain(
       });
     } catch (error) {
       throw new Error(
-        `fetch-normalize could not verify redirect safety for ${currentUrl}`,
+        `fetch could not verify redirect safety for ${currentUrl}`,
         {
           cause: error
         }
@@ -253,13 +253,13 @@ export async function resolveSafeRedirectChain(
 
     if (location === null || location.trim() === "") {
       throw new Error(
-        `fetch-normalize encountered a redirect without a Location header for ${currentUrl}`
+        `fetch encountered a redirect without a Location header for ${currentUrl}`
       );
     }
 
     if (redirectCount >= maxRedirects) {
       throw new Error(
-        `fetch-normalize exceeded the redirect limit while resolving ${sourceUrl}`
+        `fetch exceeded the redirect limit while resolving ${sourceUrl}`
       );
     }
 
@@ -269,7 +269,7 @@ export async function resolveSafeRedirectChain(
       nextUrl = new URL(location, currentUrl).toString();
     } catch (error) {
       throw new Error(
-        `fetch-normalize encountered an invalid redirect target for ${currentUrl}`,
+        `fetch encountered an invalid redirect target for ${currentUrl}`,
         {
           cause: error
         }

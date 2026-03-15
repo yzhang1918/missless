@@ -36,7 +36,20 @@ async function seedReviewRun(runDir: string): Promise<void> {
   );
   await writeFile(
     join(runDir, "source.json"),
-    "{\n  \"source_url\": \"https://example.com/agent-harness\"\n}\n",
+    [
+      "{",
+      '  "requested": {',
+      '    "url": "https://example.com/agent-harness",',
+      '    "fetch_method": "auto"',
+      "  },",
+      '  "decision_basis": {',
+      '    "url": "https://example.com/agent-harness",',
+      '    "fetch_method": "jina_reader",',
+      '    "snapshot_sha256": "fixture-sha"',
+      "  },",
+      '  "fetched_at": "2026-03-09T00:00:00.000Z"',
+      "}"
+    ].join("\n") + "\n",
     "utf8"
   );
   await mkdir(dirname(getRunRegistryPath(runDir)), { recursive: true });
@@ -90,19 +103,54 @@ function runCli(command: string, runDir: string) {
   );
 }
 
-test("anchor-evidence and render-review produce the first review package artifacts", async () => {
+function parseWorkflowPayload(result: ReturnType<typeof runCli>) {
+  assert.equal(result.stderr, "");
+
+  return JSON.parse(result.stdout) as {
+    ok: boolean;
+    command: string;
+    summary: string;
+    run_dir: string;
+    review_bundle?: string;
+    review_html?: string;
+  };
+}
+
+function expectWorkflowSuccess(
+  result: ReturnType<typeof runCli>,
+  command: string
+) {
+  assert.equal(result.status, 0, result.stderr);
+  const payload = parseWorkflowPayload(result);
+  assert.equal(payload.ok, true);
+  assert.equal(payload.command, command);
+
+  return payload;
+}
+
+function expectWorkflowFailure(
+  result: ReturnType<typeof runCli>,
+  command: string,
+  summaryPattern: RegExp
+) {
+  assert.equal(result.status, 1);
+  const payload = parseWorkflowPayload(result);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.command, command);
+  assert.match(payload.summary, summaryPattern);
+
+  return payload;
+}
+
+test("anchor and review produce the first review package artifacts", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-review");
 
   await seedReviewRun(runDir);
 
-  const anchored = runCli("anchor-evidence", runDir);
+  expectWorkflowSuccess(runCli("anchor", runDir), "anchor");
 
-  assert.equal(anchored.status, 0, anchored.stderr);
-
-  const rendered = runCli("render-review", runDir);
-
-  assert.equal(rendered.status, 0, rendered.stderr);
+  const rendered = expectWorkflowSuccess(runCli("review", runDir), "review");
 
   const evidenceResult = JSON.parse(
     await readFile(join(runDir, "evidence_result.json"), "utf8")
@@ -114,22 +162,21 @@ test("anchor-evidence and render-review produce the first review package artifac
 
   assert.equal(evidenceResult.ok, true);
   assert.equal(reviewBundle.decision, "deep_read");
+  assert.equal(rendered.review_bundle, join(runDir, "review_bundle.json"));
+  assert.equal(rendered.review_html, join(runDir, "review.html"));
   assert.match(reviewHtml, /<mark/);
   assert.match(reviewHtml, /Repository-local artifacts/);
 });
 
-test("render-review rejects stale evidence generated from an older draft", async () => {
+test("review rejects stale evidence generated from an older draft", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-stale-review");
 
   await seedReviewRun(runDir);
 
-  const anchored = runCli("anchor-evidence", runDir);
+  expectWorkflowSuccess(runCli("anchor", runDir), "anchor");
 
-  assert.equal(anchored.status, 0, anchored.stderr);
-
-  const firstRender = runCli("render-review", runDir);
-  assert.equal(firstRender.status, 0, firstRender.stderr);
+  expectWorkflowSuccess(runCli("review", runDir), "review");
 
   const staleDraft = JSON.parse(
     await readFile(join(runDir, "extraction_draft.json"), "utf8")
@@ -146,12 +193,10 @@ test("render-review rejects stale evidence generated from an older draft", async
     "utf8"
   );
 
-  const rendered = runCli("render-review", runDir);
-
-  assert.equal(rendered.status, 1);
-  assert.match(
-    rendered.stderr,
-    /anchor-evidence is rerun for the current extraction draft and canonical text/
+  expectWorkflowFailure(
+    runCli("review", runDir),
+    "review",
+    /anchor is rerun for the current extraction draft and canonical text/
   );
   await assert.rejects(
     () => stat(join(runDir, "review_bundle.json")),
@@ -169,18 +214,15 @@ test("render-review rejects stale evidence generated from an older draft", async
   );
 });
 
-test("render-review rejects stale evidence generated from an older canonical snapshot", async () => {
+test("review rejects stale evidence generated from an older canonical snapshot", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-stale-canonical");
 
   await seedReviewRun(runDir);
 
-  const anchored = runCli("anchor-evidence", runDir);
+  expectWorkflowSuccess(runCli("anchor", runDir), "anchor");
 
-  assert.equal(anchored.status, 0, anchored.stderr);
-
-  const firstRender = runCli("render-review", runDir);
-  assert.equal(firstRender.status, 0, firstRender.stderr);
+  expectWorkflowSuccess(runCli("review", runDir), "review");
 
   await writeFile(
     join(runDir, "canonical_text.md"),
@@ -188,12 +230,10 @@ test("render-review rejects stale evidence generated from an older canonical sna
     "utf8"
   );
 
-  const rendered = runCli("render-review", runDir);
-
-  assert.equal(rendered.status, 1);
-  assert.match(
-    rendered.stderr,
-    /anchor-evidence is rerun for the current extraction draft and canonical text/
+  expectWorkflowFailure(
+    runCli("review", runDir),
+    "review",
+    /anchor is rerun for the current extraction draft and canonical text/
   );
   await assert.rejects(
     () => stat(join(runDir, "review_bundle.json")),
@@ -211,26 +251,22 @@ test("render-review rejects stale evidence generated from an older canonical sna
   );
 });
 
-test("render-review translates missing evidence artifacts into a stable runtime error and removes stale review outputs", async () => {
+test("review translates missing evidence artifacts into a stable runtime error and removes stale review outputs", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-missing-evidence");
 
   await seedReviewRun(runDir);
 
-  const anchored = runCli("anchor-evidence", runDir);
-  assert.equal(anchored.status, 0, anchored.stderr);
+  expectWorkflowSuccess(runCli("anchor", runDir), "anchor");
 
-  const firstRender = runCli("render-review", runDir);
-  assert.equal(firstRender.status, 0, firstRender.stderr);
+  expectWorkflowSuccess(runCli("review", runDir), "review");
 
   await rm(join(runDir, "evidence_result.json"));
 
-  const rendered = runCli("render-review", runDir);
-
-  assert.equal(rendered.status, 1);
-  assert.match(
-    rendered.stderr,
-    /Cannot render review until anchor-evidence succeeds for the run/
+  expectWorkflowFailure(
+    runCli("review", runDir),
+    "review",
+    /Cannot render review until anchor succeeds for the run/
   );
   await assert.rejects(
     () => stat(join(runDir, "review_bundle.json")),
@@ -248,17 +284,15 @@ test("render-review translates missing evidence artifacts into a stable runtime 
   );
 });
 
-test("render-review removes stale review outputs even when source.json is missing", async () => {
+test("review removes stale review outputs even when source.json is missing", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-missing-source");
 
   await seedReviewRun(runDir);
 
-  const anchored = runCli("anchor-evidence", runDir);
-  assert.equal(anchored.status, 0, anchored.stderr);
+  expectWorkflowSuccess(runCli("anchor", runDir), "anchor");
 
-  const firstRender = runCli("render-review", runDir);
-  assert.equal(firstRender.status, 0, firstRender.stderr);
+  expectWorkflowSuccess(runCli("review", runDir), "review");
 
   await rm(join(runDir, "source.json"));
   const staleDraft = JSON.parse(
@@ -273,12 +307,10 @@ test("render-review removes stale review outputs even when source.json is missin
     "utf8"
   );
 
-  const rendered = runCli("render-review", runDir);
-
-  assert.equal(rendered.status, 1);
-  assert.match(
-    rendered.stderr,
-    /anchor-evidence is rerun for the current extraction draft and canonical text/
+  expectWorkflowFailure(
+    runCli("review", runDir),
+    "review",
+    /anchor is rerun for the current extraction draft and canonical text/
   );
   await assert.rejects(
     () => stat(join(runDir, "review_bundle.json")),
@@ -296,26 +328,22 @@ test("render-review removes stale review outputs even when source.json is missin
   );
 });
 
-test("render-review removes stale review outputs when run.json is missing after a successful render", async () => {
+test("review removes stale review outputs when run.json is missing after a successful render", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-missing-manifest");
 
   await seedReviewRun(runDir);
 
-  const anchored = runCli("anchor-evidence", runDir);
-  assert.equal(anchored.status, 0, anchored.stderr);
+  expectWorkflowSuccess(runCli("anchor", runDir), "anchor");
 
-  const firstRender = runCli("render-review", runDir);
-  assert.equal(firstRender.status, 0, firstRender.stderr);
+  expectWorkflowSuccess(runCli("review", runDir), "review");
 
   await rm(join(runDir, "run.json"));
 
-  const rendered = runCli("render-review", runDir);
-
-  assert.equal(rendered.status, 1);
-  assert.match(
-    rendered.stderr,
-    /render-review requires a valid missless run\.json before it can rebuild review artifacts/
+  expectWorkflowFailure(
+    runCli("review", runDir),
+    "review",
+    /review requires a valid missless run\.json before it can rebuild review artifacts/
   );
   await assert.rejects(
     () => stat(join(runDir, "review_bundle.json")),
@@ -333,17 +361,15 @@ test("render-review removes stale review outputs when run.json is missing after 
   );
 });
 
-test("render-review removes stale review outputs when run.json has an untrusted stage", async () => {
+test("review removes stale review outputs when run.json has an untrusted stage", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-untrusted-manifest");
 
   await seedReviewRun(runDir);
 
-  const anchored = runCli("anchor-evidence", runDir);
-  assert.equal(anchored.status, 0, anchored.stderr);
+  expectWorkflowSuccess(runCli("anchor", runDir), "anchor");
 
-  const firstRender = runCli("render-review", runDir);
-  assert.equal(firstRender.status, 0, firstRender.stderr);
+  expectWorkflowSuccess(runCli("review", runDir), "review");
 
   await writeFile(
     join(runDir, "run.json"),
@@ -359,12 +385,10 @@ test("render-review removes stale review outputs when run.json has an untrusted 
     "utf8"
   );
 
-  const rendered = runCli("render-review", runDir);
-
-  assert.equal(rendered.status, 1);
-  assert.match(
-    rendered.stderr,
-    /render-review requires a valid missless run\.json before it can rebuild review artifacts/
+  expectWorkflowFailure(
+    runCli("review", runDir),
+    "review",
+    /review requires a valid missless run\.json before it can rebuild review artifacts/
   );
   await assert.rejects(
     () => stat(join(runDir, "review_bundle.json")),
@@ -382,26 +406,22 @@ test("render-review removes stale review outputs when run.json has an untrusted 
   );
 });
 
-test("render-review removes stale review outputs when run.json is malformed after a successful render", async () => {
+test("review removes stale review outputs when run.json is malformed after a successful render", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-malformed-manifest");
 
   await seedReviewRun(runDir);
 
-  const anchored = runCli("anchor-evidence", runDir);
-  assert.equal(anchored.status, 0, anchored.stderr);
+  expectWorkflowSuccess(runCli("anchor", runDir), "anchor");
 
-  const firstRender = runCli("render-review", runDir);
-  assert.equal(firstRender.status, 0, firstRender.stderr);
+  expectWorkflowSuccess(runCli("review", runDir), "review");
 
   await writeFile(join(runDir, "run.json"), "{not-json\n", "utf8");
 
-  const rendered = runCli("render-review", runDir);
-
-  assert.equal(rendered.status, 1);
-  assert.match(
-    rendered.stderr,
-    /render-review requires a valid missless run\.json before it can rebuild review artifacts/
+  expectWorkflowFailure(
+    runCli("review", runDir),
+    "review",
+    /review requires a valid missless run\.json before it can rebuild review artifacts/
   );
   await assert.rejects(
     () => stat(join(runDir, "review_bundle.json")),
@@ -419,27 +439,23 @@ test("render-review removes stale review outputs when run.json is malformed afte
   );
 });
 
-test("render-review removes stale review outputs when only review.html remains and run.json becomes invalid", async () => {
+test("review removes stale review outputs when only review.html remains and run.json becomes invalid", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-html-only");
 
   await seedReviewRun(runDir);
 
-  const anchored = runCli("anchor-evidence", runDir);
-  assert.equal(anchored.status, 0, anchored.stderr);
+  expectWorkflowSuccess(runCli("anchor", runDir), "anchor");
 
-  const firstRender = runCli("render-review", runDir);
-  assert.equal(firstRender.status, 0, firstRender.stderr);
+  expectWorkflowSuccess(runCli("review", runDir), "review");
 
   await rm(join(runDir, "review_bundle.json"));
   await writeFile(join(runDir, "run.json"), "{not-json\n", "utf8");
 
-  const rendered = runCli("render-review", runDir);
-
-  assert.equal(rendered.status, 1);
-  assert.match(
-    rendered.stderr,
-    /render-review requires a valid missless run\.json before it can rebuild review artifacts/
+  expectWorkflowFailure(
+    runCli("review", runDir),
+    "review",
+    /review requires a valid missless run\.json before it can rebuild review artifacts/
   );
   await assert.rejects(
     () => stat(join(runDir, "review.html")),
@@ -450,17 +466,15 @@ test("render-review removes stale review outputs when only review.html remains a
   );
 });
 
-test("render-review refuses cleanup when stale outputs are no longer trusted by the runtime registry", async () => {
+test("review refuses cleanup when stale outputs are no longer trusted by the runtime registry", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-untrusted-cleanup");
 
   await seedReviewRun(runDir);
 
-  const anchored = runCli("anchor-evidence", runDir);
-  assert.equal(anchored.status, 0, anchored.stderr);
+  expectWorkflowSuccess(runCli("anchor", runDir), "anchor");
 
-  const firstRender = runCli("render-review", runDir);
-  assert.equal(firstRender.status, 0, firstRender.stderr);
+  expectWorkflowSuccess(runCli("review", runDir), "review");
 
   await rm(join(runDir, "review_bundle.json"));
   await rm(getRunRegistryPath(runDir), { force: true });
@@ -468,37 +482,31 @@ test("render-review refuses cleanup when stale outputs are no longer trusted by 
   await rm(getCleanupTokenPath(runDir), { force: true });
   await writeFile(join(runDir, "run.json"), "{not-json\n", "utf8");
 
-  const rendered = runCli("render-review", runDir);
-
-  assert.equal(rendered.status, 1);
-  assert.match(
-    rendered.stderr,
-    /render-review requires a valid missless run\.json before it can rebuild review artifacts/
+  expectWorkflowFailure(
+    runCli("review", runDir),
+    "review",
+    /review requires a valid missless run\.json before it can rebuild review artifacts/
   );
   await stat(join(runDir, "review.html"));
 });
 
-test("render-review still cleans stale outputs when the cleanup registry is corrupt but the per-run attestation is intact", async () => {
+test("review still cleans stale outputs when the cleanup registry is corrupt but the per-run attestation is intact", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-corrupt-registry");
 
   await seedReviewRun(runDir);
 
-  const anchored = runCli("anchor-evidence", runDir);
-  assert.equal(anchored.status, 0, anchored.stderr);
+  expectWorkflowSuccess(runCli("anchor", runDir), "anchor");
 
-  const firstRender = runCli("render-review", runDir);
-  assert.equal(firstRender.status, 0, firstRender.stderr);
+  expectWorkflowSuccess(runCli("review", runDir), "review");
 
   await writeFile(getRunRegistryPath(runDir), "{not-json\n", "utf8");
   await writeFile(join(runDir, "run.json"), "{not-json\n", "utf8");
 
-  const rendered = runCli("render-review", runDir);
-
-  assert.equal(rendered.status, 1);
-  assert.match(
-    rendered.stderr,
-    /render-review requires a valid missless run\.json before it can rebuild review artifacts/
+  expectWorkflowFailure(
+    runCli("review", runDir),
+    "review",
+    /review requires a valid missless run\.json before it can rebuild review artifacts/
   );
   await assert.rejects(
     () => stat(join(runDir, "review_bundle.json")),
@@ -516,28 +524,24 @@ test("render-review still cleans stale outputs when the cleanup registry is corr
   );
 });
 
-test("render-review still cleans stale outputs when only the runs-root registry remains trusted", async () => {
+test("review still cleans stale outputs when only the runs-root registry remains trusted", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-registry-only");
 
   await seedReviewRun(runDir);
 
-  const anchored = runCli("anchor-evidence", runDir);
-  assert.equal(anchored.status, 0, anchored.stderr);
+  expectWorkflowSuccess(runCli("anchor", runDir), "anchor");
 
-  const firstRender = runCli("render-review", runDir);
-  assert.equal(firstRender.status, 0, firstRender.stderr);
+  expectWorkflowSuccess(runCli("review", runDir), "review");
 
   await rm(getRunAttestationPath(runDir), { force: true });
   await rm(getCleanupTokenPath(runDir), { force: true });
   await writeFile(join(runDir, "run.json"), "{not-json\n", "utf8");
 
-  const rendered = runCli("render-review", runDir);
-
-  assert.equal(rendered.status, 1);
-  assert.match(
-    rendered.stderr,
-    /render-review requires a valid missless run\.json before it can rebuild review artifacts/
+  expectWorkflowFailure(
+    runCli("review", runDir),
+    "review",
+    /review requires a valid missless run\.json before it can rebuild review artifacts/
   );
   await assert.rejects(
     () => stat(join(runDir, "review_bundle.json")),
@@ -555,28 +559,24 @@ test("render-review still cleans stale outputs when only the runs-root registry 
   );
 });
 
-test("render-review still cleans stale outputs when only the signed run-local token remains trusted", async () => {
+test("review still cleans stale outputs when only the signed run-local token remains trusted", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-token-only");
 
   await seedReviewRun(runDir);
 
-  const anchored = runCli("anchor-evidence", runDir);
-  assert.equal(anchored.status, 0, anchored.stderr);
+  expectWorkflowSuccess(runCli("anchor", runDir), "anchor");
 
-  const firstRender = runCli("render-review", runDir);
-  assert.equal(firstRender.status, 0, firstRender.stderr);
+  expectWorkflowSuccess(runCli("review", runDir), "review");
 
   await rm(getRunRegistryPath(runDir), { force: true });
   await rm(getRunAttestationPath(runDir), { force: true });
   await writeFile(join(runDir, "run.json"), "{not-json\n", "utf8");
 
-  const rendered = runCli("render-review", runDir);
-
-  assert.equal(rendered.status, 1);
-  assert.match(
-    rendered.stderr,
-    /render-review requires a valid missless run\.json before it can rebuild review artifacts/
+  expectWorkflowFailure(
+    runCli("review", runDir),
+    "review",
+    /review requires a valid missless run\.json before it can rebuild review artifacts/
   );
   await assert.rejects(
     () => stat(join(runDir, "review_bundle.json")),
@@ -594,25 +594,21 @@ test("render-review still cleans stale outputs when only the signed run-local to
   );
 });
 
-test("render-review removes stale review outputs when canonical_text.md is missing", async () => {
+test("review removes stale review outputs when canonical_text.md is missing", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-missing-canonical");
 
   await seedReviewRun(runDir);
 
-  const anchored = runCli("anchor-evidence", runDir);
-  assert.equal(anchored.status, 0, anchored.stderr);
+  expectWorkflowSuccess(runCli("anchor", runDir), "anchor");
 
-  const firstRender = runCli("render-review", runDir);
-  assert.equal(firstRender.status, 0, firstRender.stderr);
+  expectWorkflowSuccess(runCli("review", runDir), "review");
 
   await rm(join(runDir, "canonical_text.md"));
 
-  const rendered = runCli("render-review", runDir);
-
-  assert.equal(rendered.status, 1);
-  assert.match(
-    rendered.stderr,
+  expectWorkflowFailure(
+    runCli("review", runDir),
+    "review",
     /Cannot render review until canonical_text\.md exists for the run/
   );
   await assert.rejects(
@@ -631,25 +627,21 @@ test("render-review removes stale review outputs when canonical_text.md is missi
   );
 });
 
-test("render-review removes stale review outputs when extraction_draft.json is missing", async () => {
+test("review removes stale review outputs when extraction_draft.json is missing", async () => {
   const runsRoot = await mkdtemp(join(tmpdir(), "missless-run-"));
   const runDir = join(runsRoot, "run-missing-draft");
 
   await seedReviewRun(runDir);
 
-  const anchored = runCli("anchor-evidence", runDir);
-  assert.equal(anchored.status, 0, anchored.stderr);
+  expectWorkflowSuccess(runCli("anchor", runDir), "anchor");
 
-  const firstRender = runCli("render-review", runDir);
-  assert.equal(firstRender.status, 0, firstRender.stderr);
+  expectWorkflowSuccess(runCli("review", runDir), "review");
 
   await rm(join(runDir, "extraction_draft.json"));
 
-  const rendered = runCli("render-review", runDir);
-
-  assert.equal(rendered.status, 1);
-  assert.match(
-    rendered.stderr,
+  expectWorkflowFailure(
+    runCli("review", runDir),
+    "review",
     /Cannot render review until extraction_draft\.json exists for the run/
   );
   await assert.rejects(

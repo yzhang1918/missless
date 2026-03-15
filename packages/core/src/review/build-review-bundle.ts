@@ -145,7 +145,7 @@ export async function buildReviewBundleInRunDir(
     ) {
       return failClosedRenderReview(
         artifactPaths,
-        "render-review requires a valid missless run.json before it can rebuild review artifacts."
+        "review requires a valid missless run.json before it can rebuild review artifacts."
       );
     }
 
@@ -159,14 +159,14 @@ export async function buildReviewBundleInRunDir(
   } catch {
     return failClosedRenderReview(
       artifactPaths,
-      "render-review requires a valid missless run.json before it can rebuild review artifacts."
+      "review requires a valid missless run.json before it can rebuild review artifacts."
     );
   }
 
   if (!isTrustedRunManifest(runManifest)) {
     return failClosedRenderReview(
       artifactPaths,
-      "render-review requires a valid missless run.json before it can rebuild review artifacts."
+      "review requires a valid missless run.json before it can rebuild review artifacts."
     );
   }
 
@@ -231,7 +231,7 @@ export async function buildReviewBundleInRunDir(
     ) {
       return failClosedRenderReview(
         artifactPaths,
-        "Cannot render review until anchor-evidence succeeds for the run."
+        "Cannot render review until anchor succeeds for the run."
       );
     }
 
@@ -252,7 +252,7 @@ export async function buildReviewBundleInRunDir(
   if (!evidenceResult.ok) {
     return failClosedRenderReview(
       artifactPaths,
-      "Cannot render review until anchor-evidence succeeds for the run."
+      "Cannot render review until anchor succeeds for the run."
     );
   }
 
@@ -262,7 +262,7 @@ export async function buildReviewBundleInRunDir(
   ) {
     return failClosedRenderReview(
       artifactPaths,
-      "Cannot render review until anchor-evidence is rerun for the current extraction draft and canonical text."
+      "Cannot render review until anchor is rerun for the current extraction draft and canonical text."
     );
   }
 

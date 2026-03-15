@@ -59,8 +59,13 @@ proposal.
 
 ## First Deterministic CLI Contracts
 
-`fetch-normalize <url>`:
+Detailed stdout/stderr and envelope rules live in
+`docs/specs/cli-contracts.md`. This document keeps the stage-level command
+semantics and artifact boundaries.
+
+`fetch <url>`:
 - accepts one HTTP(S) URL plus optional `--runs-dir <dir>`
+- accepts optional `--fetch-method <auto|jina|direct>`
 - creates a stable `run_dir`
 - writes `run.json`, `source.json`, and `canonical_text.md`
 - registers the run in runtime-owned cleanup state under missless runtime
@@ -71,13 +76,19 @@ proposal.
 - runtime also writes a signed run-local cleanup token so restored local runs
   can still prove stale-output ownership without trusting a plaintext
   in-directory marker
-- records both the requested source URL and the resolved safe fetch destination
-  in `source.json`
+- records the requested source URL, the final content URL used for the
+  decision basis, the requested fetch method, the chosen fetch method, and the
+  canonical snapshot hash in `source.json`
 - resolves redirect hops under the runtime SSRF policy before provider access
 - uses a provider abstraction with explicit recoverable versus terminal
   failures
 - uses `Jina Reader -> direct origin fetch` as the default provider sequence
 - allows local/mock provider overrides through `MISSLESS_JINA_BASE_URL`
+- requires injected custom providers to expose the durable chosen fetch method
+  through either a built-in durable `providerName`
+  (`jina_reader|direct_origin`) or an explicit `durableFetchMethod`
+- fails closed when an explicit `--fetch-method jina|direct` request conflicts
+  with the provider result's durable chosen fetch method
 - rejects source URLs with embedded credentials and rejects localhost,
   private, link-local, and single-label hosts by default
 - rejects hostnames that resolve to loopback, private, or link-local
@@ -93,7 +104,7 @@ proposal.
 - direct-origin fallback performs local HTML-to-markdown normalization after a
   safe public fetch
 
-`validate-draft --run-dir <dir>`:
+`validate --run-dir <dir>`:
 - reads `run.json`, `canonical_text.md`, and `extraction_draft.json`
 - validates the extraction draft schema
 - validates that the run directory still describes a normalized missless run
@@ -101,15 +112,14 @@ proposal.
   materialization
 - remains the authoritative runtime gate regardless of which agent backend
   authored the draft
-- returns concise summary output by default
-- returns structured JSON diagnostics when `--json` is requested
+- returns a structured JSON result by default
 - fails closed with a non-zero exit code when required artifacts are missing,
   JSON is malformed, the run manifest is invalid, schema validation fails, or
   duplicate atom claims are detected
 
-`anchor-evidence --run-dir <dir>`:
+`anchor --run-dir <dir>`:
 - reads `canonical_text.md` and `extraction_draft.json`
-- reuses `validate-draft` as a hard precondition
+- reuses `validate` as a hard precondition
 - resolves quote-oriented selectors into deterministic evidence records with
   `char_range` and `context_excerpt`
 - writes `evidence_result.json`
@@ -117,7 +127,7 @@ proposal.
 - fails closed when exact quotes are missing, selector context does not narrow
   the match, or the selector still resolves ambiguously
 
-`render-review --run-dir <dir>`:
+`review --run-dir <dir>`:
 - requires a valid normalized `run.json` for the run
 - requires a successful `evidence_result.json`
 - requires `evidence_result.json` to come from the current `extraction_draft.json`
@@ -133,10 +143,10 @@ proposal.
 
 Real E2E:
 - must use a live agent backend against the canonical text produced by
-  `fetch-normalize`
+  `fetch`
 - must author `extraction_draft.json` directly rather than relying on a
   product-level structured-output subset contract
-- must still pass `validate-draft`, `anchor-evidence`, and `render-review`
+- must still pass `validate`, `anchor`, and `review`
   without special-case runtime behavior
 
 ## Review Contract

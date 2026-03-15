@@ -159,7 +159,7 @@ function findSelfCheckDiagnostics(
 }
 
 function summarizeFailure(diagnostics: readonly ValidationDiagnostic[]): string {
-  return `Draft validation failed with ${diagnostics.length} issue(s). Re-run with --json for details.`;
+  return `Draft validation failed with ${diagnostics.length} issue(s). Inspect diagnostics for details.`;
 }
 
 export async function validateDraftInRunDir(

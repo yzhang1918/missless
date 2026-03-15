@@ -98,6 +98,9 @@ use the shape in `references/reviewer-dispatch-record.md`.
 `review_finalize.sh` always prints the aggregated artifact path. If expected
 reviewer artifacts are missing or the gate is otherwise blocked, it exits
 non-zero (currently `2`) after printing the path.
+The aggregate contract also fails closed when a reviewer artifact's declared
+`scope` does not match the launch manifest scope, and records those mismatches
+under `contract.scope_mismatches`.
 
 9. If blocked, fix findings and run another review round.
    - If a reviewer did not return, first record the reviewer-slot failure in the

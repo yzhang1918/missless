@@ -1,3 +1,4 @@
+import { getRunArtifactPaths } from "@missless/contracts";
 import { anchorEvidenceInRunDir } from "@missless/core";
 
 function readOptionValue(args: readonly string[], index: number, option: string): string {
@@ -14,7 +15,6 @@ export async function runAnchorEvidenceCommand(
   args: readonly string[]
 ): Promise<number> {
   let runDir: string | undefined;
-  let jsonMode = false;
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -26,24 +26,41 @@ export async function runAnchorEvidenceCommand(
     }
 
     if (arg === "--json") {
-      jsonMode = true;
       continue;
     }
 
-    throw new Error(`Unknown option for anchor-evidence: ${arg}`);
+    throw new Error(`Unknown option for anchor: ${arg}`);
   }
 
   if (runDir === undefined) {
-    throw new Error("anchor-evidence requires --run-dir <dir>");
+    throw new Error("anchor requires --run-dir <dir>");
   }
 
   const result = await anchorEvidenceInRunDir(runDir);
-
-  if (jsonMode) {
-    console.log(JSON.stringify(result, null, 2));
-  } else {
-    console.log(result.summary);
-  }
+  const artifactPaths = getRunArtifactPaths(result.run_dir);
+  console.log(
+    JSON.stringify(
+      {
+        ok: result.ok,
+        command: "anchor",
+        summary: result.summary,
+        run_dir: result.run_dir,
+        artifacts: {
+          run: artifactPaths.runManifest,
+          source: artifactPaths.source,
+          canonical_text: artifactPaths.canonicalText,
+          extraction_draft: artifactPaths.extractionDraft,
+          evidence_result: artifactPaths.evidenceResult
+        },
+        diagnostics: result.diagnostics,
+        draft_sha256: result.draft_sha256,
+        canonical_text_sha256: result.canonical_text_sha256,
+        atom_count: result.atoms.length
+      },
+      null,
+      2
+    )
+  );
 
   return result.ok ? 0 : 1;
 }

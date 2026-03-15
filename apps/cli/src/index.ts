@@ -11,7 +11,7 @@ import { runValidateDraftCommand } from "./commands/validate-draft.js";
 
 const COMMANDS = [
   {
-    name: "fetch-normalize",
+    name: "fetch",
     description: "Create a run directory and canonical text from one public URL."
   },
   {
@@ -19,25 +19,25 @@ const COMMANDS = [
     description: "Print the runtime-owned extraction_draft.json contract."
   },
   {
-    name: "validate-draft",
+    name: "validate",
     description: "Validate an agent-authored extraction draft in a run directory."
   },
   {
-    name: "anchor-evidence",
+    name: "anchor",
     description: "Validate and materialize evidence from extraction selectors."
   },
   {
-    name: "render-review",
+    name: "review",
     description: "Render a read-only HTML review package from run artifacts."
   }
 ] as const;
 
 const COMMAND_HANDLERS = {
-  "anchor-evidence": runAnchorEvidenceCommand,
-  "fetch-normalize": runFetchNormalizeCommand,
+  anchor: runAnchorEvidenceCommand,
+  fetch: runFetchNormalizeCommand,
   "print-draft-contract": runPrintDraftContractCommand,
-  "render-review": runRenderReviewCommand,
-  "validate-draft": runValidateDraftCommand
+  review: runRenderReviewCommand,
+  validate: runValidateDraftCommand
 } as const;
 
 function renderHelp(): string {

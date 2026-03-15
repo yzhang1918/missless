@@ -62,9 +62,9 @@ Current baseline for the first delivery slice is:
 
 ## Ingestion and Validation Boundary
 
-- `fetch-normalize` is the first deterministic CLI seam. It creates a stable
-  `run_dir` and writes `run.json`, `source.json`, and `canonical_text.md`.
-- `fetch-normalize` also registers the run in runtime-owned cleanup state
+- `fetch` is the first deterministic CLI seam. It creates a stable `run_dir`
+  and writes `run.json`, `source.json`, and `canonical_text.md`.
+- `fetch` also registers the run in runtime-owned cleanup state
   under missless runtime state, outside caller-supplied runs roots, so later
   repair flows can distinguish real missless run directories from arbitrary
   caller-supplied folders when cleaning stale derived artifacts.
@@ -76,6 +76,8 @@ Current baseline for the first delivery slice is:
   plaintext marker.
 - Fetch/normalize uses a provider abstraction with explicit recoverable versus
   terminal failure outcomes.
+- The user-facing CLI names the combined seam `fetch`; the internal stage split
+  between fetch and normalize remains part of the pipeline model.
 - The default provider sequence is `Jina Reader -> direct origin fetch`.
 - Runtime resolves the source redirect chain under the same SSRF policy before
   provider access so redirect hops and final destinations cannot bypass the
@@ -83,10 +85,16 @@ Current baseline for the first delivery slice is:
 - Local and mocked runs may override the reader endpoint with
   `MISSLESS_JINA_BASE_URL`; authenticated environments may also provide
   `JINA_API_KEY`.
-- `fetch-normalize` rejects embedded credentials plus localhost/private
+- Injected custom providers must expose the durable chosen fetch method
+  through either a built-in durable `providerName`
+  (`jina_reader|direct_origin`) or an explicit `durableFetchMethod`; otherwise
+  durable provenance recording fails closed.
+- Explicit `--fetch-method jina|direct` requests are enforced against that
+  durable provider result so contradictory provenance cannot be persisted.
+- `fetch` rejects embedded credentials plus localhost/private
   targets by default so repository runs do not silently exfiltrate internal or
   credentialed URLs through the third-party reader.
-- `fetch-normalize` now also rejects hostnames whose resolved addresses point
+- `fetch` now also rejects hostnames whose resolved addresses point
   at loopback, private, or link-local targets before provider fetch begins.
 - The same fail-closed policy also applies across redirect hops and final
   fetch destinations; blocked redirect targets never trigger fallback.
@@ -95,17 +103,21 @@ Current baseline for the first delivery slice is:
   forwarding for a custom override host.
 - Direct-origin fallback only runs after recoverable Jina failures and performs
   local HTML-to-markdown normalization after a safe public fetch.
-- `validate-draft` reads the run artifacts and fails closed on schema or
+- `source.json` is a durable provenance artifact that keeps the requested URL,
+  requested fetch method, final content URL, chosen fetch method, snapshot
+  hash, and fetch time, while leaving provider-attempt and transport metadata
+  out of the long-lived contract.
+- `validate` reads the run artifacts and fails closed on schema or
   contract issues before any later evidence/materialization steps run.
-- Run-level preconditions are enforced there as well, so `anchor-evidence`
-  and `render-review` both depend on the same validated `run.json` boundary.
+- Run-level preconditions are enforced there as well, so `anchor` and `review`
+  both depend on the same validated `run.json` boundary.
 - The first non-schema draft invariant is duplicate claim detection so the
   runtime can reject obviously unstable atom sets even before evidence
   anchoring begins.
 
 ## Evidence Materialization Boundary
 
-- `anchor-evidence` is deterministic runtime work, not prompt work.
+- `anchor` is deterministic runtime work, not prompt work.
 - The first implementation resolves quote-oriented selectors into
   `char_range + context_excerpt` evidence records inside `evidence_result.json`.
 - The anchored evidence artifact also records the draft and canonical-text
@@ -115,16 +127,16 @@ Current baseline for the first delivery slice is:
   breaking otherwise-valid anchors.
 - Anchor failures are fail-closed and produce explicit diagnostics instead of
   silently dropping evidence.
-- `render-review` assembles a `review_bundle.json` artifact and a local
+- `review` assembles a `review_bundle.json` artifact and a local
   read-only `review.html` page from anchored evidence plus canonical text.
-- `render-review` must reject stale evidence artifacts that were generated from
+- `review` must reject stale evidence artifacts that were generated from
   an older draft revision or older canonical-text snapshot.
-- `render-review` only deletes stale rendered outputs when the enclosing run
+- `review` only deletes stale rendered outputs when the enclosing run
   directory remains trusted by runtime-owned cleanup state or by a valid
   signed run-local cleanup token.
 - The repair loop is the same regardless of backend: generate a full draft,
   run deterministic validation, repair the draft from diagnostics, then rerun
-  `anchor-evidence` and `render-review`.
+  `anchor` and `review`.
 
 ## Evidence Anchoring Contract (Text Baseline)
 

@@ -4,7 +4,11 @@ import { resolve } from "node:path";
 
 import { getRunArtifactPaths, type RunArtifactPaths } from "@missless/contracts";
 
-import { createDefaultSourceProvider } from "../providers/default.js";
+import {
+  createSourceProviderForMethod,
+  type ConcreteFetchMethod,
+  type FetchMethod
+} from "../providers/default.js";
 import type {
   FetchLike,
   SourceProvider
@@ -32,20 +36,22 @@ export interface RunManifest {
 }
 
 export interface SourceArtifact {
-  readonly source_url: string;
-  readonly resolved_source_url: string;
-  readonly provider: string;
-  readonly provider_url: string;
+  readonly requested: {
+    readonly url: string;
+    readonly fetch_method: FetchMethod;
+  };
+  readonly decision_basis: {
+    readonly url: string;
+    readonly fetch_method: ConcreteFetchMethod;
+    readonly snapshot_sha256: string;
+  };
   readonly fetched_at: string;
-  readonly provider_response_status: number;
-  readonly response_headers: Readonly<Record<string, string>>;
-  readonly content_type: "text/markdown";
-  readonly normalized_text_sha256: string;
 }
 
 export interface FetchNormalizeInput {
   readonly sourceUrl: string;
   readonly runsDir?: string;
+  readonly fetchMethod?: FetchMethod;
   readonly provider?: SourceProvider;
   readonly now?: Date;
   readonly runId?: string;
@@ -61,7 +67,7 @@ export interface FetchNormalizeResult {
   readonly canonicalText: string;
   readonly runManifest: RunManifest;
   readonly sourceArtifact: SourceArtifact;
-  readonly provider: string;
+  readonly provider: ConcreteFetchMethod;
 }
 
 function writeJsonFile(path: string, value: unknown): Promise<void> {
@@ -74,10 +80,57 @@ function sha256(input: string): string {
 
 function assertSafeRunId(runId: string): void {
   if (!SAFE_RUN_ID_PATTERN.test(runId)) {
+    throw new Error("fetch rejects run IDs with path separators or unsafe segments");
+  }
+}
+
+function assertChosenFetchMethod(
+  fetched: {
+    readonly providerName: string;
+    readonly durableFetchMethod?: ConcreteFetchMethod;
+  },
+  requestedFetchMethod: FetchMethod,
+  hasCustomProvider: boolean
+): ConcreteFetchMethod {
+  const providerNameFetchMethod =
+    fetched.providerName === "jina_reader" || fetched.providerName === "direct_origin"
+      ? fetched.providerName
+      : undefined;
+  let chosenFetchMethod: ConcreteFetchMethod;
+
+  if (fetched.durableFetchMethod !== undefined) {
+    if (
+      providerNameFetchMethod !== undefined &&
+      providerNameFetchMethod !== fetched.durableFetchMethod
+    ) {
+      throw new Error(
+        `fetch received conflicting durable provider metadata: providerName=${fetched.providerName}, durableFetchMethod=${fetched.durableFetchMethod}`
+      );
+    }
+
+    chosenFetchMethod = fetched.durableFetchMethod;
+  } else if (providerNameFetchMethod !== undefined) {
+    chosenFetchMethod = providerNameFetchMethod;
+  } else if (hasCustomProvider) {
     throw new Error(
-      "fetch-normalize rejects run IDs with path separators or unsafe segments"
+      "fetch requires custom providers to return durableFetchMethod jina_reader or direct_origin, or a built-in providerName that identifies the durable chosen fetch method"
+    );
+  } else {
+    throw new Error(
+      `fetch received an unsupported provider result for durable provenance: ${fetched.providerName}`
     );
   }
+
+  if (
+    requestedFetchMethod !== "auto" &&
+    chosenFetchMethod !== requestedFetchMethod
+  ) {
+    throw new Error(
+      `fetch received durable fetch method ${chosenFetchMethod} from provider ${fetched.providerName}, which conflicts with explicit requested fetch method ${requestedFetchMethod}`
+    );
+  }
+
+  return chosenFetchMethod;
 }
 
 export function createRunId(now = new Date()): string {
@@ -94,6 +147,8 @@ export async function fetchNormalizeSource(
 ): Promise<FetchNormalizeResult> {
   const now = input.now ?? new Date();
   const runId = input.runId ?? createRunId(now);
+  const requestedFetchMethod = input.fetchMethod ?? "auto";
+  const hasCustomProvider = input.provider !== undefined;
   assertSafeRunId(runId);
   const hostResolver = input.hostResolver ?? defaultHostResolver;
   const fetchImpl = input.fetchImpl ?? globalThis.fetch;
@@ -102,7 +157,8 @@ export async function fetchNormalizeSource(
     fetchImpl,
     hostResolver
   });
-  const provider = input.provider ?? createDefaultSourceProvider();
+  const provider =
+    input.provider ?? createSourceProviderForMethod(requestedFetchMethod);
   const cleanupTokenWriter = input.cleanupTokenWriter ?? writeCleanupToken;
   const runsDir = resolve(input.runsDir ?? ".local/runs");
   const runDir = resolve(runsDir, runId);
@@ -119,6 +175,11 @@ export async function fetchNormalizeSource(
       ? redirectResolution.finalUrl
       : fetched.resolvedSourceUrl;
   const normalizedTextHash = sha256(fetched.canonicalText);
+  const chosenFetchMethod = assertChosenFetchMethod(
+    fetched,
+    requestedFetchMethod,
+    hasCustomProvider
+  );
   const runManifest: RunManifest = {
     run_id: runId,
     created_at: now.toISOString(),
@@ -127,15 +188,16 @@ export async function fetchNormalizeSource(
     source_url: input.sourceUrl
   };
   const sourceArtifact: SourceArtifact = {
-    source_url: input.sourceUrl,
-    resolved_source_url: resolvedSourceUrl,
-    provider: fetched.providerName,
-    provider_url: fetched.providerUrl,
-    fetched_at: fetched.fetchedAt,
-    provider_response_status: fetched.responseStatus,
-    response_headers: fetched.responseHeaders,
-    content_type: "text/markdown",
-    normalized_text_sha256: normalizedTextHash
+    requested: {
+      url: input.sourceUrl,
+      fetch_method: requestedFetchMethod
+    },
+    decision_basis: {
+      url: resolvedSourceUrl,
+      fetch_method: chosenFetchMethod,
+      snapshot_sha256: normalizedTextHash
+    },
+    fetched_at: fetched.fetchedAt
   };
 
   await mkdir(runDir, { recursive: false });
@@ -163,6 +225,6 @@ export async function fetchNormalizeSource(
     canonicalText: fetched.canonicalText,
     runManifest,
     sourceArtifact,
-    provider: fetched.providerName
+    provider: chosenFetchMethod
   };
 }

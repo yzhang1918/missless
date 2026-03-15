@@ -127,7 +127,7 @@ if (reviewMatch !== null) {
     );
   }
 
-  for (const command of ["validate-draft", "anchor-evidence", "render-review"]) {
+  for (const command of ["validate", "anchor", "review"]) {
     const result = spawnSync(
       process.execPath,
       [path.join(cwd, "apps/cli/dist/index.js"), command, "--run-dir", runDir],
@@ -281,6 +281,7 @@ test("run_missless_review.sh exercises fallback AI review and records status art
             ...process.env,
             PATH: `${fakeBinDir}:${process.env.PATH ?? ""}`,
             MISSLESS_FAKE_CODEX_MODE: "fallback-success",
+            MISSLESS_E2E_FETCH_WRAPPER_STDERR: "benign fetch warning on stderr",
             MISSLESS_JINA_BASE_URL: `http://127.0.0.1:${address.port}/`,
             ...createFetchMockEnv(reviewSourceUrl, "happy-path")
           },
@@ -336,6 +337,10 @@ test("run_missless_review.sh exercises fallback AI review and records status art
     assert.equal(aiReviewContext.selected_attempt, "fallback");
     assert.equal(aiReview.reviewer_backend, "fake-codex");
     assert.equal(aiReview.ok, true);
+    assert.match(
+      await readFile(join(sessionRoot, "logs", "fetch.log"), "utf8"),
+      /\[stderr\][\s\S]*benign fetch warning on stderr[\s\S]*\[stdout\][\s\S]*"command": "fetch"/
+    );
   } finally {
     server.closeAllConnections();
     server.close();
