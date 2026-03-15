@@ -69,7 +69,5 @@ Each subagent reviewer writes one JSON file to `.local/loop/review-<round-id>-<d
 - A `manual-fallback` artifact is valid only after the matching reviewer slot
   recorded a fallback-eligible dispatch status in
   `references/reviewer-dispatch-record.md`.
-- During the transition to the layered contract, `review_aggregate.sh` still
-  accepts legacy reviewer artifacts that use `findings[]` only and interprets
-  them as `current_slice_findings[]`. New reviewer outputs should use the
-  layered fields above.
+- `review_aggregate.sh`, `review_gate.sh`, and `final_gate.sh` require the
+  layered fields and do not accept legacy `findings[]`-only reviewer artifacts.

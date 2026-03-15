@@ -87,7 +87,7 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - Documentation impact:
   - Keep review/final-gate wording aligned with the new current-slice-only blocking rule.
 - Evidence:
-  - Updated `review_aggregate.sh` so it accepts the new layered reviewer payload, preserves separate `current_slice_findings`, `accepted_deferred_risks`, and `strategic_observations` in the aggregated review artifact, and computes blocking counts from current-slice findings only while still tolerating legacy `findings[]` payloads during transition.
+- Updated `review_aggregate.sh` so it requires the layered reviewer payload, preserves separate `current_slice_findings`, `accepted_deferred_risks`, and `strategic_observations` in the aggregated review artifact, and computes blocking counts from current-slice findings only.
   - Updated `review_gate.sh` and `final_gate.sh` so they validate the layered review artifact contract and block only on current-slice `BLOCKER` or `IMPORTANT` findings.
   - Updated `.agents/skills/loop-final-gate/SKILL.md` so the final-gate contract explicitly states that accepted deferred risks and strategic observations remain visible but non-blocking.
   - Ran `bash -n .agents/skills/loop-review-loop/scripts/review_aggregate.sh`, `bash -n .agents/skills/loop-review-loop/scripts/review_gate.sh`, and `bash -n .agents/skills/loop-final-gate/scripts/final_gate.sh`; all parsed cleanly.

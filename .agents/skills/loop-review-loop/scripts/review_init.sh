@@ -41,7 +41,9 @@ jq -n \
     scope: $scope,
     status: "in_progress",
     reviewers: [],
-    findings: [],
+    current_slice_findings: [],
+    accepted_deferred_risks: [],
+    strategic_observations: [],
     counts: {
       blocker: 0,
       important: 0,

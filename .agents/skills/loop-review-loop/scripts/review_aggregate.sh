@@ -251,34 +251,19 @@ if ((${#wrapper_files[@]} > 0)); then
       or . == "IMPORTANT"
       or . == "MINOR"
       or . == "NIT";
-    def has_layered_fields:
+    def has_valid_layered_fields:
       ((.current_slice_findings // null) != null)
       and ((.accepted_deferred_risks // null) != null)
       and ((.strategic_observations // null) != null)
       and (.current_slice_findings | type == "array")
       and (.accepted_deferred_risks | type == "array")
       and (.strategic_observations | type == "array");
-    def has_legacy_findings:
-      ((.findings // null) != null)
-      and (.findings | type == "array");
     def current_slice_findings:
-      if has_layered_fields then
-        (.current_slice_findings // [])
-      else
-        (.findings // [])
-      end;
+      (.current_slice_findings // []);
     def accepted_deferred_risks:
-      if has_layered_fields then
-        (.accepted_deferred_risks // [])
-      else
-        []
-      end;
+      (.accepted_deferred_risks // []);
     def strategic_observations:
-      if has_layered_fields then
-        (.strategic_observations // [])
-      else
-        []
-      end;
+      (.strategic_observations // []);
     def valid_current_slice_item:
       (.severity | type == "string")
       and (.severity | valid_severity);
@@ -308,7 +293,7 @@ if ((${#wrapper_files[@]} > 0)); then
     and
     all(.[]; ((.payload.summary // "") | type == "string"))
     and
-    all(.[]; (.payload | has_layered_fields or has_legacy_findings))
+    all(.[]; (.payload | has_valid_layered_fields))
     and
     all(.[]; all((.payload | current_slice_findings)[]?; valid_current_slice_item))
     and
@@ -334,7 +319,7 @@ if ((${#wrapper_files[@]} > 0)); then
       end
     )
   ' -- "${wrapper_files[@]}" >/dev/null; then
-    echo "Invalid reviewer artifact: layered review fields or severities are malformed, accepted deferred risks must record title plus tracking_issue/accepted_reason, strategic observations must include recommendation, and manual-fallback artifacts must record a reason" >&2
+    echo "Invalid reviewer artifact: layered review fields must be complete and well-typed, accepted deferred risks must record title plus tracking_issue/accepted_reason, strategic observations must include recommendation, and manual-fallback artifacts must record a reason" >&2
     exit 1
   fi
 fi
@@ -366,7 +351,7 @@ jq -n \
       or . == "IMPORTANT"
       or . == "MINOR"
       or . == "NIT";
-    def has_layered_fields($payload):
+    def has_valid_layered_fields($payload):
       (($payload.current_slice_findings // null) != null)
       and (($payload.accepted_deferred_risks // null) != null)
       and (($payload.strategic_observations // null) != null)
@@ -384,23 +369,11 @@ jq -n \
     def dispatch_for_path($dispatch; $path):
       ([ dispatch_reviewers($dispatch)[] | select(.output_path == $path) ] | first);
     def current_slice_findings($payload):
-      if has_layered_fields($payload) then
-        ($payload.current_slice_findings // [])
-      else
-        ($payload.findings // [])
-      end;
+      ($payload.current_slice_findings // []);
     def accepted_deferred_risks($payload):
-      if has_layered_fields($payload) then
-        ($payload.accepted_deferred_risks // [])
-      else
-        []
-      end;
+      ($payload.accepted_deferred_risks // []);
     def strategic_observations($payload):
-      if has_layered_fields($payload) then
-        ($payload.strategic_observations // [])
-      else
-        []
-      end;
+      ($payload.strategic_observations // []);
     def reviewer_records($manifest; $dispatch; $actual):
       [
         expected_reviewers($manifest)[] as $expected
@@ -762,7 +735,6 @@ jq -n \
         reviewers: reviewer_records($manifest; $dispatch; $actual),
         unexpected_reviewers: unexpected_outputs($manifest; $actual),
         current_slice_findings: [ $actual[] | current_slice_findings(.payload)[] ],
-        findings: [ $actual[] | current_slice_findings(.payload)[] ],
         accepted_deferred_risks: [ $actual[] | accepted_deferred_risks(.payload)[] ],
         strategic_observations: [ $actual[] | strategic_observations(.payload)[] ],
         counts: {

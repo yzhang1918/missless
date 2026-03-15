@@ -50,11 +50,7 @@ if ! jq -e '
     or . == "MINOR"
     or . == "NIT";
   def current_slice_findings:
-    if (.current_slice_findings // null) != null then
-      .current_slice_findings
-    else
-      (.findings // [])
-    end;
+    .current_slice_findings;
   def accepted_deferred_risks:
     (.accepted_deferred_risks // []);
   def strategic_observations:
@@ -101,13 +97,13 @@ if ! jq -e '
   exit 1
 fi
 
-review_blocker="$(jq -r '[(.current_slice_findings // .findings // [])[]? | select((.severity // "") == "BLOCKER")] | length' "$review_file")"
-review_important="$(jq -r '[(.current_slice_findings // .findings // [])[]? | select((.severity // "") == "IMPORTANT")] | length' "$review_file")"
+review_blocker="$(jq -r '[(.current_slice_findings // [])[]? | select((.severity // "") == "BLOCKER")] | length' "$review_file")"
+review_important="$(jq -r '[(.current_slice_findings // [])[]? | select((.severity // "") == "IMPORTANT")] | length' "$review_file")"
 review_counts_match=true
 if [[ "$(jq -r '
-  (.counts.blocker == ([((.current_slice_findings // .findings // [])[]?) | select((.severity // "") == "BLOCKER")] | length))
+  (.counts.blocker == ([((.current_slice_findings // [])[]?) | select((.severity // "") == "BLOCKER")] | length))
   and
-  (.counts.important == ([((.current_slice_findings // .findings // [])[]?) | select((.severity // "") == "IMPORTANT")] | length))
+  (.counts.important == ([((.current_slice_findings // [])[]?) | select((.severity // "") == "IMPORTANT")] | length))
 ' "$review_file")" != "true" ]]; then
   review_counts_match=false
   echo "Invalid review artifact: counts do not match current-slice findings payload" >&2
