@@ -176,7 +176,7 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - On 2026-03-15, both `gh auth status` and `git fetch --prune origin` succeeded in this worktree, so stateful publish/final-gate refresh is no longer blocked by the earlier environment issues.
 - On 2026-03-15, commit `e141eb2` tightened `review_gate.sh` and `final_gate.sh` so missing `accepted_deferred_risks` or `strategic_observations` arrays fail closed, and both `review_regression.sh` plus `stateful_gate_regression.sh` passed on that head.
 - On 2026-03-15, commit `410ad27` tightened `review_aggregate.sh` so reviewer artifacts must match the manifest `scope`, and `review_regression.sh` passed with new missing-scope and mismatched-scope coverage on that head.
-- The earlier 2026-03-15 clean full-pr review and passing final-gate records apply only through commit `7acdbf5`; they were superseded by commits `e141eb2` and `410ad27`, so the latest-head review/final-gate evidence is being refreshed again in this session.
+- The earlier 2026-03-15 clean full-pr review and passing final-gate records apply only through commit `7acdbf5`; they were superseded by commits `e141eb2` and `410ad27`, and the refreshed follow-up review/final-gate records are captured below.
 - On 2026-03-15, delta review round `20260315-093341` passed with no current-slice blockers after the archived-plan refresh.
 - On 2026-03-15, `export_ci_status.sh main --docs-updated true --pr 40 --output .local/loop/ci-status-20260315-093341.json` and `final_gate.sh .local/loop/review-20260315-093341.json .local/loop/ci-status-20260315-093341.json docs/harness/completed/2026-03-14-review-outcome-taxonomy-and-deferred-risks.md main .local/loop/final-gate-20260315-093341.json` both passed for commit `126a599`.
 
@@ -227,7 +227,7 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - Merge/landing and issue auto-close remain pending until PR `#40` lands after the reopened scope is complete.
 - Linked issue updates:
 - PR `#40` remains the active publication path for this reopened work: `https://github.com/yzhang1918/missless/pull/40`.
-- Issue `#20`, issue `#22`, and PR `#40` reflect the reopened Step 4 work, while latest-head closeout evidence is being refreshed again after the follow-up review fixes in commits `e141eb2` and `410ad27`.
+- Issue `#20`, issue `#22`, and PR `#40` reflect the reopened Step 4 work plus the refreshed closeout evidence recorded after follow-up fixes in commits `e141eb2` and `410ad27`.
 - Issue `#20`, issue `#22`, and PR `#40` can now be synced to the refreshed closeout evidence from round `20260315-093341` and final gate artifact `.local/loop/final-gate-20260315-093341.json`.
 - Spawned follow-up issues:
 - None.
