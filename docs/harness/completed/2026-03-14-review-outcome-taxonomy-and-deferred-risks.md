@@ -148,7 +148,8 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - Evidence to capture:
   - One delta review after the layered contract and gate logic land
   - One delta review after reviewer-subagent enforcement lands
-  - One final full-pr review before final gate/publish work on the reopened branch head
+  - One final full-pr review before final gate/publish work on the reopened branch head once code-bearing Step 4 changes are complete
+  - If only closeout-only archived-plan wording changes remain after that full-pr review, one follow-up delta docs/spec consistency review before rerunning final gate on the new head
   - Validation results showing accepted deferred risks and strategic observations do not block when current-slice blockers are absent
   - Validation results showing fallback without a recorded reviewer-subagent failure fails closed
 
@@ -156,7 +157,8 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 
 - Delta review after Step 2 because the taxonomy affects cross-cutting review/gate semantics.
 - Delta review after Step 4 because reviewer-subagent enforcement changes review-loop execution semantics.
-- Full-pr review before final gate after all steps are complete on the reopened branch head.
+- Full-pr review before final gate after all code-bearing steps are complete on the reopened branch head.
+- If later commits only refresh archived-plan closeout wording without changing harness behavior, rerun a delta `docs/spec consistency` review and then refresh final gate on that new head.
 
 ## Final Gate Conditions
 
