@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+repo_root="$(cd "$script_dir/../.." && pwd -P)"
+entrypoint="$repo_root/apps/cli/dist/index.js"
+package_node_modules="$repo_root/apps/cli/node_modules"
+
+if [[ ! -f "$entrypoint" ]]; then
+  echo "Missing built CLI entrypoint: $entrypoint" >&2
+  echo "Run: source $repo_root/scripts/dev-activate-missless.sh" >&2
+  exit 1
+fi
+
+if [[ -e "$package_node_modules" ]]; then
+  resolved_package_node_modules="$(cd "$package_node_modules" && pwd -P)"
+  case "$resolved_package_node_modules" in
+    "$repo_root"|"$repo_root"/*) ;;
+    *)
+      echo "apps/cli/node_modules resolves outside this worktree: $resolved_package_node_modules" >&2
+      echo "Remove that directory or symlink, then rerun: source $repo_root/scripts/dev-activate-missless.sh" >&2
+      exit 1
+      ;;
+  esac
+fi
+
+exec node "$entrypoint" "$@"

@@ -25,24 +25,26 @@ The runtime CLI exists to support deterministic fetch, validation, evidence
 anchoring, and review rendering. It is an implementation detail in this slice,
 not the main user story.
 
-Until npm publishing exists, install the runtime from a built repository
-checkout:
+For day-to-day local development, activate the canonical session-local
+developer entry point in the shell you want to use:
 
 ```bash
-pnpm install
-pnpm -r build
-npm pack ./apps/cli
-npm install -g ./missless-cli-0.0.0.tgz
+source scripts/dev-activate-missless.sh
 missless --help
 ```
 
-For a project-local install instead of a global one:
+That activation command is safe to rerun after source changes. It refreshes
+the CLI, prepends this checkout's repo-local `missless` wrapper to the current
+shell `PATH`, and reruns `pnpm install` only when the workspace dependency
+state is missing, older than `pnpm-lock.yaml`, or missing required build
+dependencies such as `esbuild`. To force a fresh dependency install, set
+`MISSLESS_FORCE_INSTALL=1` when sourcing the activation script.
 
-```bash
-mkdir -p /tmp/missless-local
-npm install --prefix /tmp/missless-local ./missless-cli-0.0.0.tgz
-npx --prefix /tmp/missless-local missless --help
-```
+Because the activation is shell-local, different terminal sessions can point at
+different `missless` checkouts at the same time. If you want a different
+worktree in one shell, source that worktree's activation script in the same
+session to move its `missless` wrapper to the front of `PATH`.
+The activation helper does not change your current working directory.
 
 ## Current Boundary
 
