@@ -250,7 +250,6 @@ current supported path.
 ## Publish Record
 
 - Publish outcome: created pull request [#44](https://github.com/yzhang1918/missless/pull/44)
-- Published branch head: `38412b4038c2f4abfdb80e810700188ee7996a5b`
 - Publish metadata: direct request (no issue); related follow-up remains `#42`
 - Synced the current contract cleanup back to issue `#42` in
   `https://github.com/yzhang1918/missless/issues/42#issuecomment-4063112093`.
