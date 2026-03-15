@@ -56,6 +56,7 @@ Each subagent reviewer writes one JSON file to `.local/loop/review-<round-id>-<d
 - Use `current_slice_findings[]` only for must-fix issues in the current diff or slice.
 - Use `accepted_deferred_risks[]` for real out-of-slice concerns that the owner has explicitly accepted to defer.
 - Use `strategic_observations[]` for longer-horizon guidance that should not block the current slice.
+- `scope` must be present and must match the review round scope declared by the launch manifest; `review_finalize.sh` fails closed when a reviewer artifact omits or mismatches it.
 - Keep entries actionable and avoid duplicates across reviewer dimensions when possible.
 - Each `accepted_deferred_risks[]` entry must include at least one of:
   - `tracking_issue`

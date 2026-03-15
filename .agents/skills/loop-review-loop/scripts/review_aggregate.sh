@@ -552,6 +552,18 @@ jq -n \
             actual_dimension: ($artifact.payload.dimension // "")
           }
       ];
+    def scope_mismatches($manifest; $actual):
+      [
+        expected_reviewers($manifest)[] as $expected
+        | (artifact_for_path($actual; $expected.output_path)) as $artifact
+        | select($artifact != null and (($artifact.payload.scope // "") != ($manifest.scope // "")))
+        | {
+            artifact_path: $artifact.artifact_path,
+            dimension: $expected.dimension,
+            expected_scope: ($manifest.scope // ""),
+            actual_scope: ($artifact.payload.scope // "")
+          }
+      ];
     def recovery($manifest; $dispatch; $actual):
       [
         reviewer_records($manifest; $dispatch; $actual)[]
@@ -686,6 +698,17 @@ jq -n \
               message: ("Reviewer artifact dimension mismatch at " + .artifact_path)
             }
         ]
+        + [
+          scope_mismatches($manifest; $actual)[]
+          | {
+              kind: "scope-mismatch",
+              artifact_path,
+              dimension,
+              expected_scope,
+              actual_scope,
+              message: ("Reviewer artifact scope mismatch at " + .artifact_path)
+            }
+        ]
         + (
           if ($manifest.baseline_repo_state.head_sha != $current_head_sha) then
             [
@@ -772,6 +795,7 @@ jq -n \
           unexpected_outputs: unexpected_outputs($manifest; $actual),
           duplicate_input_paths: $duplicate_input_paths,
           dimension_mismatches: dimension_mismatches($manifest; $actual),
+          scope_mismatches: scope_mismatches($manifest; $actual),
           recovery: recovery($manifest; $dispatch; $actual),
           violations: contract_violations($manifest; $dispatch; $actual),
           baseline_repo_state: $manifest.baseline_repo_state,
