@@ -13,6 +13,8 @@ ship with `missless`.
 ## Scope
 
 Product skills in this directory should describe repository-owned product
-behavior. They should target stable installed runtime commands rather than
-repository-relative `node .../dist/index.js` paths, and they should not depend
-on developer workflow notes to explain the user-facing contract.
+behavior. They should target stable runtime command names rather than
+repository-relative `node .../dist/index.js` paths. When the current supported
+contract is repo-local activation, the skill should document the activation
+step needed to expose that command name and stay aligned with the canonical
+entrypoint described in the repository docs.
