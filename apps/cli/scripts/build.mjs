@@ -30,7 +30,7 @@ await build({
     "jsdom",
     "node-html-markdown"
   ],
-  // Bundle workspace code, but keep runtime packages installable as bundled deps.
+  // Bundle workspace packages while keeping third-party runtime resolution unchanged.
   alias: {
     "@missless/contracts": resolve(repoRoot, "packages/contracts/src/index.ts"),
     "@missless/core": resolve(repoRoot, "packages/core/src/index.ts"),

@@ -19,14 +19,14 @@ Drop a link. Get a decision.
 
 The current product entrypoint is the repository skill at `skills/missless/`.
 
-That skill now depends on one stable installable runtime command: `missless`.
+That skill now depends on one stable local runtime command name: `missless`.
 
 The runtime CLI exists to support deterministic fetch, validation, evidence
 anchoring, and review rendering. It is an implementation detail in this slice,
 not the main user story.
 
-For day-to-day local development, activate the canonical session-local
-developer entry point in the shell you want to use:
+For day-to-day local development, the only supported entry point is the
+session-local activation flow below. Run it in the shell you want to use:
 
 ```bash
 source scripts/dev-activate-missless.sh

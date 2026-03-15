@@ -3,16 +3,8 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "bin": {
-    "missless": "dist/index.js"
-  },
-  "files": [
-    "dist",
-    "extraction-draft.schema.json"
-  ],
   "scripts": {
     "build": "node scripts/build.mjs",
-    "prepack": "node scripts/build.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "pnpm -r build && tsx --test ../../tests/integration/cli/*.test.ts"
   },
@@ -21,11 +13,6 @@
     "jsdom": "^28.1.0",
     "node-html-markdown": "^2.0.0"
   },
-  "bundleDependencies": [
-    "@mozilla/readability",
-    "jsdom",
-    "node-html-markdown"
-  ],
   "devDependencies": {
     "@missless/contracts": "workspace:*",
     "@missless/core": "workspace:*",

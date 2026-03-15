@@ -12,15 +12,18 @@ package".
 
 This skill owns one product action: `single-run URL -> review package`.
 
-This skill assumes the `missless` runtime command is already installed and
-available on `PATH`. If `missless --help` fails, stop and ask the caller to
-install the runtime before continuing.
+This skill assumes it is running inside the `missless` repository checkout.
+Before using the runtime, source `scripts/dev-activate-missless.sh` in the
+current shell session so `missless` resolves through the repo-local wrapper. If
+activation or `missless --help` fails, stop and surface the failure instead of
+guessing at an alternate runtime path.
 
 ## Workflow
 
-1. Read the runtime-owned contract surface.
+1. Activate the local runtime and read the runtime-owned contract surface.
 
 ```bash
+source scripts/dev-activate-missless.sh
 missless --help
 missless print-draft-contract
 ```
