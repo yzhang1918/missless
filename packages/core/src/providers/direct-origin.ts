@@ -163,6 +163,7 @@ export function createDirectOriginProvider(
 
         return {
           providerName: "direct_origin",
+          durableFetchMethod: "direct_origin",
           canonicalText,
           fetchedAt: new Date().toISOString(),
           providerUrl: currentUrl,

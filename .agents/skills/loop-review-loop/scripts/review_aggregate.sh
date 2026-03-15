@@ -202,6 +202,8 @@ if ((${#wrapper_files[@]} > 0)); then
   if ! jq -s -e '
     all(.[]; (.payload | type == "object"))
     and
+    all(.[]; (.payload.scope | type == "string"))
+    and
     all(.[]; (.payload.dimension | type == "string"))
     and
     all(.[]; (.payload.status | type == "string"))
@@ -317,6 +319,17 @@ jq -n \
             actual_dimension: ($artifact.payload.dimension // "")
           }
       ];
+    def scope_mismatches($manifest; $actual):
+      [
+        expected_reviewers($manifest)[] as $expected
+        | (artifact_for_path($actual; $expected.output_path)) as $artifact
+        | select($artifact != null and (($artifact.payload.scope // "") != ($manifest.scope // "")))
+        | {
+            artifact_path: $artifact.artifact_path,
+            expected_scope: ($manifest.scope // ""),
+            actual_scope: ($artifact.payload.scope // "")
+          }
+      ];
     def recovery($manifest; $actual):
       [
         reviewer_records($manifest; $actual)[]
@@ -363,6 +376,16 @@ jq -n \
               expected_dimension,
               actual_dimension,
               message: ("Reviewer artifact dimension mismatch at " + .artifact_path)
+            }
+        ]
+        + [
+          scope_mismatches($manifest; $actual)[]
+          | {
+              kind: "scope-mismatch",
+              artifact_path,
+              expected_scope,
+              actual_scope,
+              message: ("Reviewer artifact scope mismatch at " + .artifact_path)
             }
         ]
         + (
@@ -435,6 +458,7 @@ jq -n \
           unexpected_outputs: unexpected_outputs($manifest; $actual),
           duplicate_input_paths: $duplicate_input_paths,
           dimension_mismatches: dimension_mismatches($manifest; $actual),
+          scope_mismatches: scope_mismatches($manifest; $actual),
           recovery: recovery($manifest; $actual),
           violations: contract_violations($manifest; $actual),
           baseline_repo_state: $manifest.baseline_repo_state,

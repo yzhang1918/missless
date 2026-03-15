@@ -2,11 +2,12 @@ import { createDirectOriginProvider } from "./direct-origin.js";
 import { createJinaReaderProvider } from "./jina.js";
 import {
   createFallbackSourceProvider,
+  type DurableFetchMethod,
   type SourceProvider
 } from "./provider.js";
 
-export type FetchMethod = "auto" | "jina_reader" | "direct_origin";
-export type ConcreteFetchMethod = Exclude<FetchMethod, "auto">;
+export type ConcreteFetchMethod = DurableFetchMethod;
+export type FetchMethod = "auto" | ConcreteFetchMethod;
 
 export function createSourceProviderForMethod(
   fetchMethod: FetchMethod

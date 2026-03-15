@@ -1,9 +1,11 @@
 export type FetchLike = typeof fetch;
+export type DurableFetchMethod = "jina_reader" | "direct_origin";
 
 export type ProviderFailureDisposition = "retryable" | "fail_closed";
 
 export interface ProviderFetchResult {
   readonly providerName: string;
+  readonly durableFetchMethod?: DurableFetchMethod;
   readonly canonicalText: string;
   readonly fetchedAt: string;
   readonly providerUrl: string;

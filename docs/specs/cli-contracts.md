@@ -86,6 +86,11 @@ Recommended command-specific additions:
 - respect `--fetch-method <auto|jina|direct>`
 - persist canonical fetch-method values as
   `auto|jina_reader|direct_origin`
+- require injected custom providers to report the durable chosen fetch method
+  through either a built-in durable `providerName`
+  (`jina_reader|direct_origin`) or an explicit `durableFetchMethod`
+- fail closed when an explicit `--fetch-method jina|direct` request conflicts
+  with the provider result's durable chosen fetch method
 - use `source.json` for durable provenance only, not transport/debug metadata
 
 ## Source Provenance Contract

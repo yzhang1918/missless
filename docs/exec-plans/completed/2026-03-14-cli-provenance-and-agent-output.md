@@ -270,6 +270,13 @@ into long-lived artifacts.
 - Switched the workflow commands to default JSON stdout envelopes with concise
   summaries, and updated the missless skill plus e2e driver to consume the
   structured results instead of regex-matching English sentences.
+- Tightened the injected-provider provenance contract in
+  `fetchNormalizeSource`: custom providers must identify a durable chosen fetch
+  method through either a built-in `providerName` or explicit
+  `durableFetchMethod`; otherwise provenance recording fails closed.
+- Tightened harness review aggregation so reviewer artifacts with the wrong
+  declared `scope` can no longer satisfy a launch-manifest slot, and added a
+  regression check for that fail-closed behavior.
 
 ## Review Summary
 
@@ -282,6 +289,19 @@ into long-lived artifacts.
 - After the follow-up patch and validation rerun, Round 2 passed with no
   blocker or important findings, leaving publish as the remaining step before
   final gate.
+- A later isolated subagent review surfaced two additional follow-up fixes
+  before publish:
+  - custom-provider provenance now requires either a built-in provider name or
+    an explicit `durableFetchMethod`
+  - `loop-review-loop` now rejects reviewer artifacts whose declared `scope`
+    does not match the launch manifest
+- After those follow-up fixes, a fresh isolated full-pr subagent round
+  (`20260315-092955`) passed with `0` blocker and `0` important findings.
+  The only remaining note was one non-blocking reliability `NIT` about making
+  invalid reviewer-artifact stderr text mention scope validation explicitly.
+- The harness-side reviewer-scope hardening is also archived separately in
+  `docs/harness/completed/2026-03-15-reviewer-scope-contract-hardening.md`
+  so the product and harness execution histories stay split correctly.
 - No new follow-up issue was required during execution.
 
 ## Validation Summary
@@ -290,6 +310,11 @@ into long-lived artifacts.
 - `pnpm -r typecheck` passed.
 - `pnpm -r test` passed.
 - `git diff --check` passed.
+- `.agents/skills/loop-review-loop/scripts/review_regression.sh` passed after
+  the reviewer-scope enforcement update.
+- The final isolated subagent review gate passed locally via
+  `.agents/skills/loop-review-loop/scripts/review_finalize.sh 20260315-092955
+  .local/loop/review-20260315-092955-*.json`.
 
 ## Issue Update Note
 
@@ -305,6 +330,8 @@ into long-lived artifacts.
 ## Final Gate Summary
 
 - Full-pr review is passing locally.
+- Latest isolated full-pr review round: `20260315-092955`
+  (`BLOCKER=0`, `IMPORTANT=0`, one non-blocking `NIT`).
 - Final gate remains pending until publish produces branch/CI evidence.
 
 ## Assumptions

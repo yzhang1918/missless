@@ -11,6 +11,7 @@ LOGS_DIR="$SESSION_ROOT/logs"
 BIN_DIR="$SESSION_ROOT/bin"
 RUN_PROMPT="$SESSION_ROOT/review_prompt.md"
 FETCH_LOG="$LOGS_DIR/fetch.log"
+FETCH_STDOUT_JSON="$LOGS_DIR/fetch.stdout.json"
 MISSLESS_WRAPPER="$BIN_DIR/missless"
 
 if [[ -z "$URL" ]]; then
@@ -23,6 +24,9 @@ mkdir -p "$RUNS_DIR" "$LOGS_DIR" "$BIN_DIR"
 cat > "$MISSLESS_WRAPPER" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
+if [[ -n "\${MISSLESS_E2E_FETCH_WRAPPER_STDERR:-}" ]]; then
+  printf '%s\n' "\$MISSLESS_E2E_FETCH_WRAPPER_STDERR" >&2
+fi
 exec node "$ROOT_DIR/apps/cli/dist/index.js" "\$@"
 EOF
 
@@ -124,25 +128,44 @@ EOF
 
 pnpm -r build
 
+rm -f "$FETCH_LOG" "$FETCH_STDOUT_JSON"
+
 set +e
-FETCH_OUTPUT="$(
-  missless fetch "$URL" --runs-dir "$RUNS_DIR" 2>&1 | tee "$FETCH_LOG"
-)"
+missless fetch "$URL" --runs-dir "$RUNS_DIR" >"$FETCH_STDOUT_JSON" 2>"$FETCH_LOG"
 FETCH_EXIT=$?
 set -e
+
+if [[ -s "$FETCH_LOG" ]]; then
+  {
+    printf '[stderr]\n'
+    cat "$FETCH_LOG"
+    printf '\n'
+  } >"$FETCH_LOG.tmp"
+  mv "$FETCH_LOG.tmp" "$FETCH_LOG"
+fi
+
+if [[ -s "$FETCH_STDOUT_JSON" ]]; then
+  {
+    printf '[stdout]\n'
+    cat "$FETCH_STDOUT_JSON"
+    printf '\n'
+  } >>"$FETCH_LOG"
+fi
 
 if [[ $FETCH_EXIT -ne 0 ]]; then
   echo "fetch failed. See $FETCH_LOG" >&2
   exit 1
 fi
 
-RUN_DIR="$(
-  printf '%s\n' "$FETCH_OUTPUT" |
-    node --input-type=module -e 'let input = ""; process.stdin.setEncoding("utf8"); process.stdin.on("data", (chunk) => { input += chunk; }); process.stdin.on("end", () => { const payload = JSON.parse(input); if (!payload.ok || typeof payload.run_dir !== "string") { process.exit(1); } process.stdout.write(payload.run_dir); });'
-)"
+if ! RUN_DIR="$(
+  node --input-type=module -e 'import { readFileSync } from "node:fs"; const payload = JSON.parse(readFileSync(process.argv[1], "utf8")); if (!payload.ok || typeof payload.run_dir !== "string") { process.exit(1); } process.stdout.write(payload.run_dir);' "$FETCH_STDOUT_JSON"
+)"; then
+  echo "Could not parse run directory from fetch output. See $FETCH_LOG" >&2
+  exit 1
+fi
 
 if [[ -z "$RUN_DIR" ]]; then
-  echo "Could not parse run directory from fetch output." >&2
+  echo "Could not parse run directory from fetch output. See $FETCH_LOG" >&2
   exit 1
 fi
 

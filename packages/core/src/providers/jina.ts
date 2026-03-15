@@ -152,6 +152,7 @@ export function createJinaReaderProvider(
 
       return {
         providerName: "jina_reader",
+        durableFetchMethod: "jina_reader",
         canonicalText,
         fetchedAt: new Date().toISOString(),
         providerUrl,

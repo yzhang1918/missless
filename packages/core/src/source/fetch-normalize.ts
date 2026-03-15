@@ -84,14 +84,53 @@ function assertSafeRunId(runId: string): void {
   }
 }
 
-function assertChosenFetchMethod(providerName: string): ConcreteFetchMethod {
-  if (providerName === "jina_reader" || providerName === "direct_origin") {
-    return providerName;
+function assertChosenFetchMethod(
+  fetched: {
+    readonly providerName: string;
+    readonly durableFetchMethod?: ConcreteFetchMethod;
+  },
+  requestedFetchMethod: FetchMethod,
+  hasCustomProvider: boolean
+): ConcreteFetchMethod {
+  const providerNameFetchMethod =
+    fetched.providerName === "jina_reader" || fetched.providerName === "direct_origin"
+      ? fetched.providerName
+      : undefined;
+  let chosenFetchMethod: ConcreteFetchMethod;
+
+  if (fetched.durableFetchMethod !== undefined) {
+    if (
+      providerNameFetchMethod !== undefined &&
+      providerNameFetchMethod !== fetched.durableFetchMethod
+    ) {
+      throw new Error(
+        `fetch received conflicting durable provider metadata: providerName=${fetched.providerName}, durableFetchMethod=${fetched.durableFetchMethod}`
+      );
+    }
+
+    chosenFetchMethod = fetched.durableFetchMethod;
+  } else if (providerNameFetchMethod !== undefined) {
+    chosenFetchMethod = providerNameFetchMethod;
+  } else if (hasCustomProvider) {
+    throw new Error(
+      "fetch requires custom providers to return durableFetchMethod jina_reader or direct_origin, or a built-in providerName that identifies the durable chosen fetch method"
+    );
+  } else {
+    throw new Error(
+      `fetch received an unsupported provider result for durable provenance: ${fetched.providerName}`
+    );
   }
 
-  throw new Error(
-    `fetch received an unsupported provider result for durable provenance: ${providerName}`
-  );
+  if (
+    requestedFetchMethod !== "auto" &&
+    chosenFetchMethod !== requestedFetchMethod
+  ) {
+    throw new Error(
+      `fetch received durable fetch method ${chosenFetchMethod} from provider ${fetched.providerName}, which conflicts with explicit requested fetch method ${requestedFetchMethod}`
+    );
+  }
+
+  return chosenFetchMethod;
 }
 
 export function createRunId(now = new Date()): string {
@@ -109,6 +148,7 @@ export async function fetchNormalizeSource(
   const now = input.now ?? new Date();
   const runId = input.runId ?? createRunId(now);
   const requestedFetchMethod = input.fetchMethod ?? "auto";
+  const hasCustomProvider = input.provider !== undefined;
   assertSafeRunId(runId);
   const hostResolver = input.hostResolver ?? defaultHostResolver;
   const fetchImpl = input.fetchImpl ?? globalThis.fetch;
@@ -135,7 +175,11 @@ export async function fetchNormalizeSource(
       ? redirectResolution.finalUrl
       : fetched.resolvedSourceUrl;
   const normalizedTextHash = sha256(fetched.canonicalText);
-  const chosenFetchMethod = assertChosenFetchMethod(fetched.providerName);
+  const chosenFetchMethod = assertChosenFetchMethod(
+    fetched,
+    requestedFetchMethod,
+    hasCustomProvider
+  );
   const runManifest: RunManifest = {
     run_id: runId,
     created_at: now.toISOString(),

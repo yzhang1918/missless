@@ -85,6 +85,12 @@ Current baseline for the first delivery slice is:
 - Local and mocked runs may override the reader endpoint with
   `MISSLESS_JINA_BASE_URL`; authenticated environments may also provide
   `JINA_API_KEY`.
+- Injected custom providers must expose the durable chosen fetch method
+  through either a built-in durable `providerName`
+  (`jina_reader|direct_origin`) or an explicit `durableFetchMethod`; otherwise
+  durable provenance recording fails closed.
+- Explicit `--fetch-method jina|direct` requests are enforced against that
+  durable provider result so contradictory provenance cannot be persisted.
 - `fetch` rejects embedded credentials plus localhost/private
   targets by default so repository runs do not silently exfiltrate internal or
   credentialed URLs through the third-party reader.

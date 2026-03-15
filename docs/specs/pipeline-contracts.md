@@ -84,6 +84,11 @@ semantics and artifact boundaries.
   failures
 - uses `Jina Reader -> direct origin fetch` as the default provider sequence
 - allows local/mock provider overrides through `MISSLESS_JINA_BASE_URL`
+- requires injected custom providers to expose the durable chosen fetch method
+  through either a built-in durable `providerName`
+  (`jina_reader|direct_origin`) or an explicit `durableFetchMethod`
+- fails closed when an explicit `--fetch-method jina|direct` request conflicts
+  with the provider result's durable chosen fetch method
 - rejects source URLs with embedded credentials and rejects localhost,
   private, link-local, and single-label hosts by default
 - rejects hostnames that resolve to loopback, private, or link-local

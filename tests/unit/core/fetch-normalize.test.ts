@@ -535,6 +535,109 @@ test("fetchNormalizeSource does not fall back when an explicit jina_reader fetch
   ]);
 });
 
+test("fetchNormalizeSource allows injected custom providers that declare a durable fetch method", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-custom-provider-"));
+  const result = await fetchNormalizeSource({
+    sourceUrl: "https://example.com/article",
+    runsDir,
+    runId: "run-custom-provider",
+    now: new Date("2026-03-15T00:00:00.000Z"),
+    hostResolver: publicHostResolver,
+    fetchImpl: noRedirectFetch,
+    provider: {
+      name: "fixture_provider",
+      async fetch() {
+        return {
+          providerName: "fixture_provider",
+          durableFetchMethod: "direct_origin",
+          canonicalText: "Custom provider text\n",
+          fetchedAt: "2026-03-15T00:00:00.000Z",
+          providerUrl: "https://provider.example/article",
+          resolvedSourceUrl: "https://example.com/article",
+          responseStatus: 200,
+          responseHeaders: {
+            "content-type": "text/plain; charset=utf-8"
+          }
+        };
+      }
+    }
+  });
+
+  assert.equal(result.provider, "direct_origin");
+  assert.equal(result.sourceArtifact.requested.fetch_method, "auto");
+  assert.equal(result.sourceArtifact.decision_basis.fetch_method, "direct_origin");
+  assert.equal(result.canonicalText, "Custom provider text\n");
+});
+
+test("fetchNormalizeSource rejects injected custom providers that omit a durable fetch method", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-custom-provider-auto-"));
+
+  await assert.rejects(
+    () =>
+      fetchNormalizeSource({
+        sourceUrl: "https://example.com/article",
+        runsDir,
+        runId: "run-custom-provider-auto",
+        now: new Date("2026-03-15T00:00:00.000Z"),
+        fetchMethod: "direct_origin",
+        hostResolver: publicHostResolver,
+        fetchImpl: noRedirectFetch,
+        provider: {
+          name: "fixture_provider",
+          async fetch() {
+            return {
+              providerName: "fixture_provider",
+              canonicalText: "Custom provider text\n",
+              fetchedAt: "2026-03-15T00:00:00.000Z",
+              providerUrl: "https://provider.example/article",
+              resolvedSourceUrl: "https://example.com/article",
+              responseStatus: 200,
+              responseHeaders: {
+                "content-type": "text/plain; charset=utf-8"
+              }
+            };
+          }
+        }
+      }),
+    /custom providers to return durableFetchMethod/
+  );
+});
+
+test("fetchNormalizeSource rejects custom providers that contradict an explicit fetch method", async () => {
+  const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-custom-provider-mismatch-"));
+
+  await assert.rejects(
+    () =>
+      fetchNormalizeSource({
+        sourceUrl: "https://example.com/article",
+        runsDir,
+        runId: "run-custom-provider-mismatch",
+        now: new Date("2026-03-15T00:00:00.000Z"),
+        fetchMethod: "direct_origin",
+        hostResolver: publicHostResolver,
+        fetchImpl: noRedirectFetch,
+        provider: {
+          name: "fixture_provider",
+          async fetch() {
+            return {
+              providerName: "fixture_provider",
+              durableFetchMethod: "jina_reader",
+              canonicalText: "Custom provider text\n",
+              fetchedAt: "2026-03-15T00:00:00.000Z",
+              providerUrl: "https://provider.example/article",
+              resolvedSourceUrl: "https://example.com/article",
+              responseStatus: 200,
+              responseHeaders: {
+                "content-type": "text/plain; charset=utf-8"
+              }
+            };
+          }
+        }
+      }),
+    /conflicts with explicit requested fetch method direct_origin/
+  );
+});
+
 test("fetchNormalizeSource rejects unsafe run IDs that escape runsDir", async () => {
   const runsDir = await mkdtemp(join(tmpdir(), "missless-fetch-runid-"));
 

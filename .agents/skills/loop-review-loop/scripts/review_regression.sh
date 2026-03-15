@@ -451,6 +451,29 @@ fi
 unexpected_output_count="$(jq -r '.contract.unexpected_outputs | length' "$work_dir/.local/loop/review-20260305-230101.json")"
 [[ "$unexpected_output_count" == "1" ]] || fail "expected one undeclared reviewer output, got $unexpected_output_count"
 
+# 13.1) review_finalize fails when a reviewer artifact scope does not match the manifest scope.
+(
+  cd "$work_dir" &&
+  "$review_init" 20260305-230101 full-pr >/dev/null &&
+  "$review_prepare" 20260305-230101 full-pr security >/dev/null
+)
+cat > "$work_dir/.local/loop/review-20260305-230101-security.json" <<'JSON'
+{"scope":"delta","dimension":"security","status":"complete","findings":[]}
+JSON
+set +e
+scope_mismatch_finalize="$(
+  cd "$work_dir" &&
+  "$review_finalize" 20260305-230101 .local/loop/review-20260305-230101-security.json 2>&1
+)"
+scope_mismatch_status=$?
+set -e
+if [[ "$scope_mismatch_status" -eq 0 ]]; then
+  fail "review_finalize unexpectedly passed with a scope-mismatched reviewer artifact"
+fi
+[[ "$scope_mismatch_status" -eq 2 ]] || fail "review_finalize expected exit status 2 for a scope-mismatched reviewer artifact, got $scope_mismatch_status"
+scope_mismatch_count="$(jq -r '.contract.scope_mismatches | length' "$work_dir/.local/loop/review-20260305-230101.json")"
+[[ "$scope_mismatch_count" == "1" ]] || fail "expected one scope mismatch, got $scope_mismatch_count"
+
 # 14) review_finalize fails when tracked worktree state changes after manifest preparation.
 (
   cd "$work_dir" &&
