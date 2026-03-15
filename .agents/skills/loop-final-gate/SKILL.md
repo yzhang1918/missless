@@ -17,9 +17,12 @@ Run this after `loop-publish` so gate evidence reflects the published branch sta
 - CI/status artifact from GitHub or a local equivalent, tied to the current `HEAD` and base ref.
 - Base branch name.
 
+The review artifact must keep `current_slice_findings`, `accepted_deferred_risks`, and `strategic_observations` distinct so final gate can block only on current-slice blockers.
+
 ## Execution Contract
 
-1. Confirm no unresolved blocking review findings.
+1. Confirm no unresolved current-slice blocking review findings.
+   - Accepted deferred risks and strategic observations should remain visible in the review artifact but must not fail final gate by themselves.
 2. Run explicit repository-readiness preflight before gate decisions.
    - Final gate must reuse the same readiness contract enforced by publish.
 3. Confirm the working tree is clean and the supplied plan is an archived completed plan.

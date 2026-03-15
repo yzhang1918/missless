@@ -59,6 +59,8 @@ build_prompt() {
   printf 'Inspect repository context with local git commands (`git diff`, `git show`, `git log`).\n'
   printf 'Write one schema-valid JSON artifact to `%s` using `%s`.\n' "$output_path" "$schema_path"
   printf 'Only write that JSON artifact; do not modify tracked files, move HEAD, or write review artifacts anywhere else.\n'
+  printf 'Classify output strictly into `current_slice_findings`, `accepted_deferred_risks`, and `strategic_observations`.\n'
+  printf 'Only put must-fix issues for this slice into `current_slice_findings`; keep accepted out-of-slice concerns in `accepted_deferred_risks` with `tracking_issue` or `accepted_reason`, and keep longer-horizon advice in `strategic_observations`.\n'
   printf 'Focus on risks relevant to `%s`.\n' "$dimension"
   if [[ -n "$focus" ]]; then
     printf 'Additional focus: %s.\n' "$focus"
@@ -204,6 +206,7 @@ focus_for_dimension() {
 
 out_dir=".local/loop"
 out_file="$out_dir/review-launch-${round_id}.json"
+dispatch_file="$out_dir/review-dispatch-${round_id}.json"
 mkdir -p "$out_dir"
 
 tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/review-prepare.XXXXXX")"
@@ -251,8 +254,34 @@ baseline_tracked_worktree="$(tracked_worktree_json)"
 
 jq -s \
   --arg round_id "$round_id" \
+  --arg manifest_path "$out_file" \
+  --arg generated_at "$timestamp" \
+  '
+    {
+      round_id: $round_id,
+      manifest_path: $manifest_path,
+      generated_at: $generated_at,
+      reviewers: [
+        .[]
+        | {
+            dimension,
+            dimension_slug,
+            output_path,
+            last_status: "pending",
+            last_reason: "",
+            last_recorded_at: null,
+            last_artifact_path: "",
+            attempts: []
+          }
+      ]
+    }
+  ' -- "${reviewer_entries[@]}" > "$dispatch_file"
+
+jq -s \
+  --arg round_id "$round_id" \
   --arg scope "$scope" \
   --arg generated_at "$timestamp" \
+  --arg dispatch_record_path "$dispatch_file" \
   --arg baseline_head_sha "$baseline_head_sha" \
   --argjson baseline_tracked_worktree "$baseline_tracked_worktree" \
   '
@@ -260,6 +289,7 @@ jq -s \
       round_id: $round_id,
       scope: $scope,
       generated_at: $generated_at,
+      dispatch_record_path: $dispatch_record_path,
       baseline_repo_state: {
         head_sha: $baseline_head_sha,
         tracked_worktree: $baseline_tracked_worktree

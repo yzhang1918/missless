@@ -25,6 +25,10 @@ Define the outcome in one or two sentences.
 - [ ] Criterion 1
 - [ ] Criterion 2
 
+## Accepted Deferred Risks
+
+- None at plan open.
+
 ## Work Breakdown
 
 ### Step 1
