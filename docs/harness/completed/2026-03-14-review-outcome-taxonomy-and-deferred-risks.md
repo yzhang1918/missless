@@ -174,24 +174,27 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - On 2026-03-15, `.agents/skills/loop-review-loop/scripts/review_regression.sh` passed after adding dispatch-ledger enforcement, runtime-blocked rejection, runtime-blocked terminal enforcement, and launch-start ordering validation.
 - On 2026-03-15, `git diff --check` passed after the reopened Step 4 edits.
 - On 2026-03-15, both `gh auth status` and `git fetch --prune origin` succeeded in this worktree, so stateful publish/final-gate refresh is no longer blocked by the earlier environment issues.
-- On 2026-03-15, the latest clean full-pr review for the reopened branch head finalized with no current-slice blockers.
-- On 2026-03-15, GitHub-backed CI export plus final gate both passed for the latest published head, and `final_gate.sh` retained the refreshed evidence bundle at `.local/final-evidence/2026-03-14-review-outcome-taxonomy-and-deferred-risks/`.
+- On 2026-03-15, commit `e141eb2` tightened `review_gate.sh` and `final_gate.sh` so missing `accepted_deferred_risks` or `strategic_observations` arrays fail closed, and both `review_regression.sh` plus `stateful_gate_regression.sh` passed on that head.
+- On 2026-03-15, commit `410ad27` tightened `review_aggregate.sh` so reviewer artifacts must match the manifest `scope`, and `review_regression.sh` passed with new missing-scope and mismatched-scope coverage on that head.
+- The earlier 2026-03-15 clean full-pr review and passing final-gate records apply only through commit `7acdbf5`; they were superseded by commits `e141eb2` and `410ad27`, so the latest-head review/final-gate evidence is being refreshed again in this session.
 
 ## Review Summary
 
 - Earlier 2026-03-14 review rounds remain part of the branch history for Steps 1-3.
 - Reopened scope requires new review evidence after Step 4 lands because the previous clean rounds relied on manual fallback reviewer artifacts, which this reopened work is intended to tighten.
 - During 2026-03-15 delta review iteration, a `correctness` reviewer subagent identified one additional current-slice gap: terminal dispatch statuses could bypass `launch-started`; that finding was fixed in the reopened Step 4 implementation and covered by regression.
-- The latest clean full-pr review for the reopened branch head finalized with no current-slice blockers.
-- In that final full-pr round, both reviewer slots completed via real reviewer subagents and recorded `artifact-written`.
-- In that same full-pr round, the `docs/spec consistency` slot preserved one interrupted attempt in the dispatch ledger before a successful retried reviewer-subagent run; no manual fallback artifact was needed in the clean round.
+- The earlier clean full-pr round for reopened Step 4 evidence was superseded by commits `e141eb2` and `410ad27`.
+- Full-pr round `20260315-092401` then surfaced one current-slice `correctness` finding: `review_aggregate.sh` accepted reviewer artifacts with missing or incorrect `scope`; that finding was fixed in commit `410ad27` and covered by regression.
+- Full-pr round `20260315-092915` then surfaced one current-slice `docs/spec consistency` finding: this archived plan still described pre-`e141eb2`/`410ad27` review and final-gate evidence as if it covered the latest reopened branch head.
+- A fresh latest-head review must be rerun after this archived-plan refresh before this plan can again claim a clean reopened branch head.
 
 ## Final Gate Summary
 
 - Earlier final-gate records from 2026-03-14 are now stale for the reopened branch head and must be refreshed after Step 4 completes.
 - On 2026-03-15, `export_ci_status.sh main --docs-updated true --pr 40 --output .local/loop/ci-status-20260315-005921.json` exported a GitHub-backed CI artifact for the latest published PR head.
 - On 2026-03-15, `final_gate.sh` passed against `.local/loop/review-20260315-005808.json`, the exported CI artifact, and this archived plan.
-- The retained local evidence bundle for the latest passing state is `.local/final-evidence/2026-03-14-review-outcome-taxonomy-and-deferred-risks/`.
+- That passing final-gate record applies to the pre-`e141eb2` reopened head and is now superseded by later commits on PR `#40`.
+- The retained local evidence bundle `.local/final-evidence/2026-03-14-review-outcome-taxonomy-and-deferred-risks/` remains useful baseline history, but the latest-head final-gate result must be refreshed after this archived-plan update.
 
 ## Risks and Mitigations
 
@@ -214,12 +217,13 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - Earlier publish/final-gate records for PR `#40` are preserved as baseline history but are stale after the 2026-03-15 reopen.
 - Reviewer-subagent-first execution is now repo-observable through per-round dispatch ledgers, explicit fallback-eligibility rules, and aggregate enforcement for missing subagent attempts or missing `launch-started` events.
 - Reviewer dispatch now also treats `runtime-blocked` as a terminal per-slot state, with helper-level rejection plus aggregate fail-closed enforcement if later events are appended.
-- A fresh clean full-pr review artifact now exists for the reopened branch head and shows no current-slice blockers.
-- GitHub-backed CI export and final gate both passed for the latest published PR head, and the refreshed evidence bundle has been retained locally under `.local/final-evidence/2026-03-14-review-outcome-taxonomy-and-deferred-risks/`.
+- The reopened branch now also requires complete layered review artifacts at both gate scripts and per-reviewer manifest-`scope` enforcement in review aggregation.
+- Fresh latest-head review and final-gate evidence is being refreshed again after commits `e141eb2` and `410ad27`; the earlier passing closeout remains baseline history, not current-head evidence.
 - Not delivered:
 - Merge/landing and issue auto-close remain pending until PR `#40` lands after the reopened scope is complete.
+- Refreshed latest-head review and final-gate evidence still need to be captured after this archived-plan update.
 - Linked issue updates:
 - PR `#40` remains the active publication path for this reopened work: `https://github.com/yzhang1918/missless/pull/40`.
-- Issue `#20`, issue `#22`, and PR `#40` now all reflect the reopened Step 4 closeout status and latest final-gate result.
+- Issue `#20`, issue `#22`, and PR `#40` reflect the reopened Step 4 work, while latest-head closeout evidence is being refreshed again after the follow-up review fixes in commits `e141eb2` and `410ad27`.
 - Spawned follow-up issues:
 - None.
