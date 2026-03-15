@@ -1,6 +1,6 @@
 # Completed Harness Plans
 
-Status: Active
+Status: Completed
 
 ## Purpose
 
@@ -42,4 +42,5 @@ find docs/harness/completed -maxdepth 1 -name '*.md' ! -name 'README.md' -exec b
 | [`2026-03-12-harness-closeout-reliability.md`](./2026-03-12-harness-closeout-reliability.md) | 2026-03-12 | Made closeout records summary-first, added repository-readiness preflight reuse, retained one final-evidence bundle per plan, and treated remote merge success as authoritative during landing. |
 | [`2026-03-13-reviewer-contract-hardening.md`](./2026-03-13-reviewer-contract-hardening.md) | 2026-03-13 | Hardened reviewer-round contracts so missing reviewer output fails closed, fallback reasons are explicit, and repo-observable reviewer side effects become contract violations. |
 | [`2026-03-14-review-outcome-taxonomy-and-deferred-risks.md`](./2026-03-14-review-outcome-taxonomy-and-deferred-risks.md) | 2026-03-14 | Separated current-slice findings from accepted deferred risks and strategic observations, then enforced reviewer-subagent-first fallback eligibility with machine-readable dispatch records. |
+| [`2026-03-15-local-cli-dev-install.md`](./2026-03-15-local-cli-dev-install.md) | 2026-03-15 | Added a session-local `missless` activation workflow for local development, removed the old global-link path, and archived the packaged-tarball blocker as follow-up issue `#42`. |
 | [`2026-03-15-reviewer-scope-contract-hardening.md`](./2026-03-15-reviewer-scope-contract-hardening.md) | 2026-03-15 | Hardened reviewer aggregation so scope-mismatched reviewer artifacts fail closed and the contract is archived under harness history. |
