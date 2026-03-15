@@ -177,6 +177,8 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - On 2026-03-15, commit `e141eb2` tightened `review_gate.sh` and `final_gate.sh` so missing `accepted_deferred_risks` or `strategic_observations` arrays fail closed, and both `review_regression.sh` plus `stateful_gate_regression.sh` passed on that head.
 - On 2026-03-15, commit `410ad27` tightened `review_aggregate.sh` so reviewer artifacts must match the manifest `scope`, and `review_regression.sh` passed with new missing-scope and mismatched-scope coverage on that head.
 - The earlier 2026-03-15 clean full-pr review and passing final-gate records apply only through commit `7acdbf5`; they were superseded by commits `e141eb2` and `410ad27`, so the latest-head review/final-gate evidence is being refreshed again in this session.
+- On 2026-03-15, delta review round `20260315-093341` passed with no current-slice blockers after the archived-plan refresh.
+- On 2026-03-15, `export_ci_status.sh main --docs-updated true --pr 40 --output .local/loop/ci-status-20260315-093341.json` and `final_gate.sh .local/loop/review-20260315-093341.json .local/loop/ci-status-20260315-093341.json docs/harness/completed/2026-03-14-review-outcome-taxonomy-and-deferred-risks.md main .local/loop/final-gate-20260315-093341.json` both passed for commit `126a599`.
 
 ## Review Summary
 
@@ -186,7 +188,7 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - The earlier clean full-pr round for reopened Step 4 evidence was superseded by commits `e141eb2` and `410ad27`.
 - Full-pr round `20260315-092401` then surfaced one current-slice `correctness` finding: `review_aggregate.sh` accepted reviewer artifacts with missing or incorrect `scope`; that finding was fixed in commit `410ad27` and covered by regression.
 - Full-pr round `20260315-092915` then surfaced one current-slice `docs/spec consistency` finding: this archived plan still described pre-`e141eb2`/`410ad27` review and final-gate evidence as if it covered the latest reopened branch head.
-- A fresh latest-head review must be rerun after this archived-plan refresh before this plan can again claim a clean reopened branch head.
+- Delta round `20260315-093341` then re-reviewed the archived-plan refresh and passed with no current-slice blockers.
 
 ## Final Gate Summary
 
@@ -194,7 +196,9 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - On 2026-03-15, `export_ci_status.sh main --docs-updated true --pr 40 --output .local/loop/ci-status-20260315-005921.json` exported a GitHub-backed CI artifact for the latest published PR head.
 - On 2026-03-15, `final_gate.sh` passed against `.local/loop/review-20260315-005808.json`, the exported CI artifact, and this archived plan.
 - That passing final-gate record applies to the pre-`e141eb2` reopened head and is now superseded by later commits on PR `#40`.
-- The retained local evidence bundle `.local/final-evidence/2026-03-14-review-outcome-taxonomy-and-deferred-risks/` remains useful baseline history, but the latest-head final-gate result must be refreshed after this archived-plan update.
+- On 2026-03-15, `export_ci_status.sh main --docs-updated true --pr 40 --output .local/loop/ci-status-20260315-093341.json` exported a GitHub-backed CI artifact for commit `126a599`.
+- On 2026-03-15, `final_gate.sh` passed against `.local/loop/review-20260315-093341.json`, the refreshed CI artifact, and this archived plan.
+- The retained local evidence bundle `.local/final-evidence/2026-03-14-review-outcome-taxonomy-and-deferred-risks/` now contains the refreshed closeout evidence produced in the 20260315-093341 review/final-gate cycle.
 
 ## Risks and Mitigations
 
@@ -218,12 +222,12 @@ Make review artifacts and gate decisions explicitly distinguish current-slice bl
 - Reviewer-subagent-first execution is now repo-observable through per-round dispatch ledgers, explicit fallback-eligibility rules, and aggregate enforcement for missing subagent attempts or missing `launch-started` events.
 - Reviewer dispatch now also treats `runtime-blocked` as a terminal per-slot state, with helper-level rejection plus aggregate fail-closed enforcement if later events are appended.
 - The reopened branch now also requires complete layered review artifacts at both gate scripts and per-reviewer manifest-`scope` enforcement in review aggregation.
-- Fresh latest-head review and final-gate evidence is being refreshed again after commits `e141eb2` and `410ad27`; the earlier passing closeout remains baseline history, not current-head evidence.
+- Refreshed closeout evidence now includes delta review round `20260315-093341`, CI export `.local/loop/ci-status-20260315-093341.json`, and final gate artifact `.local/loop/final-gate-20260315-093341.json`.
 - Not delivered:
 - Merge/landing and issue auto-close remain pending until PR `#40` lands after the reopened scope is complete.
-- Refreshed latest-head review and final-gate evidence still need to be captured after this archived-plan update.
 - Linked issue updates:
 - PR `#40` remains the active publication path for this reopened work: `https://github.com/yzhang1918/missless/pull/40`.
 - Issue `#20`, issue `#22`, and PR `#40` reflect the reopened Step 4 work, while latest-head closeout evidence is being refreshed again after the follow-up review fixes in commits `e141eb2` and `410ad27`.
+- Issue `#20`, issue `#22`, and PR `#40` can now be synced to the refreshed closeout evidence from round `20260315-093341` and final gate artifact `.local/loop/final-gate-20260315-093341.json`.
 - Spawned follow-up issues:
 - None.
