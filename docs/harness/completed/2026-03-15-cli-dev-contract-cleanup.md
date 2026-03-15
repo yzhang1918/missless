@@ -221,6 +221,19 @@ current supported path.
 - The sourced activation workflow passes local validation on the branch head.
 - Review has no unresolved blocker or important findings.
 
+## Final Gate Summary
+
+- On 2026-03-15, `export_ci_status.sh main --docs-updated true --pr 44`
+  exported a GitHub-backed CI artifact for PR `#44` at head
+  `8aebeeac2821e0d3b46a299b28c5d64e3dd838ec`.
+- On 2026-03-15, `final_gate.sh` passed against
+  `.local/loop/review-20260315-151235.json`,
+  `.local/loop/ci-status-8aebeeac2821.json`, and this archived plan.
+- The accepted final-gate result is `pass` with `review_ok=true`,
+  `ci_ok=true`, `branch_ok=true`, and `docs_ok=true`.
+- The retained local evidence bundle for this passing gate lives at
+  `.local/final-evidence/2026-03-15-cli-dev-contract-cleanup/`.
+
 ## Delivered Scope
 
 - Removed the remaining packaging-era support signals from the private CLI
@@ -263,6 +276,7 @@ current supported path.
 ## Publish Record
 
 - Publish outcome: created pull request [#44](https://github.com/yzhang1918/missless/pull/44)
+- Current published head: `8aebeeac2821e0d3b46a299b28c5d64e3dd838ec`
 - Publish metadata: direct request (no issue); related follow-up remains `#42`
 - Synced the current contract cleanup back to issue `#42` in
   `https://github.com/yzhang1918/missless/issues/42#issuecomment-4063112093`.
