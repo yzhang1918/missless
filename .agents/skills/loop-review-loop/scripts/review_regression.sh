@@ -946,7 +946,29 @@ if (
   fail "final_gate accepted mismatched counts"
 fi
 
-# 18) gate scripts reject unknown severity values in current-slice findings.
+# 18) gate scripts reject review artifacts that omit required layered arrays.
+cat > "$work_dir/.local/loop/review-missing-layers.json" <<'JSON'
+{
+  "status": "complete",
+  "current_slice_findings": [],
+  "counts": {"blocker": 0, "important": 0, "minor": 0, "nit": 0}
+}
+JSON
+if (
+  cd "$work_dir" &&
+  "$review_gate" .local/loop/review-missing-layers.json >/dev/null 2>&1
+); then
+  fail "review_gate accepted a review artifact missing required layered arrays"
+fi
+if (
+  cd "$work_dir" &&
+  PATH="$fake_bin:$PATH" \
+  "$final_gate" .local/loop/review-missing-layers.json .local/loop/ci-good.json "$plan_path" main .local/loop/final-gate-missing-layers.json >/dev/null 2>&1
+); then
+  fail "final_gate accepted a review artifact missing required layered arrays"
+fi
+
+# 19) gate scripts reject unknown severity values in current-slice findings.
 cat > "$work_dir/.local/loop/review-unknown-severity.json" <<'JSON'
 {
   "status": "complete",
@@ -970,7 +992,7 @@ if (
   fail "final_gate accepted unknown severity token"
 fi
 
-# 19) review_gate accepts numerically equivalent count formats.
+# 20) review_gate accepts numerically equivalent count formats.
 cat > "$work_dir/.local/loop/review-decimal-zero.json" <<'JSON'
 {
   "status": "complete",
@@ -985,7 +1007,7 @@ JSON
   "$review_gate" .local/loop/review-decimal-zero.json >/dev/null
 )
 
-# 20) final_gate accepts numerically equivalent count formats.
+# 21) final_gate accepts numerically equivalent count formats.
 (
   cd "$work_dir" &&
   PATH="$fake_bin:$PATH" \
@@ -996,7 +1018,7 @@ assert_exists "$work_dir/.local/final-evidence/2026-03-11-review-regression-plan
 assert_exists "$work_dir/.local/final-evidence/2026-03-11-review-regression-plan/ci-status.json"
 assert_exists "$work_dir/.local/final-evidence/2026-03-11-review-regression-plan/final-gate.json"
 
-# 21) final_gate rejects stale CI head/base metadata.
+# 22) final_gate rejects stale CI head/base metadata.
 cat > "$work_dir/.local/loop/ci-stale.json" <<'JSON'
 {
   "schema_version": 1,
@@ -1017,7 +1039,7 @@ if (
   fail "final_gate accepted stale CI head/base metadata"
 fi
 
-# 22) cleanup rejects invalid keep-round arguments.
+# 23) cleanup rejects invalid keep-round arguments.
 if (
   cd "$work_dir" &&
   "$review_cleanup" --keep-round-id --dry-run >/dev/null 2>&1
@@ -1037,7 +1059,7 @@ if (
   fail "review_cleanup accepted non-numeric keep-rounds"
 fi
 
-# 23) explicit keep-round-id preserves orphan aggregate rounds.
+# 24) explicit keep-round-id preserves orphan aggregate rounds.
 cat > "$work_dir/.local/loop/review-20260305-230099.json" <<'JSON'
 {"round_id":"20260305-230099"}
 JSON

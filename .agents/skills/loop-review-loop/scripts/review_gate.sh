@@ -28,9 +28,9 @@ if ! jq -e '
   def current_slice_findings:
     .current_slice_findings;
   def accepted_deferred_risks:
-    (.accepted_deferred_risks // []);
+    .accepted_deferred_risks;
   def strategic_observations:
-    (.strategic_observations // []);
+    .strategic_observations;
   (.status | type == "string")
   and (
     .status == "complete"
