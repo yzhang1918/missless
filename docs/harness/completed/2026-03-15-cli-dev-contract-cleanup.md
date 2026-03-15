@@ -188,6 +188,13 @@ current supported path.
 - Aligned `skills/README.md` with the narrowed contract so repository
   skill-authoring guidance now points at stable runtime command names plus the
   required activation step when the supported entrypoint is repo-local.
+- After the runtime was reset, reran a second full-pr review round
+  (`20260315-151235`) with real reviewer subagents for `correctness`,
+  `tests-regression`, `docs-spec-consistency`, and `architecture`.
+- The accepted final review evidence is that second round:
+  all four reviewer slots wrote real `artifact-written` outputs, the aggregate
+  contract status was `ok`, and the review gate cleared with `BLOCKER=0` and
+  `IMPORTANT=0`.
 - The final review outcome remained clean, and the deferred packaging
   follow-up stayed isolated under issue `#42`.
 
@@ -234,6 +241,9 @@ current supported path.
 - `pnpm -r test` passed.
 - `.agents/skills/loop-review-loop/scripts/review_finalize.sh 20260315-143707 .local/loop/review-20260315-143707-*.json`
   passed with `BLOCKER=0` and `IMPORTANT=0`.
+- `.agents/skills/loop-review-loop/scripts/review_finalize.sh 20260315-151235 .local/loop/review-20260315-151235-*.json`
+  passed with real reviewer-subagent artifacts, `contract.status=ok`, and
+  `BLOCKER=0` / `IMPORTANT=0`.
 - `zsh -lc 'source scripts/dev-activate-missless.sh >/dev/null && missless --help >/dev/null'`
   passed.
 - `git diff --check` passed.
