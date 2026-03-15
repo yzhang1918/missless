@@ -320,26 +320,32 @@ into long-lived artifacts.
 
 - `#29` status sync comment:
   [issuecomment-4060762455](https://github.com/yzhang1918/missless/issues/29#issuecomment-4060762455)
+- `#29` PR sync comment:
+  [issuecomment-4062679479](https://github.com/yzhang1918/missless/issues/29#issuecomment-4062679479)
 - No new follow-up issue was required during execution.
 
 ## Publish Summary
 
 - Branch: `codex/29-cli-provenance-agent-output`
-- PR: pending; branch is locally PR-ready and awaiting publish
+- PR: [#41](https://github.com/yzhang1918/missless/pull/41)
+- Publish command:
+  `.agents/skills/loop-publish/scripts/publish_pr.sh main "feat(cli): ship agent-first workflow contracts" ... --plan docs/exec-plans/completed/2026-03-14-cli-provenance-and-agent-output.md --close-issue 29`
+- Published head SHA: `0e1fbe998231d3361968ebcddbe78cfb46302e35`
 
 ## Final Gate Summary
 
-- Full-pr review is passing locally.
+- Full-pr review is passing locally and on the published PR head.
 - Latest isolated full-pr review round: `20260315-092955`
   (`BLOCKER=0`, `IMPORTANT=0`, one non-blocking `NIT`).
-- Final gate was attempted locally on 2026-03-15 via
-  `.agents/skills/loop-final-gate/scripts/export_ci_status.sh main --docs-updated true`
-  and failed closed because there is no open PR yet for branch
-  `codex/29-cli-provenance-agent-output`, so no machine-readable GitHub CI
-  artifact exists for the current `HEAD`.
-- Final gate therefore remains `no-go` until `loop-publish` creates or updates
-  the PR and required-check evidence can be exported against the published
-  branch head.
+- Publish unblocked the GitHub CI exporter:
+  `.agents/skills/loop-final-gate/scripts/export_ci_status.sh main --docs-updated true --pr 41`
+  produced `.local/loop/ci-status-0e1fbe998231.json` for the current PR head.
+- Final gate then passed via:
+  `.agents/skills/loop-final-gate/scripts/final_gate.sh .local/loop/review-20260315-092955.json .local/loop/ci-status-0e1fbe998231.json docs/exec-plans/completed/2026-03-14-cli-provenance-and-agent-output.md main`
+- Required GitHub check status at gate time:
+  `harness-checks=pass` with `ci_failures=0`.
+- Retained local evidence bundle:
+  `.local/final-evidence/2026-03-14-cli-provenance-and-agent-output/`
 
 ## Assumptions
 
