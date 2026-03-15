@@ -366,10 +366,10 @@ missing_dispatch_attempt_count="$(jq -r '.contract.missing_dispatch_attempts | l
 
 # 9) aggregate rejects dash-prefixed reviewer filenames.
 cat > "$work_dir/.local/loop/-bad.json" <<'JSON'
-{"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
+{"scope":"full-pr","dimension":"security","status":"complete","current_slice_findings":[],"accepted_deferred_risks":[],"strategic_observations":[]}
 JSON
 cat > "$work_dir/.local/loop/reviewer-empty.json" <<'JSON'
-{"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
+{"scope":"full-pr","dimension":"security","status":"complete","current_slice_findings":[],"accepted_deferred_risks":[],"strategic_observations":[]}
 JSON
 if (
   cd "$work_dir" &&
@@ -388,7 +388,7 @@ fi
 
 # 11) aggregate rejects unknown severity values.
 cat > "$work_dir/.local/loop/review-20260305-230000-security.json" <<'JSON'
-{"scope":"full-pr","dimension":"security","status":"complete","findings":[{"id":"Sx","severity":"WARN"}]}
+{"scope":"full-pr","dimension":"security","status":"complete","current_slice_findings":[{"id":"Sx","severity":"WARN"}],"accepted_deferred_risks":[],"strategic_observations":[]}
 JSON
 if (
   cd "$work_dir" &&
@@ -397,7 +397,18 @@ if (
   fail "review_aggregate accepted unknown severity token"
 fi
 
-# 11.1) aggregate rejects accepted deferred risks without issue linkage or a defer reason.
+# 11.1) aggregate rejects legacy findings-only reviewer artifacts.
+cat > "$work_dir/.local/loop/review-20260305-230000-security.json" <<'JSON'
+{"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
+JSON
+if (
+  cd "$work_dir" &&
+  "$review_aggregate" 20260305-230000 .local/loop/review-20260305-230000-security.json >/dev/null 2>&1
+); then
+  fail "review_aggregate accepted a legacy findings-only reviewer artifact"
+fi
+
+# 11.2) aggregate rejects accepted deferred risks without issue linkage or a defer reason.
 cat > "$work_dir/.local/loop/review-20260305-230000-security.json" <<'JSON'
 {
   "scope": "full-pr",
@@ -421,6 +432,26 @@ if (
   "$review_aggregate" 20260305-230000 .local/loop/review-20260305-230000-security.json >/dev/null 2>&1
 ); then
   fail "review_aggregate accepted an accepted_deferred_risks entry without tracking or defer reason"
+fi
+
+# 11.3) aggregate rejects malformed layered fields even when a legacy findings array is also present.
+cat > "$work_dir/.local/loop/review-20260305-230000-security.json" <<'JSON'
+{
+  "scope": "full-pr",
+  "dimension": "security",
+  "status": "complete",
+  "summary": "Malformed layered fields should not fall back to legacy findings.",
+  "findings": [],
+  "current_slice_findings": "not-an-array",
+  "accepted_deferred_risks": [],
+  "strategic_observations": []
+}
+JSON
+if (
+  cd "$work_dir" &&
+  "$review_aggregate" 20260305-230000 .local/loop/review-20260305-230000-security.json >/dev/null 2>&1
+); then
+  fail "review_aggregate accepted malformed layered fields when a legacy findings array was also present"
 fi
 
 # 12) aggregate computes counts from layered review payloads while keeping non-blocking layers visible.
@@ -798,10 +829,10 @@ assert_exists "$work_dir/.local/loop/review-20260305-230104.json"
 record_dispatch 20260305-230101 security launch-started
 record_dispatch 20260305-230101 security artifact-written --artifact-path .local/loop/review-20260305-230101-security.json
 cat > "$work_dir/.local/loop/review-20260305-230101-security.json" <<'JSON'
-{"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
+{"scope":"full-pr","dimension":"security","status":"complete","current_slice_findings":[],"accepted_deferred_risks":[],"strategic_observations":[]}
 JSON
 cat > "$work_dir/.local/loop/review-20260305-230101-rogue.json" <<'JSON'
-{"scope":"full-pr","dimension":"rogue","status":"complete","findings":[]}
+{"scope":"full-pr","dimension":"rogue","status":"complete","current_slice_findings":[],"accepted_deferred_risks":[],"strategic_observations":[]}
 JSON
 set +e
 unexpected_output_finalize="$(
@@ -825,7 +856,7 @@ unexpected_output_count="$(jq -r '.contract.unexpected_outputs | length' "$work_
 )
 printf 'tracked-drift\n' >> "$work_dir/README.md"
 cat > "$work_dir/.local/loop/review-20260305-230102-security.json" <<'JSON'
-{"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
+{"scope":"full-pr","dimension":"security","status":"complete","current_slice_findings":[],"accepted_deferred_risks":[],"strategic_observations":[]}
 JSON
 record_dispatch 20260305-230102 security launch-started
 record_dispatch 20260305-230102 security artifact-written --artifact-path .local/loop/review-20260305-230102-security.json
@@ -857,7 +888,7 @@ worktree_drift_detected="$(jq -r '.contract.tracked_worktree_changed' "$work_dir
   git commit -m "post prepare head move" >/dev/null
 )
 cat > "$work_dir/.local/loop/review-20260305-230103-security.json" <<'JSON'
-{"scope":"full-pr","dimension":"security","status":"complete","findings":[]}
+{"scope":"full-pr","dimension":"security","status":"complete","current_slice_findings":[],"accepted_deferred_risks":[],"strategic_observations":[]}
 JSON
 record_dispatch 20260305-230103 security launch-started
 record_dispatch 20260305-230103 security artifact-written --artifact-path .local/loop/review-20260305-230103-security.json
@@ -876,11 +907,13 @@ head_move_detected="$(jq -r '.contract.head_moved' "$work_dir/.local/loop/review
 [[ "$head_move_detected" == "true" ]] || fail "HEAD movement was not recorded in the aggregate review artifact"
 head_sha="$(cd "$work_dir" && git rev-parse HEAD)"
 
-# 16) review_gate fails when counts do not match findings payload.
+# 16) review_gate fails when counts do not match current-slice findings payload.
 cat > "$work_dir/.local/loop/review-mismatch.json" <<'JSON'
 {
   "status": "complete",
-  "findings": [{"id":"X","severity":"IMPORTANT"}],
+  "current_slice_findings": [{"id":"X","severity":"IMPORTANT"}],
+  "accepted_deferred_risks": [],
+  "strategic_observations": [],
   "counts": {"blocker": 0, "important": 0, "minor": 0, "nit": 0}
 }
 JSON
@@ -913,11 +946,13 @@ if (
   fail "final_gate accepted mismatched counts"
 fi
 
-# 18) gate scripts reject unknown severity values in findings.
+# 18) gate scripts reject unknown severity values in current-slice findings.
 cat > "$work_dir/.local/loop/review-unknown-severity.json" <<'JSON'
 {
   "status": "complete",
-  "findings": [{"id":"Z","severity":"WARN"}],
+  "current_slice_findings": [{"id":"Z","severity":"WARN"}],
+  "accepted_deferred_risks": [],
+  "strategic_observations": [],
   "counts": {"blocker": 0, "important": 0, "minor": 0, "nit": 0}
 }
 JSON
@@ -939,7 +974,9 @@ fi
 cat > "$work_dir/.local/loop/review-decimal-zero.json" <<'JSON'
 {
   "status": "complete",
-  "findings": [],
+  "current_slice_findings": [],
+  "accepted_deferred_risks": [],
+  "strategic_observations": [],
   "counts": {"blocker": 0.0, "important": 0.0, "minor": 0, "nit": 0}
 }
 JSON
@@ -1023,13 +1060,13 @@ cat > "$work_dir/.local/loop/review-20260305-230001.json" <<'JSON'
 {"round_id":"20260305-230001"}
 JSON
 cat > "$work_dir/.local/loop/review-20260305-230001-correctness.json" <<'JSON'
-{"status":"complete","findings":[]}
+{"status":"complete","current_slice_findings":[],"accepted_deferred_risks":[],"strategic_observations":[]}
 JSON
 cat > "$work_dir/.local/loop/review-20260305-230002.json" <<'JSON'
 {"round_id":"20260305-230002"}
 JSON
 cat > "$work_dir/.local/loop/review-20260305-230002-security.json" <<'JSON'
-{"status":"complete","findings":[]}
+{"status":"complete","current_slice_findings":[],"accepted_deferred_risks":[],"strategic_observations":[]}
 JSON
 (
   cd "$work_dir" &&
