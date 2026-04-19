@@ -9,7 +9,8 @@ Repository knowledge is the system of record. If it is not in this repository, i
 ## Top-Level Layout
 
 - `AGENTS.md`: operating contract for human + Codex collaboration
-- `.agents/skills/`: developer-only operational playbooks used while building the product
+- `.agents/skills/`: repo-local workflow skills and developer helper playbooks
+- `.local/`: disposable local harness state and runtime artifacts
 - `apps/`: runnable product surfaces such as the first local CLI and later web entry points
 - `packages/`: reusable runtime modules, contracts, and rendering primitives
 - `skills/`: agent-facing product skills and prompt assets that ship with `missless`
@@ -21,10 +22,9 @@ Repository knowledge is the system of record. If it is not in this repository, i
 - `docs/product-specs/`: product foundation and workflow intent
 - `docs/design-docs/`: design rationale and decision log
 - `docs/specs/`: technical contracts (currently draft-first)
-- `docs/exec-plans/`: product tactical planning, tracker, and plan archives
-- `docs/harness/`: harness/process tactical planning, tracker, and plan archives
+- `docs/plans/`: tracked product plans and archived execution history managed through `easyharness`
 - `docs/standards/`: working rules for documentation/review alignment
-- `docs/references/`: external distillations and glossary
+- `docs/references/`: external distillations and shared terminology that still apply to `missless`
 
 ## Change Policy
 

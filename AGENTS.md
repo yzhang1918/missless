@@ -1,6 +1,12 @@
 # AGENTS.md
 
-This document defines how humans and Codex collaborate in `missless`.
+This document defines the product-specific collaboration overlay for
+`missless`.
+
+The generic harness workflow contract is installed and managed below by
+`easyharness`. The repository-owned guidance above that managed block should
+stay focused on `missless` itself: product truth surfaces, documentation sync
+expectations, and repository boundaries.
 
 ## Mission
 
@@ -12,7 +18,16 @@ Build `missless` as an agent-first, repository-legible system that turns informa
 2. All docs and code must be written in English.
 3. Every meaningful change must update docs/specs in the same branch.
 4. Evidence over opinion: decisions link to specs, plans, or run artifacts.
-5. Codex closes the loop: discovery -> plan -> execute -> validate -> report.
+5. `missless` keeps product-specific repository guidance here; generic harness workflow behavior belongs to `easyharness`, not a second local process stack.
+
+## Product Source Of Truth
+
+- Product intent and workflow goals: `docs/product-specs/`
+- Design rationale and decision history: `docs/design-docs/`
+- Technical contracts and durable interface expectations: `docs/specs/`
+- Tracked plans and archived execution history: `docs/plans/`
+- Repository map and folder responsibilities: `ARCHITECTURE.md`
+- Documentation-wide navigation: `docs/index.md`
 
 ## Role Split
 
@@ -26,59 +41,197 @@ Before any discovery/plan/execution work:
 - Codex must confirm objective and success criteria before entering discovery.
 - Codex must not start implementation-oriented work on assumed tasks.
 
-## Intake Sources
-
-- Asynchronous backlog, future work, and community input live in GitHub Issues for `yzhang1918/missless`.
-- Only triaged `state:accepted` issues are eligible to enter discovery from GitHub intake. `needs-triage`, `state:blocked`, and `state:parked` issues stay out of the execution queue until triage changes them.
-- A direct human request in chat may enter discovery without a pre-existing issue.
-- Once work enters planning/execution, the repository plan becomes the authoritative execution record.
-
-## Required Workflow
-
-For medium or large work, these steps are mandatory:
-1. Discovery (interactive brainstorming; no repository file writes)
-2. Plan
-   - Product work: write to `docs/exec-plans/active/` only after discovery approval
-   - Harness/process work: write to `docs/harness/active/` only after discovery approval
-3. Execution (small reviewable increments)
-4. Validation (checks + evidence)
-5. Documentation updates
-6. Issue updates
-   - If work came from a GitHub issue, sync plan/PR links and disposition back to that issue.
-   - PRs must identify the linked issue(s), or explicitly say `direct request (no issue)` when no intake issue exists. Use GitHub closing keywords only for issues that should close on merge.
-   - Do not close a resolved issue before landing. Prefer merge-time auto-close; otherwise close it manually only after the merge result is known.
-   - If execution reveals future work, create or update GitHub issues, record each issue's origin, and link them before closing the current plan.
-7. Plan archival
-   - When a task is complete, move its plan from `active/` to `completed/` before publish/final gate.
-   - Keep `active/` reserved for unfinished work only.
-
-For small work, discovery+plan can be collapsed, but rationale must still be explicit.
-
 ## Start Points
 
-- Open backlog and async next steps: triaged `state:accepted` GitHub Issues in `yzhang1918/missless`
-- Direct synchronous requests: start from the human's explicit chat request, then enter discovery
+- Repository and current execution state: `README.md` and `harness status`
+- Direct synchronous requests: start from the human's explicit chat request, then enter harness discovery when needed
 - Product context: `docs/product-specs/index.md`
 - Design rationale: `docs/design-docs/index.md`
 - Technical contracts: `docs/specs/index.md`
+- Product plan history and active tracked plans: `docs/plans/index.md`
 - Detailed standards: `docs/standards/repository-standards.md`
 
-## Local Skills
+## Documentation Sync Expectations
+
+- If product intent, user workflow, or feature positioning changes, update the
+  affected file under `docs/product-specs/`.
+- If an implementation decision changes technical behavior, interface shape, or
+  data contracts, update the affected file under `docs/specs/`.
+- If a change introduces or reverses an important tradeoff, record that
+  rationale under `docs/design-docs/`.
+- If a change alters top-level repository boundaries or document ownership,
+  update `ARCHITECTURE.md`.
+- When folder contents or entry docs change, update the relevant `index.md` in
+  the same branch.
+
+## Repository-Local Skills
 
 Repository-local skills live under `.agents/skills/`.
-If standards and skills conflict, standards win.
-
-Primary skills:
-- `loop-discovery`, `loop-plan`, `loop-execute`
-- `loop-review-loop`, `loop-final-gate`, `loop-publish`, `loop-land`, `loop-janitor`
-- `issue-triage`, `issue-create`
-- `loop-reviewer` (subagent reviewer output contract)
-- `commit`
+For `missless`, the active workflow skills are the `easyharness`-managed
+`harness-*` skills plus any narrow repository helpers that are still useful.
+Do not reintroduce a second repo-local copy of generic harness workflow rules.
 
 ## Git Rules
 
 - Main branch: `main`
 - Working branch prefix: `codex/`
 - Commits: small and atomic
-- Commit cadence: commits can happen multiple times during execution; publish/merge timing is controlled by loop workflow, not by the `commit` skill itself.
+- Commit cadence: commits can happen multiple times during execution;
+  publish/merge timing is controlled by the active harness workflow, not by the
+  `commit` skill itself.
 - Never rewrite shared history without explicit approval
+
+<!-- easyharness:begin version="v0.2.3" -->
+## Harness Working Agreement
+
+1. Humans steer. Agents execute.
+2. Approved scope lives in a git-tracked plan.
+3. Raw execution trajectory lives in `.local/` and is disposable.
+4. Durable summaries, contracts, and behavior changes must be written back to
+   tracked docs or code before archive.
+5. Evidence beats memory. Use `harness status`, tracked plans, and owned local
+   artifacts instead of relying on long-session recall.
+6. Keep tracked docs and code in English.
+
+## Harness Source of Truth
+
+The default harness split in this repository is:
+
+- tracked plan in `docs/plans/`: markdown-led plan packages, durable step
+  closeout, archive-ready summaries, and any matching `supplements/`
+  companion directories
+- `.local/harness/plans/archived/`: archived lightweight plan snapshots
+- `.local/harness/`: disposable runtime state, review artifacts, evidence artifacts, and trajectory
+- `docs/specs/`: normative harness contracts
+- `.agents/skills`: repo-local harness workflow skills
+
+If a tracked plan conflicts with a repo-local skill, the tracked plan wins.
+
+## Harness Workflow
+
+For medium or large work:
+
+1. Discovery
+2. Plan
+3. Plan approval
+4. Execute
+4. Archive / publish / await merge approval
+5. Land
+
+Plan approval is explicit. Writing a plan or hearing the original task request
+does not by itself approve execution. After the plan is shown and the human
+approves it, the agent should record that boundary with
+`harness plan approve --by human` before `harness execute start`.
+
+For approved low-risk work that explicitly uses `workflow_profile:
+lightweight`, keep the same workflow shape but store the active plan under
+`docs/plans/active/` like any other plan. Only the archived lightweight
+snapshot moves to `.local/harness/plans/archived/<plan-stem>.md`. That
+shortcut does not remove human steering, low-risk eligibility checks, or the
+requirement to leave a repo-visible breadcrumb such as a PR body note.
+
+Use `lightweight` only when all of these are true:
+
+- the human explicitly approves using `workflow_profile: lightweight`
+- the plan is sized `XXS`
+- the whole slice is one bounded low-risk change
+- the edits stay within a narrow surface such as README/docs/comments/copy, a
+  small CI condition adjustment, a tiny helper-script fix, or another similarly
+  small change whose blast radius is easy to explain
+- no schema-meaning changes, core state/review/archive/evidence changes,
+  release-safety changes, or security-sensitive logic changes
+- if the boundary is unclear, default to `standard`
+
+`size` and `workflow_profile` are separate decisions. `XXS` is the only size
+eligible for `lightweight`, and `XXS` may still use the ordinary `standard`
+workflow when that is the approved path.
+
+When drafting a new plan, estimate `size` early. If the initial estimate is
+`XXL`, stop and confirm with the human whether the work should be split first;
+if the split is unclear, return to discovery to settle a better split before
+execution approval. If the work still proceeds as `XXL`, move obvious spillover
+into `Deferred Items` or follow-up issues instead of letting the oversized plan
+quietly absorb extra scope. `XXL` remains available for truthful historical
+sizing and rare coherent large slices, but it should not be the routine
+starting point for new work.
+
+Use `harness reopen --mode finalize-fix|new-step` when an archived candidate
+is no longer merge-ready because of new feedback, remote changes, or other
+invalidation.
+
+## Harness Subagent Use
+
+The controller owns shared repository context and the final workflow judgment.
+Spawn subagents only for bounded subproblems; do not split one shared context
+bundle across multiple subagents just to get summaries back.
+
+Discovery and execution may stay local, use one subagent, or use multiple
+subagents in parallel according to the current question shape:
+
+- stay local when the controller can answer the next question from the shared
+  context it already needs to hold
+- use `1` when one bounded question or hypothesis needs independent repo
+  checking
+- use multiple subagents in parallel only when multiple hypotheses or
+  questions are genuinely independent
+
+In Codex, spawned subagents are not fire-and-forget memory. Once a bounded
+subagent task is complete and the controller has received the result, close
+that subagent promptly by default. Reuse `resume_agent` only when a later
+narrow follow-up makes continuity materially more valuable than a fresh agent.
+
+## Harness Review Execution
+
+When work enters review orchestration, spawned reviewer subagents are the
+default path. The controller agent stays in `harness-execute`, reviewer work
+belongs to spawned `harness-reviewer` subagents, and the repo-local review
+skills must be followed strictly. The shared rules in `Harness Subagent Use`
+still apply here; review-specific docs add reviewer-slot orchestration,
+aggregation, and same-slot resume rules on top of that shared baseline.
+
+The controller must not submit reviewer results on a reviewer's behalf. Each
+reviewer submission should be recorded through
+`harness review submit --by <reviewer-name>`
+from the bounded reviewer thread that owns that slot.
+
+Routine review progression is controller-owned once a tracked plan is approved.
+The controller should not stop to ask the human whether ordinary step-closeout
+or finalize review should begin.
+
+For `delta` review, use a real git commit anchor so later agents know the
+default starting point for the reviewed change.
+
+Use `harness status` at routine checkpoints:
+
+- when starting or resuming execution
+- before marking a step done
+- after each review aggregate
+- before relying on later-step or finalize progression after a warning or fix
+
+Human confirmation is still required for real blockers, scope changes, and
+merge approval, but not for ordinary review closeout.
+
+If an approved plan is likely to require reviewer subagents later, ask for
+explicit human authorization when seeking plan approval instead of waiting
+until review orchestration is already blocked on that permission.
+
+## Harness Start Points
+
+When entering the repository or resuming after compaction:
+
+1. Read `README.md` if you need repository purpose or setup context.
+2. Run `harness status`.
+3. If `harness status` reports a current plan artifact, open that plan.
+   Active work always uses a tracked plan under `docs/plans/active/`; archived
+   lightweight candidates may live under `.local/harness/plans/archived/`.
+   If status reports `idle`, there is no current plan to resume yet.
+4. Most resumed work should continue in `harness-execute`.
+5. Switch only when `harness status` and the workflow boundary clearly call for
+   a different skill:
+   - `harness-discovery` when direction is unclear
+   - `harness-plan` when creating or revising a tracked plan
+   - `harness-land` only when `state.current_node` is
+     `execution/finalize/await_merge` and a human has explicitly approved
+     merge
+   - `harness-reviewer` only inside spawned reviewer subagents
+<!-- easyharness:end -->

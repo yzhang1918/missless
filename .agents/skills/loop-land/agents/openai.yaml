@@ -1,4 +1,0 @@
-interface:
-  display_name: "Loop Land"
-  short_description: "Land changes after gate pass"
-  default_prompt: "Use $loop-land to re-check fresh final-gate evidence and land the branch after final gate passes."

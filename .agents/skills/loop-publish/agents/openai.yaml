@@ -1,4 +1,0 @@
-interface:
-  display_name: "Loop Publish"
-  short_description: "Push branch and open/update PR"
-  default_prompt: "Use $loop-publish to repo-sync, validate the archived completed plan, and create or update the PR before $loop-land."

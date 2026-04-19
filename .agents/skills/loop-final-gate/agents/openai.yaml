@@ -1,4 +1,0 @@
-interface:
-  display_name: "Loop Final Gate"
-  short_description: "Evaluate landing readiness"
-  default_prompt: "Use $loop-final-gate to repo-sync, validate the archived completed plan plus CI artifact, and perform the final go/no-go decision before landing."

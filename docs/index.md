@@ -8,8 +8,10 @@ This is the canonical entry point for repository knowledge.
 
 - Start from the catalog below.
 - Prefer `Active` docs, then `Draft` docs where needed.
-- For open backlog or asynchronous intake, start from triaged `state:accepted` GitHub Issues in `yzhang1918/missless`. Route `needs-triage`, `state:blocked`, and `state:parked` issues through `issue-triage` before treating them as execution candidates.
-- For synchronous owner-driven work, start from the approved chat request, then enter discovery and plan creation in the repository.
+- For active or resumed execution, run `harness status` first and open the
+  current tracked plan when one exists.
+- For repository-specific product truth, use the product/design/specs/plan
+  docs below rather than relying on session memory.
 
 ## Status Legend
 
@@ -26,7 +28,6 @@ This is the canonical entry point for repository knowledge.
 | Product Specs | Active | Product intent | Defines product foundation and baseline workflow. | [Product Specs Index](./product-specs/index.md) |
 | Design Docs | Active | Design rationale | Captures system design rationale and design decisions. | [Design Docs Index](./design-docs/index.md) |
 | System Specs | Active | Technical contracts | Captures current technical contracts in draft-first mode. | [Specs Index](./specs/index.md) |
-| Product Execution | Active | Product plan workflow | Covers active product plans, plan templates, and completed execution history. | [Execution Plans Index](./exec-plans/index.md) |
-| Harness Ops | Active | Agent harness workflow | Covers harness planning workflow and completed harness history. | [Harness Index](./harness/index.md) |
+| Product Plans | Active | Tracked plan history | Covers active tracked plans and archived product execution history. | [Plans Index](./plans/index.md) |
 | Standards | Active | Working rules | Defines compact rules for docs, status, review, and placement. | [Standards Index](./standards/index.md) |
 | References | Active | External learnings | Distills external practices and shared terms. | [References Index](./references/index.md) |
