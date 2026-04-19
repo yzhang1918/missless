@@ -47,19 +47,19 @@ this cleanup slice.
 
 ## Acceptance Criteria
 
-- [ ] `docs/plans/index.md` is removed, and active repository docs no longer
+- [x] `docs/plans/index.md` is removed, and active repository docs no longer
       point readers at a repo-owned plans index.
-- [ ] Active guidance still explains that tracked plans live under
+- [x] Active guidance still explains that tracked plans live under
       `docs/plans/active/` when harness is working, but plan discovery happens
       through `harness status` rather than a repository navigation page.
-- [ ] CI no longer enforces archived-plan catalog maintenance as part of the
+- [x] CI no longer enforces archived-plan catalog maintenance as part of the
       active repository contract.
-- [ ] Repo-local issue creation/triage guidance no longer requires or mentions
+- [x] Repo-local issue creation/triage guidance no longer requires or mentions
       `scope:*` labels.
-- [ ] All open GitHub issues are migrated off `scope:harness` and
+- [x] All open GitHub issues are migrated off `scope:harness` and
       `scope:product`, and the obsolete repository labels are removed if they
       are unused.
-- [ ] Validation demonstrates that active surfaces no longer reference
+- [x] Validation demonstrates that active surfaces no longer reference
       `docs/plans/index.md` or `scope:*` taxonomy, while archived plans remain
       untouched.
 
@@ -128,7 +128,7 @@ would not add much signal beyond the direct checks already run.
 
 ### Step 2: Retire scope labels from repo issue workflow and live backlog
 
-- Done: [ ]
+- Done: [x]
 
 #### Objective
 
@@ -161,11 +161,25 @@ all currently open issues to the simplified taxonomy, preserving `kind:*`,
 
 #### Execution Notes
 
-PENDING_STEP_EXECUTION
+Removed `scope:*` from the repo-local issue-create and issue-triage skills so
+new backlog work uses only `needs-triage`, exactly one `kind:*`, and an
+optional `state:*`. The backlog intake template already matched that simpler
+shape, so no template change was needed.
+
+Migrated all open GitHub issues off `scope:harness` and `scope:product`, then
+deleted both labels from the repository so the obsolete taxonomy no longer
+applies to current or historical issues.
+
+TDD was not practical for this step because the change affected repository
+workflow guidance and GitHub label state rather than executable product
+behavior. Validation used active-surface searches, live GitHub issue and label
+queries, and `git diff --check`.
 
 #### Review Notes
 
-PENDING_STEP_REVIEW
+NO_STEP_REVIEW_NEEDED: This step was a narrow repo-workflow and GitHub-label
+cleanup with direct validation against the live issue and label state, so a
+separate step-bound reviewer round would have duplicated the same checks.
 
 ## Validation Strategy
 
