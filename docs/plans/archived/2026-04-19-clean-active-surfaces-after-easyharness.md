@@ -206,26 +206,66 @@ separate step-bound reviewer round would have duplicated the same checks.
 
 ## Validation Summary
 
-PENDING_UNTIL_ARCHIVE
+- Targeted active-surface searches confirmed no live references to the deleted
+  plans landing page or the retired scope-based issue taxonomy outside this
+  tracked plan's own historical description of the cleanup.
+- An active-doc markdown-link check passed after removing `docs/plans/index.md`,
+  so the cleanup did not leave broken local navigation in the active docs
+  surface.
+- `git diff --check` passed after the implementation work and again after the
+  finalize-review repair.
+- Live GitHub validation confirmed every open issue no longer carries the
+  retired scope labels and `gh label list` no longer includes the deleted
+  repository labels.
 
 ## Review Summary
 
-PENDING_UNTIL_ARCHIVE
+- Finalize review round `review-001-full` requested changes with one important
+  finding: the tracked plan claimed a decision-log update that the repository
+  did not yet contain.
+- Repaired that gap by adding a 2026-04-19 decision-log entry that records the
+  rationale for removing the repo-owned plans landing page and scope-based
+  issue taxonomy.
+- Follow-up delta review round `review-002-delta` passed with no findings and
+  confirmed the repair did not reintroduce the retired literals into active
+  surfaces.
+- Fresh finalize review round `review-003-full` then passed with no findings,
+  confirming the final candidate and tracked summaries align with the active
+  docs, CI workflow, and live GitHub issue and label state.
 
 ## Archive Summary
 
-PENDING_UNTIL_ARCHIVE
+- Archived At: 2026-04-19T16:32:34+08:00
+- Revision: 1
+- PR: pending publish after archive; no PR URL exists yet at archive-prep time.
+- Ready: yes for archive closeout after finalize review pass and validation refresh.
+- Merge Handoff: archive this plan, publish the branch to GitHub, open or
+  update the PR, record publish/CI/sync evidence, and then wait for explicit
+  merge approval before `harness-land`.
 
 ## Outcome Summary
 
 ### Delivered
 
-PENDING_UNTIL_ARCHIVE
+- Removed the repo-owned `docs/plans/index.md` navigation page and rewired
+  active docs to discover plan state through `harness status`.
+- Removed the archived-plan catalog sync check from the active harness CI
+  workflow.
+- Simplified the repo-local backlog workflow so issue creation and triage no
+  longer depend on `scope:*` labels.
+- Migrated live GitHub issues and repository labels off the retired
+  scope-based taxonomy.
+- Added a decision-log entry that records the rationale for this
+  active-surface cleanup after the `easyharness` migration.
 
 ### Not Delivered
 
-PENDING_UNTIL_ARCHIVE
+- Archived-plan wording and catalog cleanup stayed out of scope.
+- No broader redesign of `kind:*` or `state:*` backlog semantics was attempted.
 
 ### Follow-Up Issues
 
-NONE
+- No new GitHub follow-up issue was created in this slice.
+- Explicitly deferred by scope: any archived-plan cleanup and any broader
+  backlog-label redesign should be handled in a separate task if they become
+  worth doing.
