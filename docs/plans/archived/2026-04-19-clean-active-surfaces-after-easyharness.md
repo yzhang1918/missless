@@ -228,8 +228,6 @@ separate step-bound reviewer round would have duplicated the same checks.
 
 ## Validation Summary
 
-UPDATE_REQUIRED_AFTER_REOPEN
-
 - Targeted active-surface searches confirmed no live references to the deleted
   plans landing page or the retired scope-based issue taxonomy outside this
   tracked plan's own historical description of the cleanup.
@@ -237,14 +235,17 @@ UPDATE_REQUIRED_AFTER_REOPEN
   so the cleanup did not leave broken local navigation in the active docs
   surface.
 - `git diff --check` passed after the implementation work and again after the
-  finalize-review repair.
+  finalize-review repairs.
 - Live GitHub validation confirmed every open issue no longer carries the
   retired scope labels and `gh label list` no longer includes the deleted
   repository labels.
+- Finalize-fix validation confirmed both `docs/plans/archived/README.md` and
+  `.github/workflows/harness-checks.yml` are absent and no active docs depend
+  on them for navigation or workflow truth.
+- `gh pr view 46 --json body` confirmed the PR body is readable and no longer
+  contains shell-expanded command output.
 
 ## Review Summary
-
-UPDATE_REQUIRED_AFTER_REOPEN
 
 - Finalize review round `review-001-full` requested changes with one important
   finding: the tracked plan claimed a decision-log update that the repository
@@ -258,14 +259,16 @@ UPDATE_REQUIRED_AFTER_REOPEN
 - Fresh finalize review round `review-003-full` then passed with no findings,
   confirming the final candidate and tracked summaries align with the active
   docs, CI workflow, and live GitHub issue and label state.
+- After reopen in `finalize-fix` mode, finalize review round `review-004-full`
+  passed with no findings and confirmed the deleted archived readme, removed
+  migration-only workflow, and repaired PR body all left the candidate in a
+  clean handoff state.
 
 ## Archive Summary
 
-UPDATE_REQUIRED_AFTER_REOPEN
-
-- Archived At: 2026-04-19T16:32:34+08:00
-- Revision: 1
-- PR: pending publish after archive; no PR URL exists yet at archive-prep time.
+- Archived At: 2026-04-19T18:02:04+08:00
+- Revision: 2
+- PR: https://github.com/yzhang1918/missless/pull/46
 - Ready: yes for archive closeout after finalize review pass and validation refresh.
 - Merge Handoff: archive this plan, publish the branch to GitHub, open or
   update the PR, record publish/CI/sync evidence, and then wait for explicit
@@ -275,31 +278,26 @@ UPDATE_REQUIRED_AFTER_REOPEN
 
 ### Delivered
 
-UPDATE_REQUIRED_AFTER_REOPEN
-
 - Removed the repo-owned `docs/plans/index.md` navigation page and rewired
   active docs to discover plan state through `harness status`.
-- Removed the archived-plan catalog sync check from the active harness CI
-  workflow.
+- Removed the leftover archived plans catalog readme and the migration-only
+  harness CI workflow.
 - Simplified the repo-local backlog workflow so issue creation and triage no
   longer depend on `scope:*` labels.
 - Migrated live GitHub issues and repository labels off the retired
   scope-based taxonomy.
 - Added a decision-log entry that records the rationale for this
   active-surface cleanup after the `easyharness` migration.
+- Rewrote PR #46's body into a clean human-readable summary and validation
+  note set after the earlier shell-expanded version corrupted the handoff text.
 
 ### Not Delivered
 
-UPDATE_REQUIRED_AFTER_REOPEN
-
-- Archived-plan wording and catalog cleanup stayed out of scope.
+- Archived-plan body wording stayed out of scope.
 - No broader redesign of `kind:*` or `state:*` backlog semantics was attempted.
 
 ### Follow-Up Issues
 
-UPDATE_REQUIRED_AFTER_REOPEN
-
 - No new GitHub follow-up issue was created in this slice.
-- Explicitly deferred by scope: any archived-plan cleanup and any broader
-  backlog-label redesign should be handled in a separate task if they become
-  worth doing.
+- Explicitly deferred by scope: any broader backlog-label redesign should be
+  handled in a separate task if it becomes worth doing.
