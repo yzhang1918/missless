@@ -1,6 +1,6 @@
 ---
 name: issue-triage
-description: Triage GitHub backlog issues for `missless` by reading issue context, assigning `scope:*`, `kind:*`, and optional `state:*` labels, and recording disposition. Use when an agent or human needs to process `needs-triage` issues, run recurring backlog sweeps, or prepare issues for later discovery without starting implementation.
+description: Triage GitHub backlog issues for `missless` by reading issue context, assigning `kind:*` and optional `state:*` labels, and recording disposition. Use when an agent or human needs to process `needs-triage` issues, run recurring backlog sweeps, or prepare issues for later discovery without starting implementation.
 ---
 
 # Issue Triage
@@ -12,15 +12,12 @@ Keep the GitHub backlog legible and ready for future discovery. Read the issue, 
 ## Inputs
 
 - Issue number(s) or a search query that selects the issues to triage.
-- Any human guidance on scope, priority, or whether the issue should stay open.
+- Any human guidance on kind, priority, or whether the issue should stay open.
 
 ## Label Taxonomy
 
 - Intake:
   - `needs-triage`
-- Scope:
-  - `scope:harness`
-  - `scope:product`
 - Kind:
   - `kind:feature`
   - `kind:bug`
@@ -31,7 +28,7 @@ Keep the GitHub backlog legible and ready for future discovery. Read the issue, 
   - `state:parked`
 
 Use these rules:
-- End triage with exactly one `scope:*` label and exactly one `kind:*` label.
+- End triage with exactly one `kind:*` label.
 - Remove `needs-triage` once triage is complete.
 - Leave at most one `state:*` label.
 - Only `state:accepted` issues are ready to enter discovery from backlog.
@@ -70,5 +67,5 @@ Use these rules:
 ## Guardrails
 
 - Do not start implementation or create a repository plan during triage.
-- Do not leave more than one `scope:*`, `kind:*`, or `state:*` label on the issue.
+- Do not leave more than one `kind:*` or `state:*` label on the issue.
 - Do not close an issue just because it is unscheduled; use `state:parked` when the work remains valid.

@@ -38,7 +38,7 @@ Use this file to record high-impact design decisions and reversals.
 - Options considered: many specialized docs, compact foundation docs with split policy.
 - Chosen option: compact foundation docs with split policy.
 - Consequences: easier navigation now, controlled growth later.
-- Related docs: `docs/product-specs/index.md`, `docs/plans/index.md`, `docs/standards/repository-standards.md`
+- Related docs: `docs/product-specs/index.md`, `AGENTS.md`, `docs/standards/repository-standards.md`
 
 - Date: 2026-03-06
 - Decision: Use first-class `Segment` objects as the text-source evidence contract for the first delivery slice.
@@ -55,3 +55,11 @@ Use this file to record high-impact design decisions and reversals.
 - Chosen option: the shipped first slice treats anchored evidence in run artifacts as the authoritative contract; reusable `Segment` identities remain deferred to a later persistence layer.
 - Consequences: current docs/specs must describe atom-local anchored evidence as the live contract, while older Segment-oriented plans remain historical design history rather than current repository truth.
 - Related docs: `docs/design-docs/system-design.md`, `docs/specs/core-data-model.md`, `docs/specs/pipeline-contracts.md`, `docs/plans/archived/2026-03-09-first-review-package-product-facing-v0.md`
+
+- Date: 2026-04-19
+- Decision: Remove repository-owned active plan navigation and scope-based issue taxonomy after the `easyharness` migration.
+- Context: The migration to `easyharness` moved plan discovery and execution flow ownership into the managed harness contract, but active repo surfaces still exposed a repo-owned plans landing page, archived-plan catalog enforcement in CI, and a scope-based GitHub issue taxonomy.
+- Options considered: keep a thin repo-owned plans entrypoint and workflow-vs-product scope labels as local navigation aids, rely on `harness status` plus `docs/plans/` storage paths and simplify backlog labels to `needs-triage`, `kind:*`, and optional `state:*`.
+- Chosen option: remove the repo-owned plans navigation surface, stop treating archived-plan catalog sync as active CI contract, and retire the scope-based issue taxonomy from repo guidance and GitHub labels.
+- Consequences: active repository guidance now discovers plan state through `harness status`, while `docs/plans/active/` and `docs/plans/archived/` remain storage locations rather than a repo-owned navigation product. GitHub backlog labels are simpler and no longer split workflow work from product work with a local scope taxonomy.
+- Related docs: `AGENTS.md`, `docs/index.md`, `.agents/skills/issue-create/SKILL.md`, `.agents/skills/issue-triage/SKILL.md`

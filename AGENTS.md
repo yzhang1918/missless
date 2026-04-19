@@ -48,7 +48,7 @@ Before any discovery/plan/execution work:
 - Product context: `docs/product-specs/index.md`
 - Design rationale: `docs/design-docs/index.md`
 - Technical contracts: `docs/specs/index.md`
-- Product plan history and active tracked plans: `docs/plans/index.md`
+- Product plan history and active tracked plans: `harness status`, then `docs/plans/active/` or `docs/plans/archived/` as needed
 - Detailed standards: `docs/standards/repository-standards.md`
 
 ## Documentation Sync Expectations

@@ -14,15 +14,12 @@ Capture open work in GitHub before the context goes stale. Create or update the 
 - Summary of the work to capture.
 - Origin/provenance for the issue.
 - Known references such as plans, PRs, prior issues, runs, screenshots, or docs.
-- Optional label intent when the human has already decided scope or kind.
+- Optional label intent when the human has already decided kind or state.
 
 ## Label Taxonomy
 
 - Intake:
   - `needs-triage` for new backlog items that still need classification
-- Scope:
-  - `scope:harness`
-  - `scope:product`
 - Kind:
   - `kind:feature`
   - `kind:bug`
@@ -34,8 +31,8 @@ Capture open work in GitHub before the context goes stale. Create or update the 
 
 Use these rules:
 - Default newly created issues to `needs-triage`.
-- Only apply `scope:*`, `kind:*`, or `state:*` labels when they are already known and intentional.
-- If creating a pre-triaged issue, remove `needs-triage`, assign exactly one `scope:*`, exactly one `kind:*`, and at most one `state:*`.
+- Only apply `kind:*` or `state:*` labels when they are already known and intentional.
+- If creating a pre-triaged issue, remove `needs-triage`, assign exactly one `kind:*`, and at most one `state:*`.
 
 ## Execution Contract
 
