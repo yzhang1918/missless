@@ -1,4 +1,0 @@
-interface:
-  display_name: "Loop Janitor"
-  short_description: "Run recurring entropy cleanup"
-  default_prompt: "Use $loop-janitor to scan drift, refactor safely, and update debt tracking."

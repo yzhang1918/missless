@@ -1,4 +1,0 @@
-interface:
-  display_name: "Loop Review"
-  short_description: "Run iterative review/fix loops"
-  default_prompt: "Use $loop-review-loop to prepare helper-generated reviewer launch manifests for selected dimensions, run subagent-based review rounds via $loop-reviewer outputs, then finalize with script-based aggregate+gate."

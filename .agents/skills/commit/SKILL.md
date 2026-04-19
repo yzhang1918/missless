@@ -22,7 +22,7 @@ description: Create a well-formed git commit from current changes using session 
 ## Commit Cadence
 
 - This skill defines commit quality, not commit frequency.
-- Commit frequency is controlled by workflow (`loop-execute`/`loop-review-loop`/`loop-publish`).
+- Commit frequency is controlled by the active harness execution workflow.
 - Multiple commits in one task are expected when they improve reviewability.
 
 ## Steps
