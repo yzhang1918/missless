@@ -62,4 +62,4 @@ Use this file to record high-impact design decisions and reversals.
 - Options considered: keep a thin repo-owned plans entrypoint and workflow-vs-product scope labels as local navigation aids, rely on `harness status` plus `docs/plans/` storage paths and simplify backlog labels to `needs-triage`, `kind:*`, and optional `state:*`.
 - Chosen option: remove the repo-owned plans navigation surface, stop treating archived-plan catalog sync as active CI contract, and retire the scope-based issue taxonomy from repo guidance and GitHub labels.
 - Consequences: active repository guidance now discovers plan state through `harness status`, while `docs/plans/active/` and `docs/plans/archived/` remain storage locations rather than a repo-owned navigation product. GitHub backlog labels are simpler and no longer split workflow work from product work with a local scope taxonomy.
-- Related docs: `AGENTS.md`, `docs/index.md`, `.github/workflows/harness-checks.yml`, `.agents/skills/issue-create/SKILL.md`, `.agents/skills/issue-triage/SKILL.md`
+- Related docs: `AGENTS.md`, `docs/index.md`, `.agents/skills/issue-create/SKILL.md`, `.agents/skills/issue-triage/SKILL.md`

@@ -26,16 +26,20 @@ this cleanup slice.
 ### In Scope
 
 - remove active doc references to `docs/plans/index.md` and delete that file
+- remove the archived plans catalog readme now that archived-plan navigation is
+  no longer a repository-owned active surface
 - update active repository guidance so it no longer presents a repo-owned plans
   index as part of the current navigation model
-- remove CI checks that still treat archived plan catalog maintenance as an
-  active repository contract
+- remove migration-only CI workflow checks that are no longer worth keeping as
+  ongoing repository contract enforcement
 - simplify repo-local issue workflow guidance to use `needs-triage`,
   `kind:*`, and optional `state:*` labels without `scope:*`
 - inspect live GitHub issues and migrate open issues off `scope:harness` and
   `scope:product`
 - remove obsolete `scope:*` labels from the GitHub repository if they are no
   longer used after the issue migration
+- rewrite the open PR body so its summary and validation sections are readable
+  and accurate
 
 ### Out of Scope
 
@@ -54,6 +58,10 @@ this cleanup slice.
       through `harness status` rather than a repository navigation page.
 - [x] CI no longer enforces archived-plan catalog maintenance as part of the
       active repository contract.
+- [x] `docs/plans/archived/README.md` is removed, and no active-surface docs
+      still depend on it for navigation.
+- [x] The migration-only `harness-checks` workflow is removed because its
+      remaining checks are no longer worth carrying as repository CI.
 - [x] Repo-local issue creation/triage guidance no longer requires or mentions
       `scope:*` labels.
 - [x] All open GitHub issues are migrated off `scope:harness` and
@@ -62,6 +70,8 @@ this cleanup slice.
 - [x] Validation demonstrates that active surfaces no longer reference
       `docs/plans/index.md` or `scope:*` taxonomy, while archived plans remain
       untouched.
+- [x] PR #46 has a clean readable body that truthfully summarizes the change
+      and validation instead of including shell-expanded command output.
 
 ## Deferred Items
 
@@ -76,34 +86,39 @@ this cleanup slice.
 
 #### Objective
 
-Delete the active `docs/plans/index.md` navigation page and update the active
-repository docs and checks so they no longer present plan/index maintenance as
-part of `missless`'s own contract.
+Delete the active `docs/plans/index.md` navigation page and remove the leftover
+repo-owned navigation and migration-only workflow surfaces so `missless` no
+longer carries plan catalog assets or CI checks that only existed to guard the
+one-time `easyharness` migration.
 
 #### Details
 
 Keep the harness-managed truth that active tracked plans live under
 `docs/plans/active/`, but stop documenting a repository-owned plans landing
 page or archived-plan catalog maintenance as a current navigation requirement.
-This step should update only active docs and automation checks, not archived
-plan history.
+This step may remove the archived plans catalog readme itself as a leftover
+navigation artifact, but it should not rewrite archived plan bodies or other
+archived history.
 
 #### Expected Files
 
 - `docs/plans/index.md` (removed)
+- `docs/plans/archived/README.md` (removed)
 - `AGENTS.md`
 - `docs/index.md`
 - `docs/design-docs/decision-log.md`
-- `.github/workflows/harness-checks.yml`
+- `.github/workflows/harness-checks.yml` (removed)
 - any other active file that still points at `docs/plans/index.md`
 
 #### Validation
 
 - `rg -n "docs/plans/index\\.md|Product Plans|Archived Plans Catalog|Active Plans Folder" AGENTS.md docs .github .agents/skills --glob '!docs/plans/archived/**'`
   shows only intentional remaining references, if any.
+- `rg -n "docs/plans/archived/README\\.md|Archived Product Plans|archived-plan catalog|harness-checks" AGENTS.md README.md ARCHITECTURE.md docs .github .agents/skills`
+  shows no active-surface dependency on the removed readme or workflow.
 - A markdown-link check over active docs finds no broken local links after
   removing `docs/plans/index.md`.
-- CI config no longer contains the archived-plan catalog sync job.
+- The repository no longer contains `.github/workflows/harness-checks.yml`.
 
 #### Execution Notes
 
@@ -115,10 +130,17 @@ active harness CI workflow so this slice no longer treats plans-index
 navigation or archived-plan catalog sync as part of the repository-owned
 active contract.
 
+After reopen in finalize-fix mode, removed the leftover
+`docs/plans/archived/README.md` catalog readme and deleted the migration-only
+`.github/workflows/harness-checks.yml` workflow entirely because the remaining
+checks were no longer worth preserving as standing repository CI. Also rewrote
+PR #46's body to remove shell-expanded command output and leave a truthful
+human-readable summary plus validation list.
+
 TDD was not practical for this step because the change only affected active
 documentation and CI contract wording rather than executable product behavior.
 Validation used targeted active-surface searches, an active-doc markdown-link
-check, and `git diff --check`.
+check, PR-body inspection through `gh pr view`, and `git diff --check`.
 
 #### Review Notes
 
@@ -206,6 +228,8 @@ separate step-bound reviewer round would have duplicated the same checks.
 
 ## Validation Summary
 
+UPDATE_REQUIRED_AFTER_REOPEN
+
 - Targeted active-surface searches confirmed no live references to the deleted
   plans landing page or the retired scope-based issue taxonomy outside this
   tracked plan's own historical description of the cleanup.
@@ -219,6 +243,8 @@ separate step-bound reviewer round would have duplicated the same checks.
   repository labels.
 
 ## Review Summary
+
+UPDATE_REQUIRED_AFTER_REOPEN
 
 - Finalize review round `review-001-full` requested changes with one important
   finding: the tracked plan claimed a decision-log update that the repository
@@ -235,6 +261,8 @@ separate step-bound reviewer round would have duplicated the same checks.
 
 ## Archive Summary
 
+UPDATE_REQUIRED_AFTER_REOPEN
+
 - Archived At: 2026-04-19T16:32:34+08:00
 - Revision: 1
 - PR: pending publish after archive; no PR URL exists yet at archive-prep time.
@@ -246,6 +274,8 @@ separate step-bound reviewer round would have duplicated the same checks.
 ## Outcome Summary
 
 ### Delivered
+
+UPDATE_REQUIRED_AFTER_REOPEN
 
 - Removed the repo-owned `docs/plans/index.md` navigation page and rewired
   active docs to discover plan state through `harness status`.
@@ -260,10 +290,14 @@ separate step-bound reviewer round would have duplicated the same checks.
 
 ### Not Delivered
 
+UPDATE_REQUIRED_AFTER_REOPEN
+
 - Archived-plan wording and catalog cleanup stayed out of scope.
 - No broader redesign of `kind:*` or `state:*` backlog semantics was attempted.
 
 ### Follow-Up Issues
+
+UPDATE_REQUIRED_AFTER_REOPEN
 
 - No new GitHub follow-up issue was created in this slice.
 - Explicitly deferred by scope: any archived-plan cleanup and any broader
